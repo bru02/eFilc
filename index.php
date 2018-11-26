@@ -3,11 +3,11 @@ require_once("lib.php");
 
 if (isset($_GET['logout'])) {
     session_destroy();
-    if (isset($_COOKIE['rme']) && !empty($_COOKIE['rme'])) {
+    if (hasCookie('rme')) {
         $tok = htmlentities($_COOKIE['rme']);
         $tok = explode(',', $tok);
-        $i = (isset($_COOKIE['cu'])&&!empty($_COOKIE['cu']))?intval($_COOKIE['cu']):0;
-        $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];  
+        $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
+        $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
         $conn = connectDB();
         $sql = "DELETE FROM remember WHERE tok='$tok'";
         if (!mysqli_query($conn, $sql)) {
@@ -52,7 +52,7 @@ if ($routes[0] == "sw.js") {
 if (!isset($_SESSION["revalidate"]) || $_SESSION["revalidate"] < time()) {
     reval();
 }
-if(isset($_GET['fr'])) {
+if (isset($_GET['fr'])) {
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
 }
 switch ($routes[0]) {
@@ -68,7 +68,7 @@ switch ($routes[0]) {
 
     case "login":
         if (!isset($_SESSION['refresh_token'])) {
-            if (isset($_COOKIE['rme']) && !empty($_COOKIE['rme'])) {
+            if (hasCookie('rme')) {
                 $conn = connectDB();
                 $tok = htmlentities($_COOKIE['rme']);
                 $sql = "SELECT * FROM remember WHERE tok = '$tok'";
@@ -106,8 +106,8 @@ switch ($routes[0]) {
                         }
                         $data = getStudent($_SESSION['school'], $_SESSION['token']);
 
-                        
-                       
+
+
                         if (isset($_POST['rme']) && $_POST['rme'] == "1") {
                             $ntok = hash('sha256', uniqid());
                             $sql = "UPDATE remember SET tok='$ntok' WHERE tok='$tok'";
@@ -130,8 +130,8 @@ switch ($routes[0]) {
             if (isset($_POST['school']) && isset($_POST['usr']) && isset($_POST['psw']) && isset($_SESSION['_token']) && isset($_POST['_token'])) {
                 if ($_POST['_token'] == $_SESSION['_token']) {
                     $out = $_POST['school'];
-                        $res = logIn($out, $_POST['usr'], $_POST['psw']);
-                     if (isset($res['error'])) {
+                    $res = logIn($out, $_POST['usr'], $_POST['psw']);
+                    if (isset($res['error'])) {
                         $_SESSION['tries']++;
                         sleep(($_SESSION['tries'] - 1) ^ 2);
                         promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz jelszó/felhasználónév!");
@@ -232,20 +232,20 @@ foreach ($out as $key => $day) {
                 echo "<td data-val='$val'>$val";
                 break;
             case 'fi':
-            foreach($day as $d ) {
-                if($d['Type'] == 'HalfYear') {
-                    echo $v['NumberValue'];
-                    break;
+                foreach ($day as $d) {
+                    if ($d['Type'] == 'HalfYear') {
+                        echo $v['NumberValue'];
+                        break;
+                    }
                 }
-            }
                 break;
             case 'ei':
-            foreach($day as $d ) {
-                if($d['Type'] == 'EndYear') {
-                    echo $v['NumberValue'];
-                    break;
+                foreach ($day as $d) {
+                    if ($d['Type'] == 'EndYear') {
+                        echo $v['NumberValue'];
+                        break;
+                    }
                 }
-            }
                 break;
             case '1/I': // Majd rájövök (vagy nem)
                 break;
@@ -345,7 +345,7 @@ foreach ($out as $key => $day) {
                 if (!isset($out[$v['LessonStartTime']])) {
                     $j = $v['JustificationStateName'];
                     $out[$v['LessonStartTime']] = array(
-                        'd' => date('Y. m. d.',strtotime($v['LessonStartTime'])),
+                        'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
                         's' => 0,
                         't' => $v['TypeName'],
                         'a' => ' db tanítási óra',
@@ -378,8 +378,7 @@ foreach ($out as $key => $day) {
         foreach ($out as $val) : ?>
         <li id="i<?= $val['id']; ?>" class="collection-item">
             <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
-            <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']
-            ; ?></span>
+            <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span>
          </div>
          <?php if (isset($val['h'])) : ?>
          <div class="collapsible-body">
@@ -398,45 +397,45 @@ foreach ($out as $key => $day) {
 
         break;
     case "profil":
-    showHeader('Profil');
-    showNavbar('profil');
-    $data =  $_SESSION['data'];
-    ?>
+        showHeader('Profil');
+        showNavbar('profil');
+        $data = $_SESSION['data'];
+        ?>
     <main class="row container">
-<p>Név: <?= $data['Name']?></p>
-<p>Születtél <?= date('Y. m. d.',strtotime($data['DateOfBirthUtc']))?>, <?= $data['PlaceOfBirth'] ?></p>
+<p>Név: <?= $data['Name'] ?></p>
+<p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
 <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
-<p>Iskola neve: <?= $data['InstituteName']?></p>
+<p>Iskola neve: <?= $data['InstituteName'] ?></p>
  <ul class="collection with-header s12">
         <li class="collection-header"><h4>Lakcímek</h4></li>
         <?php
-        foreach($data['AddressDataList'] as $l): 
+        foreach ($data['AddressDataList'] as $l) :
         ?>
         <li class="collection-item"><?= $l ?></li>
-        <?php endforeach;?>
+        <?php endforeach; ?>
  </ul>
     </main>
     <?php
     showFooter();
     break;
-    case "orarend":
-        $week = isset($_GET['week']) ? intval($_GET['week']) : (date('w')==0 ? 1 : 0);
-        if ($week < 0) {
-            $week = abs($week);
-            $week = "-$week";
-        } else {
-            $week = "+$week";
-        }
-        $monday = date('Y-m-d', strtotime('monday this week', strtotime("$week weeks")));
-        $friday = date('Y-m-d', strtotime('sunday this week', strtotime("$week weeks")));
-        $data = json_decode(timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday), true);
-        if (!$is_api) {
-            showHeader('Órarend');
-            showNavbar('orarend');
+case "orarend":
+    $week = isset($_GET['week']) ? intval($_GET['week']) : (date('w') == 0 ? 1 : 0);
+    if ($week < 0) {
+        $week = abs($week);
+        $week = "-$week";
+    } else {
+        $week = "+$week";
+    }
+    $monday = date('Y-m-d', strtotime('monday this week', strtotime("$week weeks")));
+    $friday = date('Y-m-d', strtotime('sunday this week', strtotime("$week weeks")));
+    $data = json_decode(timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday), true);
+    if (!$is_api) {
+        showHeader('Órarend');
+        showNavbar('orarend');
 
 
 
-            ?>
+        ?>
       <main class="row">
       <div class="container center np">
           <a href="<?= getWeekURL($week - 1); ?>" class="left">&#10094;</a>
@@ -487,7 +486,7 @@ foreach ($out as $key => $day) {
         $sh = min($hs);
         $lh = max($hs);
     }
-    //if (!$is_api) {
+
     $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
     $apiout = [];
     foreach (range(1, 6) as $h) {
@@ -495,7 +494,7 @@ foreach ($out as $key => $day) {
         if (isset($out[$h])) {
             $th = $out[$h];
             if (!$is_api) {
-                echo '<ul class="collection with-header col s12 m2' . (count($out)==5?'5':'').'">';
+                echo '<ul class="collection with-header col s12 m2' . (count($out) == 5 ? '5' : '') . '">';
 
                 echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
             }
@@ -513,11 +512,10 @@ foreach ($out as $key => $day) {
         }
         $apiout[$h] = [];
 
-       // }
         $i = 1;
         $wl = 0;
         foreach (range($sh, $lh) as $hour) {
-            if($wl == count($th)) break;
+            if ($wl == count($th)) break;
             $was = false;
             foreach ($th as $lesson) {
                 if ($lesson['Count'] == $hour) {
@@ -543,7 +541,7 @@ foreach ($out as $key => $day) {
                             'homework' => $lesson["Homework"]
                         ];
                     } else {
-                        echo '<li class="collection-item lesson"><div class="lesson-head title'.($lesson['State'] == 'Missed'? ' em':'').'"><b>' . $lesson['Subject'] . '</b></div>';
+                        echo '<li class="collection-item lesson"><div class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '"><b>' . $lesson['Subject'] . '</b></div>';
                         echo '<p class="lesson-body" data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</p><span class="secondary-content">';
                         echo $lesson['ClassRoom'];
                         echo '</span></li>';
@@ -562,8 +560,7 @@ foreach ($out as $key => $day) {
     if (!$is_api) {
         echo '</div>';
         ?>
-              <button class="btn np" onclick="window.print()">Nyomtatás</button>
-
+            <button class="btn np" onclick="window.print()">Nyomtatás</button>
         </main>
        <?php showFooter();
     } else {
@@ -603,7 +600,7 @@ case "faliujsag":
             foreach ($data['Absences'] as $v) {
                 if ($v['Type'] == 'Absence') {
                     if (!isset($out[$v['LessonStartTime']])) $out[$v['LessonStartTime']] = array(
-                        'd' => date( 'm. d.', strtotime($v['LessonStartTime'])),
+                        'd' => date('m. d.', strtotime($v['LessonStartTime'])),
                         's' => 0,
                         't' => $v['TypeName'],
                         'a' => ' db tanítási óra',
@@ -613,7 +610,7 @@ case "faliujsag":
                     $out[$v['LessonStartTime']]['s']++;
                 } else {
                     $out[] = array(
-                        'd' => date('m. d.',strtotime($v['LessonStartTime'])),
+                        'd' => date('m. d.', strtotime($v['LessonStartTime'])),
                         's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
                         't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . ")" : ''),
                         'a' => '',
@@ -656,9 +653,7 @@ case "faliujsag":
     </main>
 
     <?php
-
     showFooter();
-
     break;
 default:
     header("Connection: keep-alive");

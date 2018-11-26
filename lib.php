@@ -29,16 +29,20 @@ function tLink($t)
         }
         $t = join('-', $t);
         $normalizeChars = array(
-            'é'=>'e',  'í'=>'i', 'ó'=>'o', 'ö'=>'o', 
-            'ú'=>'u',  'ü'=>'u', 'á' => 'a'
+            'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ö' => 'o',
+            'ú' => 'u', 'ü' => 'u', 'á' => 'a'
         );
         $l = mb_strtolower($t);
-        $l = strtr($l,$normalizeChars);
+        $l = strtr($l, $normalizeChars);
         $ret = '<a href="http://www.toldygimnazium.hu/szerzo/' . $l . '">' . $n . "</a>";
     } else {
         $ret = $t;
     }
     return $ret;
+}
+function hasCookie($c)
+{
+    return isset($_COOKIE[$c]) && !empty($_COOKIE[$c]);
 }
 function reval()
 {
@@ -46,12 +50,12 @@ function reval()
         if ($_SESSION['revalidate'] < time())
             getToken($_SESSION['school'], $_SESSION['refresh_token']);
     } else {
-        if (isset($_COOKIE['rme']) && !empty($_COOKIE['rme'])) {
+        if (hasCookie('rme')) {
             $conn = connectDB();
             $tok = htmlentities($_COOKIE['rme']);
             $tok = explode(',', $tok);
-            $i = (isset($_COOKIE['cu'])&&!empty($_COOKIE['cu']))?intval($_COOKIE['cu']):0;
-            $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];  
+            $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
+            $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
 
             $sql = "SELECT * FROM remember WHERE tok = '$tok'";
             $result = mysqli_query($conn, $sql);
@@ -197,14 +201,14 @@ function getStudent($s, $tok)
         '<b class="em">Csonti</b> Domi',
         'Coci fiú',
         'Dejő'
-    ];
+    ]; // Belsős viccek
     $_SESSION['name'] = str_replace($f, $r, $out['Name']);
     $as = [];
     foreach ($out['Evaluations'] as $d) {
-        if($d['Form'] == 'Deportment') {
+        if ($d['Form'] == 'Deportment') {
             $d['Subject'] = "Magatartás";
         }
-        if($d['Form'] == 'Diligence') {
+        if ($d['Form'] == 'Diligence') {
             $d['Subject'] = "Szorgalom";
         }
         $g = $d["Theme"];
@@ -218,25 +222,23 @@ function getStudent($s, $tok)
     $j = [];
     foreach ($as as $d) {
         if (count($d) > 1) {
-            for($i=0;$i<count($d);$i++) {
-                if(isset($d[$i+1]) && $d[$i]['Date'] == $d[ $i+1]['Date']) {
+            for ($i = 0; $i < count($d); $i++) {
+                if (isset($d[$i + 1]) && $d[$i]['Date'] == $d[$i + 1]['Date']) {
                     $a = $d[$i];
-                    $b = $d[$i+1];
-                    $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? $b['NumberValue'] . '/' . $a['NumberValue'] :$a['NumberValue'] . '/' . $b['NumberValue'];
+                    $b = $d[$i + 1];
+                    $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? $b['NumberValue'] . '/' . $a['NumberValue'] : $a['NumberValue'] . '/' . $b['NumberValue'];
                     $a['Weight'] = (str_replace('%', '', $a['Weight']) + str_replace('%', '', $b['Weight'])) . '%';
-                    $d[$i+1]['Was'] = 1;
+                    $d[$i + 1]['Was'] = 1;
                     $j[] = $a;
                     continue;
-                } 
-                if(!isset($d[$i]['Was'])) {
+                }
+                if (!isset($d[$i]['Was'])) {
                     $j[] = $d[$i];
-                  /*  $j[] = $d[$i+1];
-                    $j = array_unique($j, SORT_REGULAR);*/
                 }
             }
-    } else {
-        $j = array_merge($j, $d);
-    }
+        } else {
+            $j = array_merge($j, $d);
+        }
     }
     $out['Evaluations'] = $j;
     if ($_SESSION['tyid']) {
@@ -246,8 +248,7 @@ function getStudent($s, $tok)
 
         $xpath = new \DOMXpath($doc);
         $articles = $xpath->query("//article[contains(@class, 'cleara')]");
-      
-        // all links in h2's in .blogArticle
+
         $months = [
             'szeptember' => 9,
             'október' => 10,
@@ -305,8 +306,6 @@ function getStudent($s, $tok)
     $_SESSION['id'] = $out['StudentId'];
 
     return $out;
-
-
 }
 
 function timetable($s, $tok, $from, $to)
@@ -316,49 +315,40 @@ function timetable($s, $tok, $from, $to)
         "fromDate" => $from,
         "toDate" => $to
     ), array(
-        "Authorization" => "Bearer $tok",
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Accept" => "application/json",
-        "HOST" => "$s.e-kreta.hu"
+        "Authorization" => "Bearer $tok"
     ));
     return $out;
 }
-function checkLogin($s, $usr, $psw) {
+function checkLogin($s, $usr, $psw)
+{
     $ch = curl_init();
 
-curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/Adminisztracio/Login/LoginCheck");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"UserName\":\"$usr\",\"Password\":\"$psw\"}");
-curl_setopt($ch, CURLOPT_POST, 1);
-curl_setopt($ch, CURLOPT_REFERER, "https://$s.e-kreta.hu/Adminisztracio/Login");
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/Adminisztracio/Login/LoginCheck");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"UserName\":\"$usr\",\"Password\":\"$psw\"}");
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_REFERER, "https://$s.e-kreta.hu/Adminisztracio/Login");
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-$headers = array();
-$headers[] = "Content-Type: application/x-www-form-urlencoded";
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    $headers = array();
+    $headers[] = "Content-Type: application/x-www-form-urlencoded";
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-$result = curl_exec($ch);
-if (curl_errno($ch)) {
-    echo 'Error:' . curl_error($ch);
-}
-curl_close ($ch);
-return json_decode($result, true);
+    $result = curl_exec($ch);
+    if (curl_errno($ch)) {
+        echo 'Error:' . curl_error($ch);
+    }
+    curl_close($ch);
+    return json_decode($result, true);
 }
 function getToken($s, $rt)
 {
     $data = "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
-   /* $res = request("https://$s.e-kreta.hu/idp/api/v1/Token", "POST", $data, array(
-        "Content-Type" => "application/x-www-form-urlencoded",
-        "Content-Length" => strlen($data),
-        "Accept" => "application/json",
-        "HOST" => "$s.e-kreta.hu"
-    ), true);*/
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/idp/api/v1/Token");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_POST, 1);
-// Edit: prior variable $postFields should be $postfields;
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
     $res = curl_exec($ch);
@@ -395,28 +385,21 @@ function logIn($s, $usr, $psw)
 {
     $usr = urlencode($usr);
     $data = "institute_code=$s&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
-    /*$res = request("https://$s.e-kreta.hu/idp/api/v1/Token", "POST", $data, array(
-        "Content-Length" => strlen($data),
-        'Content-type' => 'application/x-www-form-urlencoded; charset=utf-8',
-        "Accept" => "application/json",
-        "HOST" => "$s.e-kreta.hu"
-    ), true);*/
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/idp/api/v1/Token");
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_POST, 1);
-// Edit: prior variable $postFields should be $postfields;
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
     $res = curl_exec($ch);
     $res = json_decode($res, true);
-    if(isset( $res["access_token"])) {
-    $_SESSION["token"] = $res["access_token"];
-    $_SESSION["refresh_token"] = $res["refresh_token"];
-    $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
-    $_SESSION['school'] = $s;
-    $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($res["access_token"])) {
+        $_SESSION["token"] = $res["access_token"];
+        $_SESSION["refresh_token"] = $res["refresh_token"];
+        $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
+        $_SESSION['school'] = $s;
+        $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
     }
     return $res;
 }
@@ -460,10 +443,11 @@ function showHeader($title)
 <body>
 <div id="rle"></div>
 <?php
-    ob_flush();
+ob_flush();
 
 }
-function getWeekURL($week) {
+function getWeekURL($week)
+{
     return "orarend" . ($week == 0 ? '' : "?week=$week");
 }
 function showFooter($a = false)
@@ -507,7 +491,7 @@ function sanyi($a, $b)
 {
     return strtotime($b['LessonStartTime']) - strtotime($a['LessonStartTime']);
 }
-function promptLogin($usr = "", $psw = "", $sch = "",$err = "")
+function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 {
 
     if (!isset($_SESSION['_token'])) {
@@ -534,12 +518,12 @@ function promptLogin($usr = "", $psw = "", $sch = "",$err = "")
                 <label for="sc">Iskola</label>
                 <datalist id="slc">
                 <select name="school" id="rslc">
-<?php if(empty($sch)):?>
+<?php if (empty($sch)) : ?>
         <option value="klik035220001">Toldy</option>
-    <?php else: ?>
+    <?php else : ?>
     <option value="<?= $sch ?>" selected>Amit az előbb kiválasztottál</option>
 
-    <?php endif;?>
+    <?php endif; ?>
     </select>
     </datalist>
         </div>
