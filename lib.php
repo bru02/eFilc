@@ -40,9 +40,80 @@ function tLink($t)
     }
     return $ret;
 }
+function encrypt($str, $key = 'noudont')
+{
+    return base64_encode($str);
+}
+
+function decrypt($str, $key = 'noudont')
+{
+    return base64_decode($str);
+}
+
+function deleteRow($tok, $conn)
+{
+    $sql = "DELETE FROM remember WHERE tok='$tok'";
+    if (!mysqli_query($conn, $sql)) {
+        echo "Error deleting record: " . mysqli_error($conn);
+    }
+}
 function hasCookie($c)
 {
     return isset($_COOKIE[$c]) && !empty($_COOKIE[$c]);
+}
+function loginViaRME()
+{
+    $conn = connectDB();
+    $tok = htmlentities($_COOKIE['rme']);
+    $tok = explode(',', $tok);
+    $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
+    $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
+
+    $sql = "SELECT * FROM remember WHERE tok = '$tok'";
+    $result = mysqli_query($conn, $sql);
+
+    if (mysqli_num_rows($result) > 0) {
+         // output data of each row
+        while ($row = mysqli_fetch_assoc($result)) {
+            $exp = $row['expires'];
+            if (time() > $exp) {
+                deleteRow($tok, $conn);
+                setcookie('rme', '');
+                break;
+            }
+            $usr = decrypt($row['usr']);
+            $psw = decrypt($row['psw']);
+            $sch = decrypt($row['sch']);
+
+
+        }
+        if (isset($usr) && isset($psw) && isset($sch)) {
+
+            $res = logIn($sch, $usr, $psw);
+            if (isset($res['error'])) {
+                deleteRow($tok, $conn);
+                setcookie('rme', '');
+                exit();
+            }
+            $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+
+            if (isset($_POST['rme']) && $_POST['rme'] == "1") {
+                $ntok = hash('sha1', uniqid());
+                $sql = "UPDATE remember SET tok='$ntok' WHERE tok='$tok'";
+                if (mysqli_query($conn, $sql)) {
+                    setcookie('rme', $tok, $exp);
+                } else {
+                    echo "Error: " . $sql . "<br>" . mysqli_error($conn);
+                }
+
+                mysqli_close($conn);
+            }
+        }
+    } else {
+        setcookie('rme', '');
+    }
+
+    mysqli_close($conn);
 }
 function reval()
 {
@@ -51,64 +122,7 @@ function reval()
             getToken($_SESSION['school'], $_SESSION['refresh_token']);
     } else {
         if (hasCookie('rme')) {
-            $conn = connectDB();
-            $tok = htmlentities($_COOKIE['rme']);
-            $tok = explode(',', $tok);
-            $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
-            $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
-
-            $sql = "SELECT * FROM remember WHERE tok = '$tok'";
-            $result = mysqli_query($conn, $sql);
-
-            if (mysqli_num_rows($result) > 0) {
-                 // output data of each row
-                while ($row = mysqli_fetch_assoc($result)) {
-                    $exp = $row['expires'];
-                    if (time() > $exp) {
-                        $sql = "DELETE FROM remember WHERE tok='$tok'";
-                        if (!mysqli_query($conn, $sql)) {
-                            echo "Error deleting record: " . mysqli_error($conn);
-                        }
-                        setcookie('rme', '');
-                        break;
-                    }
-                    $usr = base64_decode($row['usr']);
-                    $psw = base64_decode($row['psw']);
-                    $sch = base64_decode($row['sch']);
-
-
-                }
-                if (isset($usr) && isset($psw) && isset($sch)) {
-                    try {
-                        logIn($sch, $usr, $psw);
-                    } catch (Excepion $e) {
-                        $sql = "DELETE FROM remember WHERE tok='$tok'";
-                        if (!mysqli_query($conn, $sql)) {
-                            echo "Error deleting record: " . mysqli_error($conn);
-                        }
-                        setcookie('rme', '');
-
-                        exit();
-                    }
-                    $data = getStudent($_SESSION['school'], $_SESSION['token']);
-
-                    if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                        $ntok = hash('sha256', uniqid());
-                        $sql = "UPDATE remember SET tok='$ntok' WHERE tok='$tok'";
-                        if (mysqli_query($conn, $sql)) {
-                            setcookie('rme', $tok, $exp);
-                        } else {
-                            echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                        }
-
-                        mysqli_close($conn);
-                    }
-                }
-            } else {
-                setcookie('rme', '');
-            }
-
-            mysqli_close($conn);
+            loginViaRME();
         } else if (ROUTES[0] != "login") {
             session_destroy();
             redirect('login');

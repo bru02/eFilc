@@ -9,11 +9,7 @@ if (isset($_GET['logout'])) {
         $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
         $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
         $conn = connectDB();
-        $sql = "DELETE FROM remember WHERE tok='$tok'";
-        if (!mysqli_query($conn, $sql)) {
-            echo "Error deleting record: " . mysqli_error($conn);
-        }
-        setcookie('rme', '');
+        deleteRow($tok, $conn);
     }
     redirect("login");
 }
@@ -69,63 +65,7 @@ switch ($routes[0]) {
     case "login":
         if (!isset($_SESSION['refresh_token'])) {
             if (hasCookie('rme')) {
-                $conn = connectDB();
-                $tok = htmlentities($_COOKIE['rme']);
-                $sql = "SELECT * FROM remember WHERE tok = '$tok'";
-                $result = mysqli_query($conn, $sql);
-
-                if (mysqli_num_rows($result) > 0) {
-                     // output data of each row
-                    while ($row = mysqli_fetch_assoc($result)) {
-                        $exp = $row['expires'];
-                        if (time() > $exp) {
-                            $sql = "DELETE FROM remember WHERE tok='$tok'";
-                            if (!mysqli_query($conn, $sql)) {
-                                echo "Error deleting record: " . mysqli_error($conn);
-                            }
-                            setcookie('rme', '');
-                            break;
-                        }
-                        $usr = base64_decode($row['usr']);
-                        $psw = base64_decode($row['psw']);
-                        $sch = base64_decode($row['sch']);
-
-
-                    }
-                    if (isset($usr) && isset($psw) && isset($sch)) {
-                        try {
-                            logIn($sch, $usr, $psw);
-                        } catch (Excepion $e) {
-                            $sql = "DELETE FROM remember WHERE tok='$tok'";
-                            if (!mysqli_query($conn, $sql)) {
-                                echo "Error deleting record: " . mysqli_error($conn);
-                            }
-                            setcookie('rme', '');
-
-                            exit();
-                        }
-                        $data = getStudent($_SESSION['school'], $_SESSION['token']);
-
-
-
-                        if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                            $ntok = hash('sha256', uniqid());
-                            $sql = "UPDATE remember SET tok='$ntok' WHERE tok='$tok'";
-                            if (mysqli_query($conn, $sql)) {
-                                setcookie('rme', $tok, $exp);
-                            } else {
-                                echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                            }
-
-                            mysqli_close($conn);
-                        }
-                        redirect("faliujsag");
-                    }
-                } else {
-                    setcookie('rme', '');
-                }
-
-                mysqli_close($conn);
+                loginViaRME();
             }
             if (isset($_POST['school']) && isset($_POST['usr']) && isset($_POST['psw']) && isset($_SESSION['_token']) && isset($_POST['_token'])) {
                 if ($_POST['_token'] == $_SESSION['_token']) {
@@ -137,17 +77,18 @@ switch ($routes[0]) {
                         promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz jelszó/felhasználónév!");
                         exit();
                     }
-                    $data = getStudent($_SESSION['school'], $_SESSION['token']);
+                    $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
                     if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                        $tok = hash('sha256', uniqid());
+                        $tok = hash('sha1', uniqid());
                         $conn = connectDB();
 
-                        $usr = base64_encode($_POST['usr']);
-                        $psw = base64_encode($_POST['psw']);
+                        $usr = encrypt($_POST['usr']);
+                        $psw = encrypt($_POST['psw']);
                         $exp = strtotime('1 month', 0);
                         $expd = time() + $exp;
-                        $sch = base64_encode($_POST['school']);
-                        $sql = "INSERT INTO remember (tok, usr, psw, sch, expires) VALUES ('$tok', '$usr', '$psw', '$sch', '$expd')";
+                        $sch = encrypt($_POST['school']);
+                        $name = encrypt($data['Name']);
+                        $sql = "INSERT INTO remember (tok, name, usr, psw, sch, expires) VALUES ('$tok', '$name', '$usr', '$psw', '$sch', '$expd')";
                         if (mysqli_query($conn, $sql)) {
                             setcookie('rme', $tok, $expd);
                         } else {
