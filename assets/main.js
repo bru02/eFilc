@@ -46,32 +46,19 @@ function init() {
     ; (function () {
         'use strict';
 
-        var menuIconElement = $('.header__icon');
-        var menuElement = $('.menu');
-        var menuOverlayElement = $('.menu__overlay');
+        var menuElement = $('#menu');
+        var menuOverlayElement = $('.overlay');
 
         //Menu click event
-        menuIconElement.on('click', showMenu);
-        menuOverlayElement.on('click', hideMenu);
+        menuOverlayElement.on('click', function () {
+            $('body').css({ overflow: 'auto' })
+            location.hash = "#";
+            menuElement.on('transitionend', onTransitionEnd, false);
+        });
         menuElement.on('transitionend', onTransitionEnd);
 
-        //To show menu
-        function showMenu() {
-            menuElement.css({ transform: "translateX(0)" });
-            $('body').css({ overflow: 'hidden' })
-            menuElement.addClass('menu--show');
-            menuOverlayElement.addClass('menu__overlay--show');
-        }
-
         //To hide menu
-        function hideMenu() {
-            menuElement.css({ transform: "translateX(-110%)" });
-            $('body').css({ overflow: 'auto' })
 
-            menuElement.removeClass('menu--show');
-            menuOverlayElement.removeClass('menu__overlay--show');
-            menuElement.on('transitionend', onTransitionEnd, false);
-        }
 
         var touchStartPoint, touchMovePoint;
 
@@ -87,15 +74,13 @@ function init() {
         body.on('touchmove', function (event) {
             touchMovePoint = event.touches[0].pageX;
             if (touchStartPoint < 30 && touchMovePoint > 50) {
-                menuElement.css({ transform: "translateX(0)" });
+                location.hash = "#menu";
             }
         }, false);
 
         function onTransitionEnd() {
             if (touchStartPoint < 30) {
-                menuElement.css({ transform: "translateX(0)" });
-
-                menuOverlayElement.addClass('menu__overlay--show');
+                location.hash = "#menu";
                 menuElement.on('transitionend', onTransitionEnd, false);
             }
         }

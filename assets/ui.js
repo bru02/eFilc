@@ -24,7 +24,9 @@ var _createClass = function () {
     };
 }();
 
-
+function addParam(u, p) {
+    return u + (u.indexOf('?') > -1 ? '&' : '?') + p
+}
 
 /*! cash-dom 1.3.5, https://github.com/kenwheeler/cash @license MIT */
 (function (factory) {
@@ -1209,7 +1211,7 @@ function Modal(el, options) {
      * @type {Boolean}
      */
     this.isOpen = false;
-    this.$overlay = $(`<div ${this.options.opacity == 0 ? '' : 'class="modal-overlay"'}></div>`);
+    this.$overlay = $(`<div ${this.options.opacity == 0 ? '' : 'class="overlay"'}></div>`);
     this._nthModalOpened = 0;
 
     Modal._count++;
@@ -2207,7 +2209,7 @@ var ic = (function (document, location) {
         let b = $('body');
         let _startY = 0;
         let drg = false;
-
+        let waitin = false;
         b.on('touchstart', e => {
             _startY = e.touches[0].pageY;
             drg = true;
@@ -2231,25 +2233,21 @@ var ic = (function (document, location) {
             const y = e.touches[0].pageY;
             // Activate custom pull-to-refresh effects when at the top fo the container
             // and user is scrolling up.
-            if (document.scrollingElement.scrollTop === 0 && y > _startY) {
+            if (!waitin && document.scrollingElement.scrollTop === 0 && y > _startY) {
                 $('#rle').css({ top: Math.min(y - 20, 50) + "px" }).addClass('active')
             }
         }, { passive: true });
         b.on('touchend', e => {
-            if (drg) {
+            if (drg && !waitin && $('#rle').css('top').replace('px', '') > 45) {
                 _startY = 0;
-                $('#rle').css({ top: 0 }).toogleClass('active spin');
-                let u = location.href;
+                $('#rle').css({ top: '' });
+                $('body').toggleClass('spin');
                 drg = false;
-                preload(u + (u.indexOf('?') > -1 ? '&' : '?') + "fr=true");
+                waitin = true;
+                display(addParam(location.href, "fr=true"));
             }
         })
-        /*  if ($preloadOnMousedown) {*/
         b.on('mousedown', mousedown, true)
-        /*  }
-          else {
-              $('body').on('mouseover', mouseover, true)
-          }*/
         b.on('click', click, true)
 
         if (!isInitializing) {
@@ -2302,7 +2300,7 @@ var ic = (function (document, location) {
         $timing = {
             start: +new Date
         }
-        url += (url.indexOf('?') > -1 ? '&' : '?') + "just_html=true";
+        url = addParam(url, "just_html=true");
         triggerPageEvent('fetch')
 
         $xhr.open('GET', url)

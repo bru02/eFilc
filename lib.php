@@ -576,11 +576,11 @@ function showNavbar($key, $data = array(
 {
     ?>
         <header class="np">
-            <span class="header__icon hide-on-large-only">
+            <a href="#menu" class="header__icon hide-on-large-only">
             <svg class="menu__icon no--select" width="24px" height="24px" viewBox="0 0 48 48" fill="#fff">
                 <path d="M6 36h36v-4H6v4zm0-10h36v-4H6v4zm0-14v4h36v-4H6z"></path>
             </svg>
-            </span>
+            </a>
 
             <span class="header__title no--select">E-filc</span>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
@@ -589,11 +589,11 @@ function showNavbar($key, $data = array(
                  <?php 
             } ?>
                 <li <?php echo ('profil' == $key) ? 'class="active"' : '' ?>><a href="profil"><?php echo $_SESSION['name']; ?></a></li>
-                <li><a href="?logout=1" data-no-instant>Kilépés</a></li>
+                <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
-      <div class="menu np">
+      <div id="menu">
         <div class="menu__header">
             <a href="profil">
                 <?php echo $_SESSION['name']; ?>
@@ -604,11 +604,11 @@ function showNavbar($key, $data = array(
                     <li class="<?php echo ($url == $key) ? 'active' : '' ?>"><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
                  <?php 
             } ?>
-            <li><a href="?logout=1" data-no-instant>Kilépés</a></li>
+            <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
 
-      <div class="menu__overlay"></div>
+      <div class="overlay"></div>
 <?php
 
 }
