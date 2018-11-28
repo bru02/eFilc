@@ -416,13 +416,40 @@ thead {
   min-height: 1px;
 }
 
-.row .col.s12 {
+.row .s12 {
   width: 100%;
   margin-left: auto;
   left: auto;
   right: auto;
 }
-
+@media only screen and (min-width: 601px) {
+  /*
+  .row .m1 {
+    width: 8.3333333333%;
+    margin-left: auto;
+    left: auto;
+    right: auto;
+  }
+  */
+  .row .m2 {
+    width: 16.6666666667%;
+    margin-left: auto;
+    left: auto;
+    right: auto;
+  }
+  .row .m25 {
+    width: 20%;
+    margin-left: auto;
+    left: auto;
+    right: auto;
+  }
+  .row .m6 {
+    width: 50%;
+    margin-left: auto;
+    left: auto;
+    right: auto;
+  }
+}
 a {
   text-decoration: none;
 }
@@ -1040,7 +1067,7 @@ input:focus + label, label.active, input[placeholder] + label {
   background-color: rgba(0, 0, 0, 0.42);
 }
 
-[type="checkbox"].tabbed:focus + span:after {
+[type="checkbox"]:focus + span:after, [type="checkbox"]:hover + span:after {
   -webkit-transform: scale(1);
           transform: scale(1);
   border: 0;
@@ -1335,4 +1362,17 @@ header ul a:hover, li.active {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: #555; 
+}
+
+.collection-item {
+  position: relative;
+}
+[data-nth]:after {
+  color: #7AC;
+  opacity: 0.15;
+  content: attr(data-nth);
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  font-size: 930%;
 }

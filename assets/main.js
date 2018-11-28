@@ -11,12 +11,18 @@ function getf(url, cb) {
 }
 function s() {
     if (!location.href.match(/\/orarend/g)) return;
-    window.mh = 0; $('.collection-item').css('height', 'unset'); $('.collection').each((e) => { $(e).find('.collection-item').each((e) => { mh = Math.max(mh, $(e).height()); }) }); $('.collection-item').css('height', mh + 'px')
+    window.mh = 0;
+    $('.collection-item').css('height', 'unset');
+    $('.collection').each((e) => {
+        $(e).find('.collection-item').each((e) => {
+            mh = Math.max(mh, $(e).height());
+        })
+    });
+    $('.collection-item').css('height', mh + 'px')
 }
 
-
 $(window).on('resize', s);
-if (location.href.match(/^(?=.*\/login)(?!.*toldy).*/g))
+if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
     getf('schools', function (data) {
         var data = JSON.parse(data);
         let inp = $('#sc');
@@ -92,13 +98,16 @@ function init() {
         $('.lesson').on('click', function (t) {
             $('#modal span').html('-');
             let a = $(this);
+            let c = a.find('b');
+            elems.find('.modal-content>span').html(c.is('.em') ? 'Elmarad!' : '');
             let b = a.find('.lesson-body');
             let attrs = ['lecke', 'room', 'time', 'theme'];
             $(attrs).each(function (e) {
                 let ar = b.attr(`data-${e}`);
                 ar && (elems.find(`[data-${e}]`).html(ar))
             });
-            elems.find(`[data-tr]`).html(a.find('.lesson-head b').html());
+            elems.find(`[data-nth]`).html(a.parent().attr('data-nth'));
+            elems.find(`[data-tr]`).html(c.html());
             elems.find(`[data-teacher]`).html(a.find('p').html());
             inst.open();
         });
@@ -108,52 +117,11 @@ function init() {
     if (location.href.match(/\/hianyzasok/g)) {
         var inst = M.Collapsible($('.collapsible'))
     }
-    /*  if (location.href.match(/\/jegyek/g)) {
-          var inst = M.Collapsible($('table'), function(e){
-          if(!e.next().is('.collapsible-body')) {
-              let y = document.createElement('tr');
-              $(y).addClass('collapsible-body')
-              let row = $(y).insertAfter(e).html("<td><table class='striped'><thead><tr><td>Dátum</td><td>Típus</td><td>Téma</td><td>Súly</td><td>Tanár</td><td>Értékelés</td></tr></thead><tbody></tbody></table></td>");
-              row = row.find('tbody');
-             let s = e.find('span')
-             $(s.map((e)=>{return $(e).attr('data-tooltip')})).each((e)=>{
-                 let ht = '<tr>';
-                 let g = e.split("\n");
-                 $(g).each((h)=>{
-                     let x = h.split(': ')
-                 ht +=`<td>${x[x.length-1]}</td>`;
-                 })
-                                    ht+=(`<td>${s.html()}</td>`);
 
-                 row.html(`${row.html()}${ht}</tr>`)
-             })
-          }
-      })
-  }*/
     $('[data-tooltip]').on('mouseenter', function () {
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':before').getPropertyValue('height').replace('px', '') - 20) <= 0);
     });
 }
-
-s();
-/*$(window).on('click', 'a:link:not([href^="#"])', function (e) {
-    if (e.target.href.indexOf('logout') > -1) return;
-    e.preventDefault();
-    let t = $(e.target);
-    let url = t.attr('href');
-    if (location.href == url || t.parents('.active').length) return;
-    history.pushState(null, null, url);
-    url += (url.indexOf('?') > -1 ? '&' : '?') + "just_html=true";
-    getf(url, function (e) {
-        let frag = document.createRange().createContextualFragment(e);
-        let f = $(frag);
-        f.find('script, link,  meta').remove(); // Prevent XSS. Kinda.
-        document.title = f.find("title:not(a)").text();
-        $('header').html(f.find('header:not(a)').html()); // To force queryselector
-        $('.row').html(f.find('main.row').html());
-        init();
-    });
-});*/
 init();
 ic.on('change', init);
 let g = $('#gdpr');
@@ -203,8 +171,3 @@ window.addEventListener('beforeinstallprompt', (e) => {
             });
     });
 });
-/*$(window).on('popstate', function () {
-    if (location.host != window.location.host) return;
-    _link = location.pathname.replace(/^.*[\\\/]/, ''); //getf filename only
-    getf(_link, () => { });
-});*/

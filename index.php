@@ -386,7 +386,8 @@ case "orarend":
       </div>
       <div id="modal" class="modal modal-fixed-footer n">
         <div class="modal-content">
-        <p>Időpont: <span data-time></span></p>
+            <span></span>
+        <p>Időpont: <span data-nth></span>. óra, <span data-time></span></p>
         <p>Tantárgy: <span data-tr></span></p>
     
         <p>Tanár: <span data-teacher></span></p>
@@ -429,7 +430,6 @@ case "orarend":
     }
 
     $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
-    $apiout = [];
     foreach (range(1, 6) as $h) {
         $n = $weeknames[$h];
         if (isset($out[$h])) {
@@ -441,7 +441,7 @@ case "orarend":
             }
         } else {
             $th = [];
-            if ($h != 6 && !$is_api) {
+            if ($h != 6) {
                 echo '<ul class="collection with-header col s12 m25">';
 
                 echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
@@ -451,68 +451,55 @@ case "orarend":
             }
             continue;
         }
-        $apiout[$h] = [];
 
         $i = 1;
         $wl = 0;
+        $lout = [];
+        foreach ($th as $d) {
+            $key = $d['Count'];
+            if (!isset($out[$key])) $out[$key] = [];
+            $lout[$key][] = $d;
+        }
         foreach (range($sh, $lh) as $hour) {
-            if ($wl == count($th)) break;
             $was = false;
-            foreach ($th as $lesson) {
-                if ($lesson['Count'] == $hour) {
-                    $wl++;
-                    $was = true;
-                    if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
-                        $c = json_decode(file_get_contents('sch.json'), true);
-                        $e = explode('.', substr($lesson['ClassGroup'], 0, 3));
-                        $b = intval(date('Y')) - ($e[0] - 7);
-                        $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
-                        file_put_contents('sch.json', json_encode($c));
-
-                    }
-                    if ($is_api) {
-                        $apiout[$h][$hour] = [
-                            'id' => $lesson['LessonId'],
-                            'subject' => $lesson['Subject'],
-                            'start' => strtotime($lesson['StartTime']),
-                            'end' => strtotime($lesson['EndTime']),
-                            'teacher' => $lesson['Teacher'],
-                            'room' => $lesson['ClassRoom'],
-                            'theme' => $lesson['Theme'],
-                            'homework' => $lesson["Homework"]
-                        ];
-                    } else {
-                        echo '<li class="collection-item lesson"><div class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '"><b>' . $lesson['Subject'] . '</b></div>';
-                        echo '<p class="lesson-body" data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</p><span class="secondary-content">';
-                        echo $lesson['ClassRoom'];
-                        echo '</span></li>';
-                    }
-                    break;
+            if (isset($lout[$hour])) {
+                $wl++;
+                $was = true;
+                if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
+                    $c = json_decode(file_get_contents('sch.json'), true);
+                    $e = explode('.', substr($lesson['ClassGroup'], 0, 3));
+                    $b = intval(date('Y')) - ($e[0] - 7);
+                    $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
+                    file_put_contents('sch.json', json_encode($c));
                 }
+                echo '<li class="collection-item" data-nth="' . $hour . '">';
+                foreach ($lout[$hour] as $lesson) {
+                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? '' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b>';
+                    echo '<p class="lesson-body" data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</p><span class="secondary-content">';
+                    echo $lesson['ClassRoom'];
+                    echo '</span></div>';
+                }
+                echo '</li>';
+            } else {
+                echo "<li class=\"collection-item\">-</li>";
             }
-            if (!$was && !$is_api) {
-                echo "<li class=\"collection-item\">-<li>";
-            }
+            if ($wl >= count($th)) break;
+
             $i++;
         }
-        if (!$is_api) echo "</ul>";
-
+        echo "</ul>";
     }
-    if (!$is_api) {
-        echo '</div>';
-        ?>
+    echo '</div>';
+    ?>
             <button class="btn np" onclick="window.print()">Nyomtatás</button>
         </main>
        <?php showFooter();
-    } else {
-        echo json_encode($apiout, JSON_UNESCAPED_UNICODE);
-    }
-    break;
-case "faliujsag":
-    showHeader('Faliújság');
-    $data = $_SESSION['data'];
-    showNavbar('faliujsag');
-    ?>
+        break;
+    case "faliujsag":
+        showHeader('Faliújság');
+        $data = $_SESSION['data'];
+        showNavbar('faliujsag');
+        ?>
   <main class="row">
   <div class="container">
     <div class="col s12 m6">

@@ -22,8 +22,11 @@ function getCurrentUri()
 function tLink($t)
 {
     if ($_SESSION['isToldy']) {
+        if (strpos($t, "Helyettesítő: ") > -1) {
+            return 'Helyettesítő: ' . tLink(str_replace('Helyettesítő: ', '', $t));
+        }
         $n = $t;
-        $t = explode(' ', str_replace('dr ', '', str_replace('Attila Dezső', 'Attila', str_replace('csilla margit', 'csilla', str_replace('Helyettesítő: ', '', $t)))));
+        $t = explode(' ', str_replace('dr ', '', str_replace('Attila Dezső', 'Attila', str_replace('csilla margit', 'csilla', $t))));
         if (count($t) > 3) {
             array_pop($t);
         }
