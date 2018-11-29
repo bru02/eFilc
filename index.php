@@ -171,8 +171,8 @@ foreach ($out as $key => $day) {
                 echo "$val";
                 break;
             case 'diff':
-                $val = $aout[$key]['Difference'];
-                echo "<td data-val='$val'>$val";
+                $val = floatval($aout[$key]['Difference']);
+                echo "<td" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
             case 'fi':
                 foreach ($day as $d) {
@@ -463,7 +463,6 @@ case "orarend":
         foreach (range($sh, $lh) as $hour) {
             $was = false;
             if (isset($lout[$hour])) {
-                $wl++;
                 $was = true;
                 if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
                     $c = json_decode(file_get_contents('sch.json'), true);
@@ -474,10 +473,11 @@ case "orarend":
                 }
                 echo '<li class="collection-item" data-nth="' . $hour . '">';
                 foreach ($lout[$hour] as $lesson) {
-                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? '' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b>';
+                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b>';
                     echo '<p class="lesson-body" data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</p><span class="secondary-content">';
                     echo $lesson['ClassRoom'];
                     echo '</span></div>';
+                    $wl++;
                 }
                 echo '</li>';
             } else {

@@ -383,12 +383,12 @@ thead {
   .container {
     width: 85%;
   }
-  :empty:before {
+  li:empty:before {
     content:  "-";
   }
 }
 @media only screen and (max-width: 600px) {
-  :empty {
+  .collection-item:empty {
     display: none;
   }
   .collection-item {
@@ -1330,7 +1330,7 @@ header ul a:hover, li.active {
   color: red;
   font-weight: bold;
 }
-[data-tooltip*="Beszámoló"] {
+[data-tooltip*="Beszámoló"], .gr {
   color: green;
 }
 [data-tooltip*="Gyakorlati feladat"] {
@@ -1346,10 +1346,7 @@ header ul a:hover, li.active {
   color: #52A5A5;
 }
 
-[data-val]:not([data-val='0']) {
-  color: green;
-}
-.red, [data-val^="-"] {
+.red {
   color: red!important;
 }
 .em {
@@ -1386,6 +1383,6 @@ header ul a:hover, li.active {
   left: 50%;
   font-size: 930%;
 }
-:empty:before {
-  content:  "-";
+.lesson:not(.h2) {
+  height: 100%;
 }
