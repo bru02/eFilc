@@ -1190,7 +1190,7 @@ header {
   transform: translateX(-110%);
   will-change: transform;
   height: 100%;
-    overflow: hidden scroll;
+    overflow: hidden auto;
   z-index: 998;
 }
 
