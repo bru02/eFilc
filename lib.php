@@ -127,7 +127,7 @@ function reval()
         if (hasCookie('rme')) {
             loginViaRME();
         } else if (ROUTES[0] != "login") {
-            session_destroy();
+           // session_destroy();
             redirect('login');
         }
     }

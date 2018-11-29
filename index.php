@@ -24,17 +24,7 @@ foreach ($routess as $route) {
     if (trim($route) != '' && !empty($route))
         array_push($routes, $route);
 }
-if (empty($routes)) {
-    $routes = ["login"];
-}
 define('ROUTES', $routes);
-$is_api = false;
-if (count($routes) > 1 && $routes[0] == "api") {
-    $is_api = true;
-    array_shift($routes);
-
-}
-
 if ($routes[0] == "schools") {
     echo json_encode(schools());
     exit();
@@ -45,6 +35,18 @@ if ($routes[0] == "sw.js") {
     echo file_get_contents('real-sw.js');
     exit();
 }
+reval();
+if (empty($routes)) {
+    redirect("faliujsag");
+}
+$is_api = false;
+if (count($routes) > 1 && $routes[0] == "api") {
+    $is_api = true;
+    array_shift($routes);
+
+}
+
+
 if (!isset($_SESSION["revalidate"]) || $_SESSION["revalidate"] < time()) {
     reval();
 }
@@ -434,11 +436,9 @@ case "orarend":
         $n = $weeknames[$h];
         if (isset($out[$h])) {
             $th = $out[$h];
-            if (!$is_api) {
-                echo '<ul class="collection with-header col s12 m2' . (count($out) == 5 ? '5' : '') . '">';
+            echo '<ul class="collection with-header col s12 m2' . (count($out) == 5 ? '5' : '') . '">';
 
-                echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
-            }
+            echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
         } else {
             $th = [];
             if ($h != 6) {
@@ -457,7 +457,7 @@ case "orarend":
         $lout = [];
         foreach ($th as $d) {
             $key = $d['Count'];
-            if (!isset($out[$key])) $out[$key] = [];
+            if (!isset($lout[$key])) $lout[$key] = [];
             $lout[$key][] = $d;
         }
         foreach (range($sh, $lh) as $hour) {
@@ -481,7 +481,7 @@ case "orarend":
                 }
                 echo '</li>';
             } else {
-                echo "<li class=\"collection-item\">-</li>";
+                echo "<li class=\"collection-item\"></li>";
             }
             if ($wl >= count($th)) break;
 

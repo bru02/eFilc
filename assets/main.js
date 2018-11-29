@@ -13,12 +13,14 @@ function s() {
     if (!location.href.match(/\/orarend/g)) return;
     window.mh = 0;
     $('.collection-item').css('height', 'unset');
-    $('.collection').each((e) => {
-        $(e).find('.collection-item').each((e) => {
-            mh = Math.max(mh, $(e).height());
+    for (let els = $('ul'), i = 0; els.length; els = $('ul.collection li:nth-child(' + (++i) + ')')) {
+        if (i == 0) continue;
+        let m = 0;
+        els.each(e => {
+            m = Math.max($(e).height(), m);
         })
-    });
-    $('.collection-item').css('height', mh + 'px')
+        els.css('height', m + 'px')
+    }
 }
 
 $(window).on('resize', s);
