@@ -126,20 +126,17 @@ function init() {
 }
 init();
 ic.on('change', init);
+function addCookie(n) {
+    var exdate = new Date();
+    exdate.setDate(exdate.getDate() + 365);
+
+    document.cookie = `${n}=1;expires=${exdate.toUTCString()};path=/`;
+}
 let g = $('#gdpr');
 if (g.length) {
     new Modal(g, {
         opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
-            var exdate = new Date();
-            exdate.setDate(exdate.getDate() + 365);
-
-            var cookie = [
-                'gdpr=' + 1,
-                'expires=' + exdate.toUTCString(),
-                'path=/'
-            ];
-            document.cookie = cookie.join(';');
-
+            addCookie('gdpr');
         }
     }).open();
 }
@@ -150,26 +147,30 @@ if ('serviceWorker' in navigator) {
         .register('./sw.js', { scope: '/' })
         .then(function () { console.log('Service Worker Registered'); });
 }
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent Chrome 67 and earlier from automatically showing the prompt
-    e.preventDefault();
-    // Stash the event so it can be triggered later.
-    deferredPrompt = e;
-    // Update UI notify the user they can add to home screen
-    (new Modal($('#pwa'), { opacity: 0, preventScrolling: false })).open();
-    $('#pwa-btn').on('click', (e) => {
-        // Show the prompt
-        deferredPrompt.prompt();
-        // Wait for the user to respond to the prompt
-        deferredPrompt.userChoice
-            .then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the A2HS prompt');
-                } else {
-                    console.log('User dismissed the A2HS prompt');
-                }
-                deferredPrompt = null;
-            });
+let p = $('#pwa');
+if (p.length) {
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        // Update UI notify the user they can add to home screen
+        (new Modal(p, { opacity: 0, preventScrolling: false })).open();
+        $('#pwa-btn').on('click', () => {
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice
+                .then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        addCookie('pwa');
+                        console.log('User accepted the A2HS prompt');
+                    } else {
+                        console.log('User dismissed the A2HS prompt');
+                    }
+                    deferredPrompt = null;
+                });
+        });
     });
-});
+}

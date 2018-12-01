@@ -25,7 +25,8 @@ var _createClass = function () {
 }();
 
 function addParam(u, p) {
-    return u + (u.indexOf('?') > -1 ? '&' : '?') + p
+    u = u.replace(new RegExp(`(\\?|\\&)${p}`, 'g'), '');
+    return u + (u.indexOf('?') > -1 ? '&' : '?') + p;
 }
 
 /*! cash-dom 1.3.5, https://github.com/kenwheeler/cash @license MIT */
@@ -2224,13 +2225,18 @@ var ic = (function (document, location) {
             }
         }, { passive: true });
         b.on('touchend', e => {
-            if (drg && !waitin && $('#rle').css('top').replace('px', '') > 45) {
-                _startY = 0;
-                $('#rle').css({ top: '' });
-                $('body').toggleClass('spin');
+            if (drg) {
+                if (!waitin && $('#rle').css('top').replace('px', '') > 45 && document.scrollingElement.scrollTop === 0) {
+                    _startY = 0;
+                    $('#rle').css({ top: '' });
+                    $('body').toggleClass('spin');
+                    waitin = true;
+                    display(addParam(location.href, "fr=true"));
+                } else if (!waitin) {
+                    $('#rle').css({ top: 0 });
+                    $('body').removeClass('spin');
+                }
                 drg = false;
-                waitin = true;
-                display(addParam(location.href, "fr=true"));
             }
         })
         b.on('mousedown', mousedown, true)

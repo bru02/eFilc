@@ -480,7 +480,7 @@ function showFooter($a = false)
   </div>
     <?php 
 }
-if (!$a) { ?>
+if (!$a && !hasCookie('pwa')) { ?>
 <div id="pwa" class="modal bottom-sheet np modal-content">
         Tetszik az e-filc? Töltsd le és offline és használhatod! 
         <a href="#" class="right modal-close">&times;</a>
@@ -588,10 +588,10 @@ function showNavbar($key, $data = array(
             <span class="header__title no--select">E-filc</span>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
                  <?php foreach ($data as $url => $txt) { ?>
-                    <li <?php echo ($url == $key) ? 'class="active"' : '' ?>><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+                    <?php echo ($url == $key) ? '<li class="active"' : '<li' ?>><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
                  <?php 
             } ?>
-                <li <?php echo ('profil' == $key) ? 'class="active"' : '' ?>><a href="profil"><?php echo $_SESSION['name']; ?></a></li>
+                <?php echo ('profil' == $key) ? '<li class="active"' : '<li' ?>><a href="profil"><?php echo $_SESSION['name']; ?></a></li>
                 <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>

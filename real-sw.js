@@ -38,14 +38,15 @@ self.addEventListener('fetch', function (event) {
         caches.open('eFilc').then(function (cache) {
             return cache.match(event.request).then(function (response) {
                 var fetchPromise = fetch(event.request).then(function (networkResponse) {
-                    cache.put(event.request, networkResponse.clone());
+                    var clone = networkResponse.clone();
+                    cache.put(event.request, networkResponse);
                     var url = event.request.url;
                     if (url.match(datas)) {
                         if (url.indexOf('just_html') < 0) {
-                            cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&')), networkResponse.clone());
+                            cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=true"), clone.clone());
                         } else {
-                            Promise(networkResponse.text).then(e => {
-                                cache.put(new Request(url.replace(/(\?|\&)just_html=true/)), new Response(`<!DOCTYPE html><html lang="hu"><head>	<meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="E-filc"><meta name="apple-mobile-web-app-title" content="E-filc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="E-filc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="ui.js" data-no-instant></script><script src="main.js" data-no-instant></script></html>`, {
+                            clone.clone().text().then(e => {
+                                cache.put(new Request(url.replace(/(\?|\&)just_html=true/, '')), new Response(`<!DOCTYPE html><html lang="hu"><head>	<meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="E-filc"><meta name="apple-mobile-web-app-title" content="E-filc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="E-filc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/ui.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
                                     headers: {
                                         'Content-Type': 'text/html'
                                     }
@@ -54,8 +55,8 @@ self.addEventListener('fetch', function (event) {
                             });
                         }
                     }
-                    return networkResponse;
-                }).catch(function () {
+                    return clone;
+                }, function () {
                     return caches.match(event.request);
                 })
                 if (event.request.url.indexOf("fr=") > -1 || event.request.url.indexOf("notify") > -1) return fetchPromise;
