@@ -7,7 +7,7 @@ function getf(url, cb) {
             cb(xhr.responseText);
         }
     };
-    xhr.send(null);
+    xhr.send();
 }
 function s() {
     if (!location.href.match(/\/orarend/g)) return;
@@ -47,52 +47,45 @@ if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
                 this.setCustomValidity('Adjon meg egy érvényes értéket');
             }
         });
-
     });
-
 function init() {
-    ; (function () {
-        'use strict';
-
-        var menuElement = $('#menu');
-        var menuOverlayElement = $('.overlay');
-
-        //Menu click event
-        menuOverlayElement.on('click', function () {
-            $('body').css({ overflow: 'auto' })
-            location.hash = "#";
-            menuElement.on('transitionend', onTransitionEnd, false);
-        });
-        menuElement.on('transitionend', onTransitionEnd);
-
-        //To hide menu
-
-
-        var touchStartPoint, touchMovePoint;
-
-        /*Swipe from edge to open menu*/
-        var body = $('body');
-        //`TouchStart` event to find where user start the touch
-        body.on('touchstart', function (event) {
-            touchStartPoint = event.changedTouches[0].pageX;
-            touchMovePoint = touchStartPoint;
-        }, false);
-
-        //`TouchMove` event to determine user touch movement
-        body.on('touchmove', function (event) {
-            touchMovePoint = event.touches[0].pageX;
-            if (touchStartPoint < 30 && touchMovePoint > 50) {
-                location.hash = "#menu";
-            }
-        }, false);
-
-        function onTransitionEnd() {
-            if (touchStartPoint < 30) {
-                location.hash = "#menu";
-                menuElement.on('transitionend', onTransitionEnd, false);
-            }
+    var menuElement = $('#menu');
+    var menuOverlayElement = $('.overlay');
+    //Menu click event
+    menuOverlayElement.on('click', function () {
+        $('body').css({ overflow: '' })
+        menuElement.removeClass('open').on('transitionend', onTransitionEnd, false);
+    });
+    menuElement.on('transitionend', onTransitionEnd);
+    //To hide menu
+    var touchStartPoint, touchMovePoint;
+    /*Swipe from edge to open menu*/
+    var body = $('body');
+    //`TouchStart` event to find where user start the touch
+    body.on('touchstart', function (event) {
+        touchStartPoint = event.changedTouches[0].pageX;
+        touchMovePoint = touchStartPoint;
+    }, false);
+    function open() {
+        $('body').css({ overflow: 'hidden' })
+        menuElement.addClass('open')
+    }
+    //`TouchMove` event to determine user touch movement
+    body.on('touchmove', function (event) {
+        touchMovePoint = event.touches[0].pageX;
+        if (touchStartPoint < 30 && touchMovePoint > 50) {
+            open()
         }
-    })();
+    }, false);
+    $('#mo').on('click', () => {
+        open()
+    })
+    function onTransitionEnd() {
+        if (touchStartPoint < 30) {
+            open()
+            menuElement.on('transitionend', onTransitionEnd, false);
+        }
+    }
     if (location.href.match(/\/orarend/g)) {
         s();
         var elems = $('#modal');
@@ -113,13 +106,10 @@ function init() {
             elems.find(`[data-teacher]`).html(a.find('p').html());
             inst.open();
         });
-
-
     }
     if (location.href.match(/\/hianyzasok/g)) {
         var inst = M.Collapsible($('.collapsible'))
     }
-
     $('[data-tooltip]').on('mouseenter', function () {
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':before').getPropertyValue('height').replace('px', '') - 20) <= 0);
     });

@@ -358,6 +358,27 @@ function checkLogin($s, $usr, $psw)
     curl_close($ch);
     return json_decode($result, true);
 }
+function WebTimeTable($sch, $tok)
+{
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, "https://$sch.e-kreta.hu/api/CalendarApi/GetTanuloOrarend?tanarId=-1&osztalyCsoportId=-1&tanuloId=-1&teremId=-1&kellCsengetesiRendMegjelenites=false&csakOrarendiOra=false&kellTanoranKivuliFoglalkozasok=false&kellTevekenysegek=false&kellTanevRendje=true&szuresTanevRendjeAlapjan=false&start=2018-11-26&end=2018-12-01&_=" . time());
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+
+    $headers = array();
+    $headers[] = "Cookie: __RequestVerificationToken=$tok;";
+    $headers[] = "Referer: https://$sch.e-kreta.hu/Orarend/InformaciokOrarend";
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
+
+    $result = curl_exec($ch);
+    if (curl_errno($ch)) {
+        echo 'Error:' . curl_error($ch);
+    }
+    curl_close($ch);
+    return $result;
+}
 function getToken($s, $rt)
 {
     $data = "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
@@ -374,9 +395,7 @@ function getToken($s, $rt)
     $_SESSION["refresh_token"] = $res["refresh_token"];
     $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-
     return $res;
-
 }
 function getPushRegId($s, $uid, $h)
 {
@@ -394,9 +413,6 @@ function getPushRegId($s, $uid, $h)
     $res = curl_exec($ch);
     //$res = json_decode($res, true);
     return $res;
-
-
-
 }
 function logIn($s, $usr, $psw)
 {
@@ -482,21 +498,16 @@ function showFooter($a = false)
 }
 if (!$a && !hasCookie('pwa')) { ?>
 <div id="pwa" class="modal bottom-sheet np modal-content">
-        Tetszik az e-filc? Töltsd le és offline és használhatod! 
-        <a href="#" class="right modal-close">&times;</a>
-        <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
-  </div>
-      <!--<div class="fab fab__push waves-effect waves-light">
-  </div>
-  <div class="toast__container"></div>
-  <div class="pg"></div>-->
+    Tetszik az e-filc? Töltsd le és offline és használhatod! 
+    <a href="#" class="right modal-close">&times;</a>
+    <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
+</div>
 <?php 
 } ?>
     </body>
-<script src="assets/ui.js"  data-no-instant></script>
+<script src="assets/ui.js" data-no-instant></script>
 <?php
-if (!$a) echo '      <script  data-no-instant src="assets/notification.js"></script>
-';
+if (!$a) echo '<script  data-no-instant src="assets/notification.js"></script>';
 ?>
 <script data-no-instant src=assets/main.js></script>
 </html>
@@ -579,7 +590,7 @@ function showNavbar($key, $data = array(
 {
     ?>
         <header class="np">
-            <a href="#menu" class="header__icon hide-on-large-only">
+            <a href="#menu" id="mo" class="header__icon hide-on-large-only">
             <svg class="menu__icon no--select" width="24px" height="24px" viewBox="0 0 48 48" fill="#fff">
                 <path d="M6 36h36v-4H6v4zm0-10h36v-4H6v4zm0-14v4h36v-4H6z"></path>
             </svg>
@@ -588,29 +599,50 @@ function showNavbar($key, $data = array(
             <span class="header__title no--select">E-filc</span>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
                  <?php foreach ($data as $url => $txt) { ?>
-                    <?php echo ($url == $key) ? '<li class="active"' : '<li' ?>><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+                    <?php if ($url == $key) { ?>
+                    <li class="active"><?= $txt; ?></li>
+                    <?php 
+                } else { ?>
+                <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+                 <?php 
+            }
+        }
+        $txt = $_SESSION['name'];
+        if ('profil' == $key) { ?>
+                    <li class="active"><?= $txt; ?></li>
+                    <?php 
+                } else { ?>
+                <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
                  <?php 
             } ?>
-                <?php echo ('profil' == $key) ? '<li class="active"' : '<li' ?>><a href="profil"><?php echo $_SESSION['name']; ?></a></li>
                 <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
       <div id="menu">
         <div class="menu__header">
+        <?php if ('profil' == $key) { ?>
+            <?php echo $txt;
+        } else { ?>
             <a href="profil">
-                <?php echo $_SESSION['name']; ?>
+                <?php echo $txt; ?>
             </a>
+<?php 
+} ?>
         </div>
         <ul class="menu__list">
         <?php foreach ($data as $url => $txt) { ?>
-                    <li class="<?php echo ($url == $key) ? 'active' : '' ?>"><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
-                 <?php 
-            } ?>
+            <?php if ($url == $key) { ?>
+            <li class="active"><?= $txt; ?></li>
+            <?php 
+        } else { ?>
+            <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+            <?php 
+        }
+    } ?>
             <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
-
       <div class="overlay"></div>
 <?php
 
