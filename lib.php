@@ -43,15 +43,6 @@ function tLink($t)
     }
     return $ret;
 }
-function encrypt($str, $key = 'noudont')
-{
-    return base64_encode($str);
-}
-
-function decrypt($str, $key = 'noudont')
-{
-    return base64_decode($str);
-}
 
 function deleteRow($tok, $conn)
 {
@@ -379,6 +370,13 @@ function WebTimeTable($sch, $tok)
     curl_close($ch);
     return $result;
 }
+function getHomeWork($sch, $tok, $id)
+{
+    $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], [
+        'Authorization' => "Bearer $tok"
+    ]);
+    return json_decode($ret, true);
+}
 function getToken($s, $rt)
 {
     $data = "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
@@ -503,11 +501,17 @@ if (!$a && !hasCookie('pwa')) { ?>
     <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
 </div>
 <?php 
+}
+if (!$a) { ?>
+<footer>
+    eFilc - <a href="github.com/bru02/eFilc">Github</a>
+</footer>
+<?php 
 } ?>
     </body>
 <script src="assets/ui.js" data-no-instant></script>
 <?php
-if (!$a) echo '<script  data-no-instant src="assets/notification.js"></script>';
+if (!$a) echo '<script data-no-instant src="assets/notification.js"></script>';
 ?>
 <script data-no-instant src=assets/main.js></script>
 </html>

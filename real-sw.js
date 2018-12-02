@@ -5,7 +5,7 @@ var filesToCache = [
     './assets/ui.js',
     './assets/ui.css',
 ];
-var datas = /faliujsag|orarend|jegyek|hianyzasok/;
+var datas = /faliujsag|orarend|jegyek|hianyzasok|profil/;
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
     e.waitUntil(

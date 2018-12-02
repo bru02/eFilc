@@ -766,9 +766,7 @@ _createClass(Modal, [{
         /* if (typeof this.options.onOpenStart === 'function') {
            this.options.onOpenStart.call(this, this.el, this._openingTrigger);
          }*/        if (this.options.preventScrolling) {
-            $("body").css({
-                overflow: "hidden"
-            });
+            $("body").addClass('no-scroll');
         }
         // Set initial styles
         /* this.$el.css({
@@ -818,9 +816,8 @@ _createClass(Modal, [{
             opacity: 0
         });
         this.$el.removeClass("open");
-        $("body").css({
-            overflow: ""
-        });
+        $("body").removeClass('no-scroll');
+
         if (this.options.dismissible) {
             var doc = $(document);
             doc.off("keydown", this._handleKeydownBound);

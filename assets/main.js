@@ -53,7 +53,7 @@ function init() {
     var menuOverlayElement = $('.overlay');
     //Menu click event
     menuOverlayElement.on('click', function () {
-        $('body').css({ overflow: '' })
+        $("body").removeClass('no-scroll');
         menuElement.removeClass('open').on('transitionend', onTransitionEnd, false);
     });
     menuElement.on('transitionend', onTransitionEnd);
@@ -67,7 +67,7 @@ function init() {
         touchMovePoint = touchStartPoint;
     }, false);
     function open() {
-        $('body').css({ overflow: 'hidden' })
+        $("body").addClass('no-scroll');
         menuElement.addClass('open')
     }
     //`TouchMove` event to determine user touch movement
@@ -96,7 +96,7 @@ function init() {
             let c = a.find('b');
             elems.find('.modal-content>span').html(c.is('.em') ? 'Elmarad!' : '');
             let b = a.find('.lesson-body');
-            let attrs = ['lecke', 'room', 'time', 'theme'];
+            let attrs = ['lecke', 'time', 'theme'];
             $(attrs).each(function (e) {
                 let ar = b.attr(`data-${e}`);
                 ar && (elems.find(`[data-${e}]`).html(ar))
@@ -104,14 +104,17 @@ function init() {
             elems.find(`[data-nth]`).html(a.parent().attr('data-nth'));
             elems.find(`[data-tr]`).html(c.html());
             elems.find(`[data-teacher]`).html(a.find('p').html());
+            elems.find(`[data-room]`).html(a.find('.secondary-content').html());
+
             inst.open();
         });
     }
     if (location.href.match(/\/hianyzasok/g)) {
         var inst = M.Collapsible($('.collapsible'))
     }
-    $('[data-tooltip]').on('mouseenter', function () {
-        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':before').getPropertyValue('height').replace('px', '') - 20) <= 0);
+    $('[tooltip]').on('mouseenter', function () {
+        let th = window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '');
+        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - th - 20) <= 0);
     });
 }
 init();

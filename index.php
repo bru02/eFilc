@@ -113,24 +113,24 @@ switch ($routes[0]) {
         showNavbar('jegyek');
         ?>
 <main class="row">
-    <table class="responsive-table striped notes">
-        <thead>
-            <tr>
-                <td>
+    <notes class="responsive-table striped notes">
+        <nhead>
+            <ntr>
+                <ntd>
                     Tantárgy
-                </td>
+                </ntd>
             <?php
             $months = [9, 10, 11, 12, '1/I', 'Félév', '1/II', 2, 3, 4, 5, 6, 'Évvége', 'Átlag', 'Osztály átlag', 'Különbség'];
             foreach ($months as $a) {
-                echo "<td>$a</td>\n\r";
+                echo "<ntd>$a</ntd>\n\r";
             }
             $data = $_SESSION['data'];
             $avrg = $data['SubjectAverages'];
             $data = $data['Evaluations'];
             ?>
             </tr>
-        </thead>
-        <tbody>
+        </nhead>
+        <nbody>
 <?php
 $out = [];
 foreach ($data as $d) {
@@ -148,9 +148,9 @@ foreach ($avrg as $d) {
 
 foreach ($out as $key => $day) {
     usort($day, "date_sort");
-    echo "<tr><td>$key</td>"; // class='collapsible-header'
+    echo "<ntr><ntd>$key</ntd>"; // class='collapsible-header'
     foreach (array_merge(range(9, 12), ['1/I', 'fi', '1/II'], range(2, 6), ['ei', 'atl', 'oatl', 'diff']) as $h) {
-        if ($h != 'diff') echo "<td>";
+        if ($h != 'diff') echo "<ntd>";
         switch ($h) {
             case 'atl':
                 $val = $aout[$key]['Value'];
@@ -162,7 +162,7 @@ foreach ($out as $key => $day) {
                 break;
             case 'diff':
                 $val = floatval($aout[$key]['Difference']);
-                echo "<td" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
+                echo "<ntd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
             case 'fi':
                 foreach ($day as $d) {
@@ -188,21 +188,21 @@ foreach ($out as $key => $day) {
                 $day = array_reverse($day);
                 foreach ($day as $v) {
                     if (intval(date('n', strtotime($v['Date']))) == $h) {
-                        echo '<span id="i' . $v['EvaluationId'] . '"  data-tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $v['Weight'] . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . '</span> ';
+                        echo '<span id="i' . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $v['Weight'] . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . '</span> ';
                     }
                 }
                 break;
         }
         ob_flush();
 
-        echo "</td>";
+        echo "</ntd>";
     }
-    echo "</tr>";
+    echo "</ntr>";
     ob_flush();
 }
 ?>
-            </tbody>
-    </table>
+            </nbody>
+</notes>
 </main>
 <?php
 showFooter();
@@ -230,9 +230,9 @@ case "feljegyzesek":
             ?>
         <tr id="i<?= $h['NoteId']; ?>">
         <td><?php echo date('m. d.', strtotime($h['Date'])); ?></td>
-        <td data-tooltip="<?= $h['Type']; ?>"><?php
-                                                echo $h["Title"];
-                                                ?></td>
+        <td tooltip="<?= $h['Type']; ?>"><?php
+                                        echo $h["Title"];
+                                        ?></td>
         <td><?php echo tLink($h['Teacher']); ?></td>
         <td><?php echo $h['Content']; ?></td>
         </tr>
