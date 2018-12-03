@@ -1,5 +1,4 @@
 ﻿<?php
-include "db.php";
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -57,57 +56,14 @@ function hasCookie($c)
 }
 function loginViaRME()
 {
-    $conn = connectDB();
-    $tok = htmlentities($_COOKIE['rme']);
-    $tok = explode(',', $tok);
-    $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
-    $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
-
-    $sql = "SELECT * FROM remember WHERE tok = '$tok'";
-    $result = mysqli_query($conn, $sql);
-
-    if (mysqli_num_rows($result) > 0) {
-         // output data of each row
-        while ($row = mysqli_fetch_assoc($result)) {
-            $exp = $row['expires'];
-            if (time() > $exp) {
-                deleteRow($tok, $conn);
-                setcookie('rme', '');
-                break;
-            }
-            $usr = decrypt($row['usr']);
-            $psw = decrypt($row['psw']);
-            $sch = decrypt($row['sch']);
-
-
-        }
-        if (isset($usr) && isset($psw) && isset($sch)) {
-
-            $res = logIn($sch, $usr, $psw);
-            if (isset($res['error'])) {
-                deleteRow($tok, $conn);
-                setcookie('rme', '');
-                exit();
-            }
-            $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-
-            if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                $ntok = hash('sha1', uniqid());
-                $sql = "UPDATE remember SET tok='$ntok' WHERE tok='$tok'";
-                if (mysqli_query($conn, $sql)) {
-                    setcookie('rme', $tok, $exp);
-                } else {
-                    echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                }
-
-                mysqli_close($conn);
-            }
-        }
-    } else {
+    $cookie = htmlentities($_COOKIE['rme']);
+    $cookie = explode(',', $cookie);
+    try {
+        getToken($cookie[0], $cookie[1]);
+    } catch (Exception $e) {
         setcookie('rme', '');
+        return false;
     }
-
-    mysqli_close($conn);
 }
 function reval()
 {
@@ -116,7 +72,7 @@ function reval()
             getToken($_SESSION['school'], $_SESSION['refresh_token']);
     } else {
         if (hasCookie('rme')) {
-            loginViaRME();
+            if (!loginViaRME()) redirect('login');
         } else if (ROUTES[0] != "login") {
            // session_destroy();
             redirect('login');
@@ -389,10 +345,12 @@ function getToken($s, $rt)
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
     $res = curl_exec($ch);
     $res = json_decode($res, true);
+    $_SESSION['school'] = $s;
     $_SESSION["token"] = $res["access_token"];
     $_SESSION["refresh_token"] = $res["refresh_token"];
     $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (hasCookie('rme')) setcookie('rme', $_SESSION['school'] . "," . $res["refresh_token"], strtotime('+1 year'));
     return $res;
 }
 function getPushRegId($s, $uid, $h)
@@ -484,7 +442,7 @@ function getWeekURL($week)
 function showFooter($a = false)
 {
     if (isset($_REQUEST['just_html'])) return;
-    if (!isset($_COOKIE['gdpr'])) {
+    if (!hasCookie('gdpr')) {
 
         ?>
  <div id="gdpr" class="modal bottom-sheet np modal-content">
@@ -584,14 +542,16 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 <?php
 showFooter(true);
 }
-function showNavbar($key, $data = array(
-    'faliujsag' => 'Faliújság',
-    'jegyek' => 'Jegyek',
-    'hianyzasok' => 'Hiányzások',
-    'feljegyzesek' => 'Feljegyzések',
-    'orarend' => 'Órarend',
-))
+function showNavbar($key)
 {
+    $data = array(
+        'faliujsag' => 'Faliújság',
+        'jegyek' => 'Jegyek',
+        'hianyzasok' => 'Hiányzások',
+        'feljegyzesek' => 'Feljegyzések',
+        'orarend' => 'Órarend',
+        'profil' => $_SESSION['name'],
+    )
     ?>
         <header class="np">
             <a href="#menu" id="mo" class="header__icon hide-on-large-only">
@@ -610,32 +570,21 @@ function showNavbar($key, $data = array(
                 <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
                  <?php 
             }
-        }
-        $txt = $_SESSION['name'];
-        if ('profil' == $key) { ?>
-                    <li class="active"><?= $txt; ?></li>
-                    <?php 
-                } else { ?>
-                <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
-                 <?php 
-            } ?>
+        } ?>
                 <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
       <div id="menu">
         <div class="menu__header">
-        <?php if ('profil' == $key) { ?>
-            <?php echo $txt;
-        } else { ?>
             <a href="profil">
-                <?php echo $txt; ?>
+                <?php echo $_SESSION['name']; ?>
             </a>
-<?php 
-} ?>
         </div>
         <ul class="menu__list">
-        <?php foreach ($data as $url => $txt) { ?>
+        <?php foreach ($data as $url => $txt) {
+            if ($url == 'profil') continue;
+            ?>
             <?php if ($url == $key) { ?>
             <li class="active"><?= $txt; ?></li>
             <?php 

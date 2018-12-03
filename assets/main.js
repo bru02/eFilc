@@ -112,13 +112,19 @@ function init() {
     if (location.href.match(/\/hianyzasok/g)) {
         var inst = M.Collapsible($('.collapsible'))
     }
+    if (location.href.match(/\/jegyek/g)) {
+        $(location.hash).closest('n').addClass('open')
+    }
     $('[tooltip]').on('mouseenter', function () {
         let th = window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '');
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - th - 20) <= 0);
     });
 }
-init();
-ic.on('change', init);
+$.fn.ready(() => {
+    ic.on('change', init);
+    ic.init("mousedown");
+});
+
 function addCookie(n) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + 365);

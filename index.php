@@ -77,21 +77,7 @@ switch ($routes[0]) {
                     }
                     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
                     if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                        $tok = hash('sha1', uniqid());
-                        $conn = connectDB();
-                        $usr = encrypt($_POST['usr']);
-                        $psw = encrypt($_POST['psw']);
-                        $exp = strtotime('1 month', 0);
-                        $expd = time() + $exp;
-                        $sch = encrypt($_POST['school']);
-                        $name = encrypt($data['Name']);
-                        $sql = "INSERT INTO remember (tok, name, usr, psw, sch, expires) VALUES ('$tok', '$name', '$usr', '$psw', '$sch', '$expd')";
-                        if (mysqli_query($conn, $sql)) {
-                            setcookie('rme', $tok, $expd);
-                        } else {
-                            echo "Error: " . $sql . "<br>" . mysqli_error($conn);
-                        }
-                        mysqli_close($conn);
+                        setcookie('rme', $_SESSION['school'] . "," . $_SESSION['refresh_token'], strtotime('+1 year'));
                     }
                     redirect("faliujsag");
                 } else {
@@ -148,7 +134,7 @@ foreach ($avrg as $d) {
 
 foreach ($out as $key => $day) {
     usort($day, "date_sort");
-    echo "<ntr><ntd>$key</ntd>"; // class='collapsible-header'
+    echo "<ntr><ntd>$key</ntd><n>"; // class='collapsible-header'
     foreach (array_merge(range(9, 12), ['1/I', 'fi', '1/II'], range(2, 6), ['ei', 'atl', 'oatl', 'diff']) as $h) {
         if ($h != 'diff') echo "<ntd>";
         switch ($h) {
@@ -197,7 +183,7 @@ foreach ($out as $key => $day) {
 
         echo "</ntd>";
     }
-    echo "</ntr>";
+    echo "</n></ntr>";
     ob_flush();
 }
 ?>

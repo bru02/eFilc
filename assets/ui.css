@@ -1216,13 +1216,15 @@ header ul a:hover, li.active {
 }
 
 .collapsible-body {
-  max-height: 0;
-  overflow : hidden;
-  -webkit-box-sizing: border-box;
-  box-sizing: border-box;
-  transition: all 0.3s ease-out;
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: all 0.3s ease;
+  height: 0;
 }
-
+.collapsible-body.open {
+  transform: scaleY(1);
+  height: unset;
+}
 .collapsible {
   background-color: #fff;
 }
@@ -1338,12 +1340,11 @@ ntd, nth {
 nbody {
   display: table-row-group;
 }
-
+n {
+  display: contents;
+}
 @media only screen and (max-width: 992px) {
-  notes, nbody, ntr, ntd {
-    display: block;
-    z-index: 0;
-  }
+
   ntr {
     margin: 0.5rem 0 1rem 0;
     border: 1px solid #e0e0e0;
@@ -1364,7 +1365,7 @@ nbody {
   ntd:last-child {
     border-bottom: none;
   }
-  ntr ntd:first-child {
+  ntr>ntd:first-child {
     font-size: 2.28rem;
     line-height: 110%;
     margin: 1.52rem 0 0.912rem 0;
@@ -1372,29 +1373,33 @@ nbody {
     border-bottom: 1px solid #e0e0e0;
     padding: 5px 10px;
   }
-  nhead, ntd:empty {
+  nhead, ntd:empty, n {
     display: none;
   }
-  ntd:last-child::before {
+  n>ntd:last-child::before {
     content: "Különbség: ";
     color: #000;
   }
-  ntd:nth-last-child(2)::before {
+  n>ntd:nth-last-child(2)::before {
     content: "Osztály átlag: ";
   }
-  ntd:nth-last-child(3)::before {
+  n>ntd:nth-last-child(3)::before {
     content: "Átlag: ";
   }
-  ntd [tooltip]::before {
+  n [tooltip]::before {
     content: '';
   }
-  ntd [tooltip]::after {
+  n [tooltip]::after {
     left:unset!important;
     top:50%;
     margin-left:8px;
     transform: translateX(0%)   translateY(-50%);
   }
-  ntd [tooltip] {
+  n [tooltip] {
     position: unset;
+  }
+  notes, nbody, ntr, ntd, n.open {
+    display: block;
+    z-index: 0;
   }
 }

@@ -860,20 +860,18 @@ function Collapsible(el, bo = (() => { })) {
         let f = $(this);
         bo(f);
         let t = f.next();
-        if (t[0].style.maxHeight) {
-            t.css("maxHeight", "");
-        } else {
-            t.css("maxHeight", t[0].scrollHeight + "px");
-        }
+        t.toggleClass('open');
     });
     let z = $(el).find(":target .collapsible-body");
     if (z.length) {
-        z.css("maxHeight", z[0].scrollHeight + "px");
+        z.addClass('open');
     }
 }
 
-M.Collapsible = Collapsible;
-
+$(window).on('click', 'ntd', function (e) {
+    if (window.innerWidth < 992)
+        $(this).next().toggleClass('open')
+})
 /* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */ var ic = function (document, location) {
     // Internal variables
     var $ua = navigator.userAgent, $isChromeForIOS = $ua.indexOf(" CriOS/") > -1, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
@@ -1253,4 +1251,3 @@ M.Collapsible = Collapsible;
     };
 }(document, location);
 
-ic.init("mousedown");
