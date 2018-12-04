@@ -25,7 +25,19 @@ function tLink($t)
             return 'Helyettesítő: ' . tLink(str_replace('Helyettesítő: ', '', $t));
         }
         $n = $t;
-        $t = explode(' ', str_replace('dr ', '', str_replace('Attila Dezső', 'Attila', str_replace('csilla margit', 'csilla', $t))));
+        $s = [
+            'dr ',
+            'attila dezső',
+            'csilla margit',
+            'tamas miklos'
+        ];
+        $r = [
+            '',
+            'attila',
+            'csilla',
+            'tamas'
+        ];
+        $t = explode(' ', str_replace($s, $r, $t));
         if (count($t) > 3) {
             array_pop($t);
         }
@@ -42,13 +54,13 @@ function tLink($t)
     }
     return $ret;
 }
-
-function deleteRow($tok, $conn)
+function logout()
 {
-    $sql = "DELETE FROM remember WHERE tok='$tok'";
-    if (!mysqli_query($conn, $sql)) {
-        echo "Error deleting record: " . mysqli_error($conn);
+    if (isset($_SESSION)) session_destroy();
+    if (hasCookie('rme')) {
+        setcookie('rme');
     }
+    if (ROUTES[0] != 'login') redirect("login");
 }
 function hasCookie($c)
 {
@@ -58,24 +70,24 @@ function loginViaRME()
 {
     $cookie = htmlentities($_COOKIE['rme']);
     $cookie = explode(',', $cookie);
-    try {
-        getToken($cookie[0], $cookie[1]);
-    } catch (Exception $e) {
+    if (count($cookie) == 2 && !getToken($cookie[0], $cookie[1])) {
         setcookie('rme', '');
         return false;
     }
+    return true;
 }
 function reval()
 {
-    if (isset($_SESSION['refresh_token'])) {
+    if (!$_SESSION['authed']) {
+        logout();
+    } elseif (isset($_SESSION['refresh_token'])) {
         if ($_SESSION['revalidate'] < time())
             getToken($_SESSION['school'], $_SESSION['refresh_token']);
     } else {
         if (hasCookie('rme')) {
-            if (!loginViaRME()) redirect('login');
+            if (!loginViaRME()) logout();
         } else if (ROUTES[0] != "login") {
-           // session_destroy();
-            redirect('login');
+            logout();
         }
     }
 }
@@ -136,37 +148,20 @@ function schools()
 }
 function getStuff($s, $tok)
 {
-    reval();
-
     $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Event", "GET", [], array(
         "Authorization" => "Bearer $tok"
 
     ));
     return $out;
-
 }
 
 function getStudent($s, $tok)
 {
-    reval();
-
     $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Student", "GET", '', array(
         "Authorization" => "Bearer $tok"
     ), true);
     $out = json_decode($out, true);
-    $f = [
-        'Jenei Csongor',
-        'Csontos Domonkos',
-        'Kálmán Dániel',
-        'Szőke Dezső'
-    ];
-    $r = [
-        '(Coftalan) Cofi Fiú',
-        '<b class="em">Csonti</b> Domi',
-        'Coci fiú',
-        'Dejő'
-    ]; // Belsős viccek
-    $_SESSION['name'] = str_replace($f, $r, $out['Name']);
+    $_SESSION['name'] = $out['Name'];
     $as = [];
     foreach ($out['Evaluations'] as $d) {
         if ($d['Form'] == 'Deportment') {
@@ -274,7 +269,6 @@ function getStudent($s, $tok)
 
 function timetable($s, $tok, $from, $to)
 {
-    reval();
     $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Lesson", "GET", array(
         "fromDate" => $from,
         "toDate" => $to
@@ -344,14 +338,18 @@ function getToken($s, $rt)
     curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
     $res = curl_exec($ch);
+    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($http_status != 200) return false;
     $res = json_decode($res, true);
-    $_SESSION['school'] = $s;
-    $_SESSION["token"] = $res["access_token"];
-    $_SESSION["refresh_token"] = $res["refresh_token"];
-    $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
-    $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-    if (hasCookie('rme')) setcookie('rme', $_SESSION['school'] . "," . $res["refresh_token"], strtotime('+1 year'));
-    return $res;
+    if (isset($res) && is_array($res)) {
+        $_SESSION['school'] = $s;
+        $_SESSION["token"] = $res["access_token"];
+        $_SESSION["refresh_token"] = $res["refresh_token"];
+        $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
+        $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+        if (hasCookie('rme')) setcookie('rme', $_SESSION['school'] . "," . $res["refresh_token"], strtotime('+1 month'));
+        return $res;
+    } else return false;
 }
 function getPushRegId($s, $uid, $h)
 {
@@ -441,10 +439,17 @@ function getWeekURL($week)
 }
 function showFooter($a = false)
 {
-    if (isset($_REQUEST['just_html'])) return;
-    if (!hasCookie('gdpr')) {
-
+    if (isset($_REQUEST['just_html'])) {
         ?>
+        <footer>
+            eFilc - <a href="https://github.com/bru02/eFilc">Github</a>
+        </footer>
+<?php
+return;
+}
+if (!hasCookie('gdpr')) {
+
+    ?>
  <div id="gdpr" class="modal bottom-sheet np modal-content">
         <a href="https://cookiesandyou.com" target="_blank">Sütiket</a>
          használunk.

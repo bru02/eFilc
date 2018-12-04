@@ -2,20 +2,12 @@
 require_once("lib.php");
 
 if (isset($_GET['logout'])) {
-    session_destroy();
-    if (hasCookie('rme')) {
-        $tok = htmlentities($_COOKIE['rme']);
-        $tok = explode(',', $tok);
-        $i = hasCookie('cu') ? intval($_COOKIE['cu']) : 0;
-        $tok = isset($tok[$i]) ? $tok[$i] : $tok[0];
-        $conn = connectDB();
-        deleteRow($tok, $conn);
-    }
-    redirect("login");
+    logout();
 }
 
 $_SESSION['tries'] = isset($_SESSION['tries']) ? $_SESSION['tries'] : 0;
 $_SESSION['tyid'] = isset($_SESSION['tyid']) ? $_SESSION['tyid'] : false;
+$_SESSION['authed'] = isset($_SESSION['authed']) ? $_SESSION['authed'] : (hasCookie('rme') ? loginViaRME() : false);
 
 $base_url = getCurrentUri();
 $routes = array();
@@ -35,7 +27,6 @@ if ($routes[0] == "sw.js") {
     echo file_get_contents('real-sw.js');
     exit();
 }
-reval();
 if (empty($routes)) {
     redirect("faliujsag");
 }
@@ -44,14 +35,13 @@ if (count($routes) > 1 && $routes[0] == "api") {
     $is_api = true;
     array_shift($routes);
 }
-if (!isset($_SESSION["revalidate"]) || $_SESSION["revalidate"] < time()) {
-    reval();
-}
+
 if (isset($_GET['fr'])) {
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
 }
 switch ($routes[0]) {
     case "notify":
+        reval();
         if (isset($_REQUEST['id'])) {
             echo getPushRegId($_SESSION['school'], $_SESSION['id'], $_REQUEST['id']);
             exit();
@@ -61,7 +51,7 @@ switch ($routes[0]) {
         }
         break;
     case "login":
-        if (!isset($_SESSION['refresh_token'])) {
+        if (!$_SESSION['authed']) {
             if (hasCookie('rme')) {
                 loginViaRME();
             }
@@ -75,6 +65,7 @@ switch ($routes[0]) {
                         promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz jelszó/felhasználónév!");
                         exit();
                     }
+                    $_SESSION['authed'] = true;
                     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
                     if (isset($_POST['rme']) && $_POST['rme'] == "1") {
                         setcookie('rme', $_SESSION['school'] . "," . $_SESSION['refresh_token'], strtotime('+1 year'));
@@ -95,6 +86,7 @@ switch ($routes[0]) {
         }
         break;
     case "jegyek":
+        reval();
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
@@ -134,7 +126,7 @@ foreach ($avrg as $d) {
 
 foreach ($out as $key => $day) {
     usort($day, "date_sort");
-    echo "<ntr><ntd>$key</ntd><n>"; // class='collapsible-header'
+    echo "<ntr><ntd>$key</ntd>"; // class='collapsible-header'
     foreach (array_merge(range(9, 12), ['1/I', 'fi', '1/II'], range(2, 6), ['ei', 'atl', 'oatl', 'diff']) as $h) {
         if ($h != 'diff') echo "<ntd>";
         switch ($h) {
@@ -174,7 +166,9 @@ foreach ($out as $key => $day) {
                 $day = array_reverse($day);
                 foreach ($day as $v) {
                     if (intval(date('n', strtotime($v['Date']))) == $h) {
-                        echo '<span id="i' . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $v['Weight'] . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . '</span> ';
+                        $w = $v['Weight'];
+                        $tag = $w == "200%" ? 'b' : 'span';
+                        echo "<$tag id=\"i" . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . "</$tag> ";
                     }
                 }
                 break;
@@ -183,7 +177,7 @@ foreach ($out as $key => $day) {
 
         echo "</ntd>";
     }
-    echo "</n></ntr>";
+    echo "</ntr>";
     ob_flush();
 }
 ?>
@@ -194,6 +188,7 @@ foreach ($out as $key => $day) {
 showFooter();
 break;
 case "feljegyzesek":
+    reval();
     showHeader('Feljegyzések');
     showNavbar('feljegyzesek');
     ?>
@@ -233,6 +228,7 @@ case "feljegyzesek":
 showFooter();
 break;
 case "hianyzasok":
+    reval();
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
@@ -258,9 +254,11 @@ case "hianyzasok":
 
             }
             $out[$v['LessonStartTime']]['s']++;
+            $li = $v['NumberOfLessons'];
             $out[$v['LessonStartTime']]['h'][] = array(
-                'sub' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-                'stat' => '<span' . ($v['JustificationState'] == 'Justified' ? '' : ' class="red"') . '>' . $j . '</span>'
+                'sub' => $v['Subject'] . ' (' . $li . '. óra)',
+                'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
+                'i' => $li
             );
         } else {
             $out[] = array(
@@ -274,9 +272,7 @@ case "hianyzasok":
                 'id' => $v['AbsenceId']
 
             );
-            $v;
         }
-        if (count($out) >= 5) break;
     }
     foreach ($out as $val) : ?>
         <li id="i<?= $val['id']; ?>" class="collection-item">
@@ -285,7 +281,12 @@ case "hianyzasok":
          </div>
          <?php if (isset($val['h'])) : ?>
          <div class="collapsible-body">
-            <?php foreach ($val['h'] as $g) { ?>
+            <?php 
+            usort($val['h'], function ($a, $b) {
+                return $a['i'] - $b['i'];
+            });
+            foreach ($val['h'] as $g) {
+                ?>
                 <p class="collection-item"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
             <?php 
         } ?>
@@ -299,6 +300,7 @@ case "hianyzasok":
 showFooter();
 break;
 case "profil":
+    reval();
     showHeader('Profil');
     showNavbar('profil');
     $data = $_SESSION['data'];
@@ -321,6 +323,7 @@ case "profil":
 showFooter();
 break;
 case "orarend":
+    reval();
     $week = isset($_GET['week']) ? intval($_GET['week']) : (date('w') == 0 ? 1 : 0);
     if ($week < 0) {
         $week = abs($week);
@@ -426,8 +429,8 @@ foreach (range(1, 6) as $h) {
             }
             echo '<li class="collection-item" data-nth="' . $hour . '">';
             foreach ($lout[$hour] as $lesson) {
-                echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b>';
-                echo '<p class="lesson-body" data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</p><span class="secondary-content">';
+                echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b><br/>';
+                echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</i><span class="secondary-content">';
                 echo $lesson['ClassRoom'];
                 echo '</span></div>';
                 $wl++;
@@ -449,6 +452,7 @@ echo '</div>';
        <?php showFooter();
         break;
     case "faliujsag":
+        reval();
         showHeader('Faliújság');
         $data = $_SESSION['data'];
         showNavbar('faliujsag');
@@ -542,6 +546,7 @@ default:
         <style>
             body {
                 background-image: url(assets/astronauta.jpg), url(assets/Stars404.png);
+                background-color: #000;
                 background-position: right top, center center;
                 background-repeat: no-repeat, repeat;
                 background-size: cover, auto;

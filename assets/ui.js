@@ -5,23 +5,6 @@ if (!Object.entries) Object.entries = function (obj) {
     return resArray;
 };
 
-var _createClass = function () {
-    function defineProperties(target, props) {
-        for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor) descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-        }
-    }
-    return function (Constructor, protoProps, staticProps) {
-        if (protoProps) defineProperties(Constructor.prototype, protoProps);
-        if (staticProps) defineProperties(Constructor, staticProps);
-        return Constructor;
-    };
-}();
-
 function addParam(u, p) {
     u = u.replace(new RegExp(`(\\?|\\&)${p}`, "g"), "");
     return u + (u.indexOf("?") > -1 ? "&" : "?") + p;
@@ -42,7 +25,8 @@ function addParam(u, p) {
     var idMatch = /^#[\w-]*$/, classMatch = /^\.[\w-]*$/, htmlMatch = /<.+>/, singlet = /^\w+$/;
     function find(selector, context) {
         context = context || doc;
-        var elems = classMatch.test(selector) ? context.getElementsByClassName(selector.slice(1)) : singlet.test(selector) ? context.getElementsByTagName(selector) : context.querySelectorAll(selector);
+        var elems = idMatch.test(selector) ?
+            doc.getElementById(selector.slice(1)) : classMatch.test(selector) ? context.getElementsByClassName(selector.slice(1)) : singlet.test(selector) ? context.getElementsByTagName(selector) : context.querySelectorAll(selector);
         return elems;
     }
     var frag;
@@ -73,13 +57,7 @@ function addParam(u, p) {
         }
         var elems = selector, i = 0, length;
         if (isString(selector)) {
-            elems = idMatch.test(selector) ?
-                // If an ID use the faster getElementById check
-                doc.getElementById(selector.slice(1)) : htmlMatch.test(selector) ?
-                    // If HTML, parse it into real elements
-                    parseHTML(selector) :
-                    // else use `find`
-                    find(selector, context);
+            elems = htmlMatch.test(selector) ? parseHTML(selector) : find(selector, context);
             // If function, use as shortcut for DOM ready
         } else if (isFunction(selector)) {
             onReady(selector);
@@ -116,11 +94,7 @@ function addParam(u, p) {
     Object.defineProperty(fn, "constructor", {
         value: cash
     });
-    cash.parseHTML = parseHTML;
-    cash.noop = noop;
-    cash.isFunction = isFunction;
-    cash.isString = isString;
-    cash.extend = fn.extend = function (target) {
+    fn.extend = function (target) {
         target = target || {};
         var args = slice.call(arguments), length = args.length, i = 1;
         if (args.length === 1) {
@@ -294,8 +268,6 @@ function addParam(u, p) {
             return cache[prop];
         };
     }();
-    cash.prefixedProp = getPrefixedProp;
-    cash.camelCase = camelCase;
     fn.extend({
         css: function (prop, value) {
             if (isString(prop)) {
@@ -719,162 +691,123 @@ doc.on("blur", docHandleBlur, true);
  * @param {Element} el
  * @param {Object} options
  */ function Modal(el, options) {
-    this.el = el.length ? el[0] : el;
-    this.$el = $(el);
-    this.options = $.extend({}, Modal.defaults, options);
+    let self = {
+        "open": function () {
+            if (self.isOpen) {
+                return;
+            }
+            self.isOpen = true;
+            Modal._modalsOpen++;
+            self._nthModalOpened = Modal._modalsOpen;
+            // Set Z-Index based on number of currently open modals
+            let zi = 1e3 + Modal._modalsOpen * 2;
+            self.$overlay.css({
+                zIndex: zi
+            });
+            self.$el.css({
+                zIndex: zi + 1
+            });
+            // Set opening trigger, undefined indicates modal was opened by javascript
+            // onOpenStart callback
+            if (self.options.preventScrolling) {
+                $("body").addClass('no-scroll');
+            }
+            self.$overlay.css({
+                display: "block",
+                opacity: self.options.opacity
+            });
+            // Animate overlay
+            self.el.insertAdjacentElement("afterend", self.$overlay[0]);
+            self.$el.addClass("open");
+            if (self.options.dismissible) {
+                var _doc = $(document);
+                _doc.on("keydown", function (e) {
+                    if (e.keyCode === 27 && self.options.dismissible) {
+                        self.close();
+                    }
+                });
+                _doc.on("focus", function (e) {
+                    // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
+                    if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
+                        self.el.focus();
+                    }
+                });
+            }
+            // this._animateIn();
+            // Focus modal
+            self.el.focus();
+        },
+        "close": function () {
+            if (!self.isOpen) {
+                return;
+            }
+            self.isOpen = false;
+            Modal._modalsOpen--;
+            self._nthModalOpened = 0;
+            self.$overlay.css({
+                opacity: 0
+            });
+            self.$el.removeClass("open");
+            $("body").removeClass('no-scroll');
+
+            if (self.options.dismissible) {
+                var doc = $(document);
+                doc.off("keydown", self._handleKeydownBound);
+                doc.off("focus", self._handleFocusBound, true);
+            }
+            setTimeout(function () {
+                self.$overlay.remove();
+                // Call onCloseEnd callback
+                if (self.options.onCloseEnd) {
+                    self.options.onCloseEnd();
+                }
+            }, 250);
+        }
+    };
+    self.el = el.length ? el[0] : el;
+    self.$el = $(el);
+    self.options = $.fn.extend({
+        opacity: .5,
+        onCloseEnd: null,
+        preventScrolling: true,
+        dismissible: true
+    }, options);
     /**
      * Describes open/close state of modal
      * @type {Boolean}
-     */    this.isOpen = false;
-    this.$overlay = $(`<div ${this.options.opacity == 0 ? "" : 'class="overlay"'}></div>`);
-    this._nthModalOpened = 0;
+     */    self.isOpen = false;
+    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`);
+    self._nthModalOpened = 0;
     Modal._count++;
-    let self = this;
-    this.$overlay.on("click", function () {
+    self.$overlay.on("click", function () {
         if (self.options.dismissible) {
             self.close();
         }
     });
-    this.$el.on("click", function (e) {
+    self.$el.on("click", function (e) {
         var $closeTrigger = $(e.target).closest(".modal-close");
         if ($closeTrigger.length) {
             self.close();
         }
     });
-    return this;
+    return self;
 }
-
-_createClass(Modal, [{
-    key: "open",
-    value: function () {
-        if (this.isOpen) {
-            return;
-        }
-        this.isOpen = true;
-        Modal._modalsOpen++;
-        this._nthModalOpened = Modal._modalsOpen;
-        // Set Z-Index based on number of currently open modals
-        let zi = 1e3 + Modal._modalsOpen * 2;
-        this.$overlay.css({
-            zIndex: zi
-        });
-        this.$el.css({
-            zIndex: zi + 1
-        });
-        // Set opening trigger, undefined indicates modal was opened by javascript
-        // onOpenStart callback
-        /* if (typeof this.options.onOpenStart === 'function') {
-           this.options.onOpenStart.call(this, this.el, this._openingTrigger);
-         }*/        if (this.options.preventScrolling) {
-            $("body").addClass('no-scroll');
-        }
-        // Set initial styles
-        /* this.$el.css({
-             display: 'block'
-         });*/        this.$overlay.css({
-            display: "block",
-            opacity: this.options.opacity
-        });
-        // Animate overlay
-        this.el.insertAdjacentElement("afterend", this.$overlay[0]);
-        this.$el.addClass("open");
-        if (this.options.dismissible) {
-            let self = this;
-            var _doc = $(document);
-            _doc.on("keydown", function (e) {
-                if (e.keyCode === 27 && self.options.dismissible) {
-                    self.close();
-                }
-            });
-            _doc.on("focus", function (e) {
-                // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
-                if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
-                    self.el.focus();
-                }
-            });
-        }
-        // this._animateIn();
-        // Focus modal
-        this.el.focus();
-    }
-    /**
-     * Close Modal
-     */}, {
-    key: "close",
-    value: function close() {
-        if (!this.isOpen) {
-            return;
-        }
-        this.isOpen = false;
-        Modal._modalsOpen--;
-        this._nthModalOpened = 0;
-        // Call onCloseStart callback
-        /*if (typeof this.options.onCloseStart === 'function') {
-          this.options.onCloseStart.call(this, this.el);
-        }
-        */        this.$overlay.css({
-            opacity: 0
-        });
-        this.$el.removeClass("open");
-        $("body").removeClass('no-scroll');
-
-        if (this.options.dismissible) {
-            var doc = $(document);
-            doc.off("keydown", this._handleKeydownBound);
-            doc.off("focus", this._handleFocusBound, true);
-        }
-        var self = this;
-        setTimeout(function () {
-            self.$overlay.remove();
-            // Call onCloseEnd callback
-            if (self.options.onCloseEnd) {
-                self.options.onCloseEnd();
-            }
-        }, 250);
-    }
-}], [{
-    key: "defaults",
-    get: function () {
-        return {
-            opacity: .5,
-            onCloseEnd: null,
-            preventScrolling: true,
-            dismissible: true
-        };
-    }
-}]);
-
-/**
- * @static
- * @memberof Modal
- */ Modal._modalsOpen = 0;
-
-/**
- * @static
- * @memberof Modal
- */ Modal._count = 0;
-
-function Collapsible(el, bo = (() => { })) {
+Modal._modalsOpen = 0;
+function Collapsible(el) {
     // Setup tab indices
     $(el).find(".collapsible-header").on("click", function (e) {
-        let f = $(this);
-        bo(f);
-        let t = f.next();
-        t.toggleClass('open');
+        $(this).next().toggleClass('open');
     });
-    let z = $(el).find(":target .collapsible-body");
-    if (z.length) {
-        z.addClass('open');
-    }
+    $(el).find(":target .collapsible-body").addClass('open')
+
 }
 
-$(window).on('click', 'ntd', function (e) {
-    if (window.innerWidth < 992)
-        $(this).next().toggleClass('open')
+$(window).on('click', 'ntr', function (e) {
+    $(this).toggleClass('open')
 })
 /* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */ var ic = function (document, location) {
     // Internal variables
-    var $ua = navigator.userAgent, $isChromeForIOS = $ua.indexOf(" CriOS/") > -1, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
+    var $ua = navigator.userAgent, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
         // Preloading-related variables
         $history = {}, $xhr, $url = false, $title = false, $mustRedirect = false, $body = false, $timing = {}, $isPreloading = false, $isWaitingForCompletion = false, $trackedAssets = [],
         // Variables defined by public functions
@@ -905,10 +838,6 @@ $(window).on('click', 'ntd', function (e) {
            5.1, 6.0 and Mobile 7.0) to execute script tags directly.
         */;
         if (newUrl) {
-            var hashIndex = newUrl.indexOf("#"), hashElem = hashIndex > -1 && $(newUrl.split("?")[0].substr(hashIndex))[0];
-            if (hashElem) {
-                hashElem.scrollIntoView();
-            }
             $currentLocationWithoutHash = removeHash(newUrl);
         } else {
             scrollTo(0, scrollY);
@@ -1048,7 +977,7 @@ $(window).on('click', 'ntd', function (e) {
         $timing = {
             start: +new Date()
         };
-        url = addParam(url, "just_html=true");
+        url = addParam(url, "just_html=1");
         $xhr.open("GET", url);
         $xhr.send();
     }
@@ -1245,9 +1174,7 @@ $(window).on('click', 'ntd', function (e) {
     }
     ////////////////////
     return {
-        supported,
         init,
         on
     };
 }(document, location);
-

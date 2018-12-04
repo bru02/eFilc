@@ -367,7 +367,7 @@ thead, nhead {
   left: auto;
   right: auto;
 }
-@media only screen and (min-width: 601px) {
+@media only screen and (min-width: 601px), print {
   /*
   .row .m1 {
     width: 8.3333333333%;
@@ -397,6 +397,13 @@ thead, nhead {
 }
 a {
   text-decoration: none;
+}
+.h2 {
+  float: left;
+  width: 50%;
+}
+.h2 + .h2 {
+  float: right;
 }
 
 html {
@@ -1174,10 +1181,14 @@ header ul a:hover, li.active {
 }
 
 @media print {
-  .np {
+  @page { 
+    size: A4 landscape;
+    size: 287mm 210mm;  }
+
+  .np, footer, header {
     display: none
   }
-  .row, .container {
+  .row, .container, body {
     padding: 0;
     margin: 0;
   }
@@ -1246,7 +1257,6 @@ header ul a:hover, li.active {
 }
 [tooltip*="200%"] {
   color: red;
-  font-weight: bold;
 }
 [tooltip*="Beszámoló"], .gr {
   color: green;
@@ -1299,7 +1309,7 @@ header ul a:hover, li.active {
   position: absolute;
   top: 35%;
   left: 50%;
-  font-size: 930%;
+  font-size: 500%;
 }
 .lesson:not(.h2) {
   height: 100%;
@@ -1340,9 +1350,7 @@ ntd, nth {
 nbody {
   display: table-row-group;
 }
-n {
-  display: contents;
-}
+
 @media only screen and (max-width: 992px) {
 
   ntr {
@@ -1373,33 +1381,40 @@ n {
     border-bottom: 1px solid #e0e0e0;
     padding: 5px 10px;
   }
-  nhead, ntd:empty, n {
-    display: none;
-  }
-  n>ntd:last-child::before {
+
+  ntr>ntd:last-child::before {
     content: "Különbség: ";
     color: #000;
   }
-  n>ntd:nth-last-child(2)::before {
+  ntr>ntd:nth-last-child(2)::before {
     content: "Osztály átlag: ";
   }
-  n>ntd:nth-last-child(3)::before {
+  ntr>ntd:nth-last-child(3)::before {
     content: "Átlag: ";
   }
-  n [tooltip]::before {
+  ntr [tooltip]::before {
     content: '';
   }
-  n [tooltip]::after {
+  ntr [tooltip]::after {
     left:unset!important;
     top:50%;
     margin-left:8px;
     transform: translateX(0%)   translateY(-50%);
   }
-  n [tooltip] {
+  ntr [tooltip] {
     position: unset;
   }
-  notes, nbody, ntr, ntd, n.open {
+  notes, nbody, ntr, ntd {
     display: block;
     z-index: 0;
+  }
+  ntr>*:not(:first-child) {
+    display: none;
+  }
+  ntr.open ntd:not(:empty) {
+    display: block;
+  }
+  nhead, ntd:empty, n {
+    display: none;
   }
 }

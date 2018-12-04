@@ -49,10 +49,12 @@ if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
         });
     });
 function init() {
+    let he = $(location.hash);
+    if (he.length) {
+        requestAnimationFrame(() => { he[0].scrollIntoView() });
+    }
     var menuElement = $('#menu');
-    var menuOverlayElement = $('.overlay');
-    //Menu click event
-    menuOverlayElement.on('click', function () {
+    $('.overlay').on('click', function () {
         $("body").removeClass('no-scroll');
         menuElement.removeClass('open').on('transitionend', onTransitionEnd, false);
     });
@@ -89,13 +91,13 @@ function init() {
     if (location.href.match(/\/orarend/g)) {
         s();
         var elems = $('#modal');
-        var inst = new Modal(elems);
+        var inst = Modal(elems);
         $('.lesson').on('click', function (t) {
             $('#modal span').html('-');
             let a = $(this);
             let c = a.find('b');
             elems.find('.modal-content>span').html(c.is('.em') ? 'Elmarad!' : '');
-            let b = a.find('.lesson-body');
+            let b = a.find('i');
             let attrs = ['lecke', 'time', 'theme'];
             $(attrs).each(function (e) {
                 let ar = b.attr(`data-${e}`);
@@ -103,21 +105,18 @@ function init() {
             });
             elems.find(`[data-nth]`).html(a.parent().attr('data-nth'));
             elems.find(`[data-tr]`).html(c.html());
-            elems.find(`[data-teacher]`).html(a.find('p').html());
+            elems.find(`[data-teacher]`).html(b.html());
             elems.find(`[data-room]`).html(a.find('.secondary-content').html());
 
             inst.open();
         });
     }
-    if (location.href.match(/\/hianyzasok/g)) {
-        var inst = M.Collapsible($('.collapsible'))
-    }
+    Collapsible($('.collapsible'))
     if (location.href.match(/\/jegyek/g)) {
-        $(location.hash).closest('n').addClass('open')
+        he.closest('ntr').addClass('open')
     }
     $('[tooltip]').on('mouseenter', function () {
-        let th = window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '');
-        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - th - 20) <= 0);
+        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 20) <= 0);
     });
 }
 $.fn.ready(() => {
@@ -133,7 +132,7 @@ function addCookie(n) {
 }
 let g = $('#gdpr');
 if (g.length) {
-    new Modal(g, {
+    Modal(g, {
         opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
             addCookie('gdpr');
         }
@@ -155,7 +154,7 @@ if (p.length) {
         // Stash the event so it can be triggered later.
         deferredPrompt = e;
         // Update UI notify the user they can add to home screen
-        (new Modal(p, { opacity: 0, preventScrolling: false })).open();
+        (Modal(p, { opacity: 0, preventScrolling: false })).open();
         $('#pwa-btn').on('click', () => {
             // Show the prompt
             deferredPrompt.prompt();

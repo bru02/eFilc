@@ -1,5 +1,5 @@
 Options -MultiViews
-AddCharset UTF-8 .js .html
+AddCharset UTF-8 .js .html .css
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-l
