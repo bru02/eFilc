@@ -444,33 +444,35 @@ function showFooter($a = false)
         <footer>
             eFilc - <a href="https://github.com/bru02/eFilc">Github</a>
         </footer>
+    </main>
 <?php
 return;
 }
 if (!hasCookie('gdpr')) {
 
     ?>
- <div id="gdpr" class="modal bottom-sheet np modal-content">
-        <a href="https://cookiesandyou.com" target="_blank">Sütiket</a>
-         használunk.
-        <button class="right modal-close btn">Oké</button>
-  </div>
+    <div id="gdpr" class="modal bottom-sheet np modal-content">
+            <a href="https://cookiesandyou.com" target="_blank">Sütiket</a>
+            használunk.
+            <button class="right modal-close btn">Oké</button>
+    </div>
+        <?php 
+    }
+    if (!$a && !hasCookie('pwa')) { ?>
+    <div id="pwa" class="modal bottom-sheet np modal-content">
+        Tetszik az e-filc? Töltsd le és offline és használhatod! 
+        <a href="#" class="right modal-close">&times;</a>
+        <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
+    </div>
     <?php 
 }
-if (!$a && !hasCookie('pwa')) { ?>
-<div id="pwa" class="modal bottom-sheet np modal-content">
-    Tetszik az e-filc? Töltsd le és offline és használhatod! 
-    <a href="#" class="right modal-close">&times;</a>
-    <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
-</div>
-<?php 
-}
 if (!$a) { ?>
-<footer>
-    eFilc - <a href="github.com/bru02/eFilc">Github</a>
-</footer>
-<?php 
+    <footer>
+        eFilc - <a href="github.com/bru02/eFilc">Github</a>
+    </footer>
+    <?php 
 } ?>
+</main>
     </body>
 <script src="assets/ui.js" data-no-instant></script>
 <?php
@@ -602,6 +604,7 @@ function showNavbar($key)
         </ul>
       </div>
       <div class="overlay"></div>
+      <main>
 <?php
 
 }

@@ -23,10 +23,8 @@ Using normalize.css v7.0.0 | MIT License | github.com/necolas/normalize.css */
 /**
  * Remove the margin in all browsers (opinionated).
  */
-body {
-  position: relative;
+html, body {
   margin: 0;
-  padding-bottom: 6rem;
   min-height: 100%;
   font-family: "Helvetica Neue", Arial, sans-serif;
 }
@@ -336,24 +334,18 @@ thead, nhead {
   }
 }
 
-.col .row {
-  margin-left: -0.75rem;
-  margin-right: -0.75rem;
-}
-
-.row {
+main {
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 20px;
 }
 
-.row:after {
+main:after, .row::after {
   content: "";
   display: table;
   clear: both;
 }
 
-.row .col {
+.col {
   float: left;
   -webkit-box-sizing: border-box;
           box-sizing: border-box;
@@ -361,34 +353,26 @@ thead, nhead {
   min-height: 1px;
 }
 
-.row .s12 {
+.s12 {
   width: 100%;
   margin-left: auto;
   left: auto;
   right: auto;
 }
 @media only screen and (min-width: 601px), print {
-  /*
-  .row .m1 {
-    width: 8.3333333333%;
-    margin-left: auto;
-    left: auto;
-    right: auto;
-  }
-  */
-  .row .m2 {
+  .m2 {
     width: 16.6666666667%;
     margin-left: auto;
     left: auto;
     right: auto;
   }
-  .row .m25 {
+  .m25 {
     width: 20%;
     margin-left: auto;
     left: auto;
     right: auto;
   }
-  .row .m6 {
+  .m6 {
     width: 50%;
     margin-left: auto;
     left: auto;
@@ -648,7 +632,7 @@ h6 {
 }
 */
 #rle {
-  top:0;
+  top: -35px;
   position: absolute;
   left: calc(50% - 9px);
   width: 30px;
@@ -658,17 +642,15 @@ h6 {
   border-right: 10px solid rgba(255, 255, 255, 0.2);
   border-bottom: 10px solid rgba(255, 255, 255, 0.2);
   border-left: 10px solid #ffffff;
+  transition: all .3s ease;
   transform: translateZ(0);
   z-index: 9999;
   background: #2196F3;
-  display:none;
-}
-#rle.active {
-  display: block;
 }
 
+
 .spin #rle {
-  top: 50px;
+  top: 90px;
   animation: spin 1s infinite;
 }
 .spin {
@@ -919,19 +901,9 @@ input[type=password] + label:after {
   margin-bottom: 1rem;
 }
 
-.input-field.inline input {
+.input-field input {
   margin-bottom: 1rem;
 }
-
-.input-field.col label {
-  left: 0.75rem;
-}
-
-.input-field.col .prefix ~ label,
-.input-field.col .prefix ~ .validate ~ label {
-  width: calc(100% - 3rem - 1.5rem);
-}
-
 .input-field > label {
   color: #9e9e9e;
   position: absolute;
@@ -1093,11 +1065,6 @@ header {
   cursor: pointer;
 }
 
-.header__icon:active {
-  opacity: 0.8;
-  outline: 1px solid #fff;
-}
-
 .header__title {
   color: #fff;
   font-size: 20px;
@@ -1119,7 +1086,7 @@ header {
   transform: translateX(-110%);
   will-change: transform;
   height: 100vh;
-    overflow: hidden auto;
+  overflow: hidden auto;
   z-index: 998;
 }
 
@@ -1188,7 +1155,7 @@ header ul a:hover, li.active {
   .np, footer, header {
     display: none
   }
-  .row, .container, body {
+  main, .container, body {
     padding: 0;
     margin: 0;
   }
@@ -1220,10 +1187,6 @@ header ul a:hover, li.active {
   display: inline-block;
   text-align: center;
   margin-right: 1rem
-}
-
-.keyboard-focused .collapsible-header:focus {
-  background-color: #eee
 }
 
 .collapsible-body {
@@ -1318,16 +1281,26 @@ header ul a:hover, li.active {
 /**
  * Footer Styles
  */
-
-footer {
+ html,
+ body {
+  height: 100%;
+  position: relative;
+ }
+ main {
+  min-height: 100vh; /* will cover the 100% of viewport */
+  overflow: hidden;
+  display: block;
+  position: relative;
+  padding-bottom: 50px; /* height of your footer */
+ }
+ footer {
   position: absolute;
-  right: 0;
   bottom: 0;
-  left: 0;
-  padding: 1rem;
-  background-color: #efefef;
+  width: 100%;
   text-align: center;
-}
+  background: #f3f3f3;
+  padding: 15px;
+ }
 
 .no-scroll {
   overflow: hidden;

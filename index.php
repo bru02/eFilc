@@ -90,25 +90,24 @@ switch ($routes[0]) {
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
-<main class="row">
-    <notes class="responsive-table striped notes">
-        <nhead>
-            <ntr>
-                <ntd>
-                    Tantárgy
-                </ntd>
-            <?php
-            $months = [9, 10, 11, 12, '1/I', 'Félév', '1/II', 2, 3, 4, 5, 6, 'Évvége', 'Átlag', 'Osztály átlag', 'Különbség'];
-            foreach ($months as $a) {
-                echo "<ntd>$a</ntd>\n\r";
-            }
-            $data = $_SESSION['data'];
-            $avrg = $data['SubjectAverages'];
-            $data = $data['Evaluations'];
-            ?>
-            </tr>
-        </nhead>
-        <nbody>
+<notes class="responsive-table striped notes">
+    <nhead>
+        <ntr>
+            <ntd>
+                Tantárgy
+            </ntd>
+        <?php
+        $months = [9, 10, 11, 12, '1/I', 'Félév', '1/II', 2, 3, 4, 5, 6, 'Évvége', 'Átlag', 'Osztály átlag', 'Különbség'];
+        foreach ($months as $a) {
+            echo "<ntd>$a</ntd>\n\r";
+        }
+        $data = $_SESSION['data'];
+        $avrg = $data['SubjectAverages'];
+        $data = $data['Evaluations'];
+        ?>
+        </tr>
+    </nhead>
+    <nbody>
 <?php
 $out = [];
 foreach ($data as $d) {
@@ -181,9 +180,8 @@ foreach ($out as $key => $day) {
     ob_flush();
 }
 ?>
-            </nbody>
+        </nbody>
 </notes>
-</main>
 <?php
 showFooter();
 break;
@@ -192,38 +190,36 @@ case "feljegyzesek":
     showHeader('Feljegyzések');
     showNavbar('feljegyzesek');
     ?>
-<main class="row">
-    <table class="striped">
-        <thead>
-            <tr>
-                <td>Dátum</td>
-                <td>Típus</td>
-                <td>Tanár</td>
-                <td>Üzenet</td>
-            </tr>
-        </thead>
-        <tbody>
-        <?php
-        $data = $_SESSION['data'];
-        ob_flush();
-        usort($data['Notes'], 'date_sort');
-        foreach ($data['Notes'] as $h) {
-            ?>
-        <tr id="i<?= $h['NoteId']; ?>">
-        <td><?php echo date('m. d.', strtotime($h['Date'])); ?></td>
-        <td tooltip="<?= $h['Type']; ?>"><?php
-                                        echo $h["Title"];
-                                        ?></td>
-        <td><?php echo tLink($h['Teacher']); ?></td>
-        <td><?php echo $h['Content']; ?></td>
+<table class="striped">
+    <thead>
+        <tr>
+            <td>Dátum</td>
+            <td>Típus</td>
+            <td>Tanár</td>
+            <td>Üzenet</td>
         </tr>
-        <?php
-        ob_flush();
-    }
-    ?>
-        </tbody>
-    </table>
-</main>
+    </thead>
+    <tbody>
+    <?php
+    $data = $_SESSION['data'];
+    ob_flush();
+    usort($data['Notes'], 'date_sort');
+    foreach ($data['Notes'] as $h) {
+        ?>
+    <tr id="i<?= $h['NoteId']; ?>">
+    <td><?php echo date('m. d.', strtotime($h['Date'])); ?></td>
+    <td tooltip="<?= $h['Type']; ?>"><?php
+                                    echo $h["Title"];
+                                    ?></td>
+    <td><?php echo tLink($h['Teacher']); ?></td>
+    <td><?php echo $h['Content']; ?></td>
+    </tr>
+    <?php
+    ob_flush();
+}
+?>
+    </tbody>
+</table>
 <?php
 showFooter();
 break;
@@ -232,70 +228,68 @@ case "hianyzasok":
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
-<main class="row">
-    <ul class="collapsible collection">
-    <?php
-    $data = $_SESSION['data'];
-    ob_flush();
-    $out = [];
-    usort($data['Absences'], "sanyi");
-    foreach ($data['Absences'] as $v) {
-        if ($v['Type'] == 'Absence') {
-            if (!isset($out[$v['LessonStartTime']])) {
-                $j = $v['JustificationStateName'];
-                $out[$v['LessonStartTime']] = array(
-                    'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
-                    's' => 0,
-                    't' => $v['TypeName'],
-                    'a' => ' db tanítási óra',
-                    'h' => [],
-                    'id' => $v['AbsenceId']
-                );
-
-            }
-            $out[$v['LessonStartTime']]['s']++;
-            $li = $v['NumberOfLessons'];
-            $out[$v['LessonStartTime']]['h'][] = array(
-                'sub' => $v['Subject'] . ' (' . $li . '. óra)',
-                'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
-                'i' => $li
-            );
-        } else {
-            $out[] = array(
-                'd' => date(
-                    'Y. m. d.',
-                    strtotime($v['LessonStartTime'])
-                ),
-                's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-                't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . " perc)" : ''),
-                'a' => '',
+<ul class="collapsible collection">
+<?php
+$data = $_SESSION['data'];
+ob_flush();
+$out = [];
+usort($data['Absences'], "sanyi");
+foreach ($data['Absences'] as $v) {
+    if ($v['Type'] == 'Absence') {
+        if (!isset($out[$v['LessonStartTime']])) {
+            $j = $v['JustificationStateName'];
+            $out[$v['LessonStartTime']] = array(
+                'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
+                's' => 0,
+                't' => $v['TypeName'],
+                'a' => ' db tanítási óra',
+                'h' => [],
                 'id' => $v['AbsenceId']
-
             );
+
         }
+        $out[$v['LessonStartTime']]['s']++;
+        $li = $v['NumberOfLessons'];
+        $out[$v['LessonStartTime']]['h'][] = array(
+            'sub' => $v['Subject'] . ' (' . $li . '. óra)',
+            'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
+            'i' => $li
+        );
+    } else {
+        $out[] = array(
+            'd' => date(
+                'Y. m. d.',
+                strtotime($v['LessonStartTime'])
+            ),
+            's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
+            't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . " perc)" : ''),
+            'a' => '',
+            'id' => $v['AbsenceId']
+
+        );
     }
-    foreach ($out as $val) : ?>
-        <li id="i<?= $val['id']; ?>" class="collection-item">
-            <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
-            <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span>
-         </div>
-         <?php if (isset($val['h'])) : ?>
-         <div class="collapsible-body">
-            <?php 
-            usort($val['h'], function ($a, $b) {
-                return $a['i'] - $b['i'];
-            });
-            foreach ($val['h'] as $g) {
-                ?>
-                <p class="collection-item"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
-            <?php 
-        } ?>
-         </div>
-    <?php endif; ?>
-        </li>
+}
+foreach ($out as $val) : ?>
+    <li id="i<?= $val['id']; ?>" class="collection-item">
+        <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
+        <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span>
+        </div>
+        <?php if (isset($val['h'])) : ?>
+        <div class="collapsible-body">
+        <?php 
+        usort($val['h'], function ($a, $b) {
+            return $a['i'] - $b['i'];
+        });
+        foreach ($val['h'] as $g) {
+            ?>
+            <p class="collection-item"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
+        <?php 
+    } ?>
+        </div>
+<?php endif; ?>
+    </li>
 <?php endforeach; ?>
-    </ul>
-</main>
+</ul>
 <?php
 showFooter();
 break;
@@ -305,20 +299,18 @@ case "profil":
     showNavbar('profil');
     $data = $_SESSION['data'];
     ?>
-    <main class="row container">
-        <p>Név: <?= $data['Name'] ?></p>
-        <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
-        <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
-        <p>Iskola neve: <?= $data['InstituteName'] ?></p>
-        <ul class="collection with-header s12">
-            <li class="collection-header"><h4>Lakcímek</h4></li>
-                <?php
-                foreach ($data['AddressDataList'] as $l) :
-                ?>
-            <li class="collection-item"><?= $l ?></li>
-                <?php endforeach; ?>
-        </ul>
-    </main>
+    <p>Név: <?= $data['Name'] ?></p>
+    <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
+    <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
+    <p>Iskola neve: <?= $data['InstituteName'] ?></p>
+    <ul class="collection with-header s12">
+        <li class="collection-header"><h4>Lakcímek</h4></li>
+            <?php
+            foreach ($data['AddressDataList'] as $l) :
+            ?>
+        <li class="collection-item"><?= $l ?></li>
+            <?php endforeach; ?>
+    </ul>
 <?php
 showFooter();
 break;
@@ -338,27 +330,26 @@ case "orarend":
         showHeader('Órarend');
         showNavbar('orarend');
         ?>
-<main class="row">
-    <div class="container center np">
-        <a href="<?= getWeekURL($week - 1); ?>" class="left">&#10094;</a>
-        <a href="<?= getWeekURL($week + 1); ?>" class="right">&#10095;</a>
-        <span class="center"><?= $monday . ' - ' . $friday; ?></span>
+<div class="container center np">
+    <a href="<?= getWeekURL($week - 1); ?>" class="left">&#10094;</a>
+    <a href="<?= getWeekURL($week + 1); ?>" class="right">&#10095;</a>
+    <span class="center"><?= $monday . ' - ' . $friday; ?></span>
+</div>
+    <div id="modal" class="modal modal-fixed-footer n">
+    <div class="modal-content">
+        <span></span>
+        <p>Időpont: <span data-nth></span>. óra, <span data-time></span></p>
+        <p>Tantárgy: <span data-tr></span></p>
+        <p>Tanár: <span data-teacher></span></p>
+        <p>Téma: <span data-theme></span></p>
+        <p>Terem: <span data-room></span></p>
+        <p>Házi: <span data-lecke></span></p>
     </div>
-      <div id="modal" class="modal modal-fixed-footer n">
-        <div class="modal-content">
-            <span></span>
-            <p>Időpont: <span data-nth></span>. óra, <span data-time></span></p>
-            <p>Tantárgy: <span data-tr></span></p>
-            <p>Tanár: <span data-teacher></span></p>
-            <p>Téma: <span data-theme></span></p>
-            <p>Terem: <span data-room></span></p>
-            <p>Házi: <span data-lecke></span></p>
-        </div>
-        <div class="modal-footer">
-          <button class="modal-close btn">Bezárás</button>
-        </div>
-      </div>
-      <div class='row'>
+    <div class="modal-footer">
+        <button class="modal-close btn">Bezárás</button>
+    </div>
+    </div>
+    <div class="row">
 <?php
 ob_flush();
 }
@@ -447,8 +438,7 @@ foreach (range(1, 6) as $h) {
 }
 echo '</div>';
 ?>
-            <button class="btn np" onclick="window.print()">Nyomtatás</button>
-        </main>
+        <button class="btn np" onclick="window.print()">Nyomtatás</button>
        <?php showFooter();
         break;
     case "faliujsag":
@@ -457,73 +447,71 @@ echo '</div>';
         $data = $_SESSION['data'];
         showNavbar('faliujsag');
         ?>
-    <main class="row">
-        <div class="container">
-            <div class="col s12 m6">
-                <div class="collection with-header">
-                <div class="collection-header"><b>Legutóbbi jegyek</b></div>
-                <?php 
-                ob_flush();
-                usort($data['Evaluations'], "date_sort");
-                foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-                <a href="jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?php echo $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
-            <?php endforeach; ?>
-            </div>
-        </div>
-    <div class="col s12 m6">
-        <div class="collection with-header">
-            <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
-            <?php
+    <div class="container">
+        <div class="col s12 m6">
+            <div class="collection with-header">
+            <div class="collection-header"><b>Legutóbbi jegyek</b></div>
+            <?php 
             ob_flush();
-            $out = [];
-            usort($data['Absences'], "sanyi");
-            foreach ($data['Absences'] as $v) {
-                if ($v['Type'] == 'Absence') {
-                    if (!isset($out[$v['LessonStartTime']])) $out[$v['LessonStartTime']] = array(
-                        'd' => date('m. d.', strtotime($v['LessonStartTime'])),
-                        's' => 0,
-                        't' => $v['TypeName'],
-                        'a' => ' db tanítási óra',
-                        'id' => $v['AbsenceId']
-                    );
-                    $out[$v['LessonStartTime']]['s']++;
-                } else {
-                    $out[] = array(
-                        'd' => date('m. d.', strtotime($v['LessonStartTime'])),
-                        's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-                        't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . ")" : ''),
-                        'a' => '',
-                        'id' => $v['AbsenceId']
-                    );
-                    $v;
-                }
-                if (count($out) >= 5) break;
-            }
-            foreach (array_slice($out, 0, 6) as $val) : ?>
-            <a href="hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span></a>
-    <?php endforeach; ?>
+            usort($data['Evaluations'], "date_sort");
+            foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
+            <a href="jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?php echo $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
+        <?php endforeach; ?>
         </div>
     </div>
-    <div class="col s12">
-        <ul class="collection with-header">
-            <li class="collection-header"><b>Legutóbbi feljegyzések</b></li>
+<div class="col s12 m6">
+    <div class="collection with-header">
+        <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
         <?php
         ob_flush();
-        foreach (array_slice($data['Notes'], 0, 6) as $note) {
-            ?>
-            <li class="collection-item">
-                <span class="title"><?= $note['Title'] ?></span>
-                <p><?= $note['Content'] ?><br>
-                    <?= tLink($note['Teacher']) ?>
-                </p>
-                <a href="feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
-            </li>
+        $out = [];
+        usort($data['Absences'], "sanyi");
+        foreach ($data['Absences'] as $v) {
+            if ($v['Type'] == 'Absence') {
+                if (!isset($out[$v['LessonStartTime']])) $out[$v['LessonStartTime']] = array(
+                    'd' => date('m. d.', strtotime($v['LessonStartTime'])),
+                    's' => 0,
+                    't' => $v['TypeName'],
+                    'a' => ' db tanítási óra',
+                    'id' => $v['AbsenceId']
+                );
+                $out[$v['LessonStartTime']]['s']++;
+            } else {
+                $out[] = array(
+                    'd' => date('m. d.', strtotime($v['LessonStartTime'])),
+                    's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
+                    't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . ")" : ''),
+                    'a' => '',
+                    'id' => $v['AbsenceId']
+                );
+                $v;
+            }
+            if (count($out) >= 5) break;
+        }
+        foreach (array_slice($out, 0, 6) as $val) : ?>
+        <a href="hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span></a>
+<?php endforeach; ?>
+    </div>
+</div>
+<div class="col s12">
+    <ul class="collection with-header">
+        <li class="collection-header"><b>Legutóbbi feljegyzések</b></li>
+    <?php
+    ob_flush();
+    foreach (array_slice($data['Notes'], 0, 6) as $note) {
+        ?>
+        <li class="collection-item">
+            <span class="title"><?= $note['Title'] ?></span>
+            <p><?= $note['Content'] ?><br>
+                <?= tLink($note['Teacher']) ?>
+            </p>
+            <a href="feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
+        </li>
 <?php 
 } ?>
-        </ul>
-    </div>
-    </div>
-</main>
+    </ul>
+</div>
+</div>
 <?php
 showFooter();
 break;

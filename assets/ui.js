@@ -1,24 +1,22 @@
-if (!Object.entries) Object.entries = function (obj) {
-    var ownProps = Object.keys(obj), i = ownProps.length, resArray = new Array(i);
-    // preallocate the Array
-    while (i--) resArray[i] = [ownProps[i], obj[ownProps[i]]];
-    return resArray;
-};
-
-function addParam(u, p) {
-    u = u.replace(new RegExp(`(\\?|\\&)${p}`, "g"), "");
-    return u + (u.indexOf("?") > -1 ? "&" : "?") + p;
+window._opening = false;
+window._opened = false;
+function addParam(uri, key, v) {
+    return uri
+        .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=" + v)
+        .replace(/^([^?&]+)&/, "$1?");
 }
+window.prefix = function () {
+    var styles = window.getComputedStyle(document.documentElement, ""), pre = (Array.prototype.slice.call(styles).join("").match(/-(moz|webkit|ms)-/) || styles.OLink === "" && ["", "o"])[1];
+    return "-" + pre + "-";
+}();
 /*! cash-dom 1.3.5, https://github.com/kenwheeler/cash @license MIT */
 (function (factory) {
     window.$ = factory();
 })(function () {
     var doc = document, win = window, ArrayProto = Array.prototype, slice = ArrayProto.slice, filter = ArrayProto.filter, push = ArrayProto.push;
-    var noop = function () { },
-        isFunction = function (item) {
-            // @see https://crbug.com/568448
-            return typeof item === typeof noop && item.call;
-        },
+    var isFunction = function (item) {
+        return item instanceof Function;
+    },
         isString = function (item) {
             return typeof item === typeof "";
         };
@@ -52,7 +50,7 @@ function addParam(u, p) {
             return this;
         }
         // If already a cash collection, don't do any further processing
-        if (selector.cash && selector !== win) {
+        if (selector.cash) {
             return selector;
         }
         var elems = selector, i = 0, length;
@@ -243,37 +241,13 @@ function addParam(u, p) {
             }));
         }
     });
-    var camelCase = function () {
-        var camelRegex = /(?:^\w|[A-Z]|\b\w)/g, whiteSpace = /[\s-_]+/g;
-        return function (str) {
-            return str.replace(camelRegex, function (letter, index) {
-                return letter[index === 0 ? "toLowerCase" : "toUpperCase"]();
-            }).replace(whiteSpace, "");
-        };
-    }();
-    var getPrefixedProp = function () {
-        var cache = {}, doc = document, div = doc.createElement("div"), style = div.style;
-        return function (prop) {
-            prop = camelCase(prop);
-            if (cache[prop]) {
-                return cache[prop];
-            }
-            var ucProp = prop.charAt(0).toUpperCase() + prop.slice(1), prefixes = ["webkit", "moz", "ms", "o"], props = (prop + " " + prefixes.join(ucProp + " ") + ucProp).split(" ");
-            each(props, function (p) {
-                if (p in style) {
-                    cache[p] = prop = cache[prop] = p;
-                    return false;
-                }
-            });
-            return cache[prop];
-        };
-    }();
+
     fn.extend({
         css: function (prop, value) {
             if (isString(prop)) {
-                prop = getPrefixedProp(prop);
                 return arguments.length > 1 ? this.each(function (v) {
-                    return v.style[prop] = value;
+                    v.style[prop] = value;
+                    if ($(this).css(prop) != value && prop.indexOf(prefix) < 0) $(this).css(prefix + prop, value);
                 }) : win.getComputedStyle(this[0])[prop];
             }
             for (var key in prop) {
@@ -533,10 +507,7 @@ function addParam(u, p) {
     return cash;
 });
 
-window.prefix = function () {
-    var styles = window.getComputedStyle(document.documentElement, ""), pre = (Array.prototype.slice.call(styles).join("").match(/-(moz|webkit|ms)-/) || styles.OLink === "" && ["", "o"])[1];
-    return "-" + pre + "-";
-}();
+
 
 window.M = {};
 
@@ -574,29 +545,19 @@ M.anime.remove = () => { }
 */
 // Function to update labels of text fields
 M.updateTextFields = function () {
-    var input_selector = "input[type=text], input[type=password]";
-    $(input_selector).each(function (element) {
-        var $this = $(this);
-        $this.siblings("label").toggleClass("active", element.value.length > 0 || element.autofocus);
+    $("input[type=text], input[type=password]").each(function () {
+        $(this).siblings("label").toggleClass("active", this.value.length > 0 || this.autofocus);
     });
 };
 
 M.validate_field = function (object) {
-    if (object[0].validity.badInput === false && !object.is(":required")) {
-        if (object.hasClass("validate")) {
-            object.removeClass("valid");
-            object.removeClass("invalid");
-        }
-    } else {
-        if (object.hasClass("validate")) {
-            // Check for character counter attributes
-            if (object.is(":valid")) {
-                object.removeClass("invalid");
-                object.addClass("valid");
-            } else {
-                object.removeClass("valid");
-                object.addClass("invalid");
-            }
+    object.removeClass("valid invalid");
+    if (object.is(".validate")) {
+        // Check for character counter attributes
+        if (object.is(":valid")) {
+            object.addClass("valid");
+        } else {
+            object.addClass("invalid");
         }
     }
 };
@@ -607,7 +568,7 @@ $(document).ready(function () {
     let doc = $(document);
     // Add active if form auto complete
     doc.on("change", input_selector, function () {
-        if (this.value.length !== 0 || $(this).attr("placeholder") !== null) {
+        if (this.value.length !== 0) {
             $(this).siblings("label").addClass("active");
         }
         M.validate_field($(this));
@@ -615,82 +576,19 @@ $(document).ready(function () {
     // Add active if input element has been pre-populated on document ready
     M.updateTextFields();
     /**
-     * Add active when element has focus
-     * @param {Event} e
-     */    doc.on("focus", function (e) {
-        if ($(e.target).is(input_selector)) {
-            $(e.target).siblings("label, .prefix").addClass("active");
-        }
-    }, true);
-    /**
      * Remove active when element is blurred
      * @param {Event} e
      */    doc.on("blur", function (e) {
         var $inputElement = $(e.target);
         if ($inputElement.is(input_selector)) {
-            var selector = ".prefix";
-            if ($inputElement[0].value.length === 0 && $inputElement[0].validity.badInput !== true && $inputElement.attr("placeholder") === null) {
-                selector += ", label";
+            if (!$inputElement[0].value.length && !$inputElement[0].validity.badInput) {
+                $inputElement.siblings("label").removeClass("active");
             }
-            $inputElement.siblings(selector).removeClass("active");
             M.validate_field($inputElement);
         }
     }, true);
 });
-
-// End of $(document).ready
-var body = $(document.body);
-
-/**
- * TabPress Keydown handler
- */ M.tabPressed = false;
-
-M.keyDown = false;
-
-var docHandleKeydown = function (e) {
-    M.keyDown = true;
-    if (e.which === 9 || e.which === 40 || e.which === 38) {
-        M.tabPressed = true;
-    }
-};
-
-var docHandleKeyup = function (e) {
-    M.keyDown = false;
-    if (e.which === 9 || e.which === 40 || e.which === 38) {
-        M.tabPressed = false;
-    }
-};
-
-var docHandleFocus = function (e) {
-    if (M.keyDown) {
-        body.addClass("keyboard-focused");
-    }
-};
-
-var docHandleBlur = function (e) {
-    body.removeClass("keyboard-focused");
-};
-
-var doc = $(document);
-
-doc.on("keydown", docHandleKeydown, true);
-
-doc.on("keyup", docHandleKeyup, true);
-
-doc.on("focus", docHandleFocus, true);
-
-doc.on("blur", docHandleBlur, true);
-
-/**
- * @class
- *
- */
-/**
- * Construct Modal instance and set up overlay
- * @constructor
- * @param {Element} el
- * @param {Object} options
- */ function Modal(el, options) {
+function Modal(el, options) {
     let self = {
         "open": function () {
             if (self.isOpen) {
@@ -802,18 +700,17 @@ function Collapsible(el) {
 
 }
 
-$(window).on('click', 'ntr', function (e) {
-    $(this).toggleClass('open')
+$(window).on('click', 'ntr ntd:first-child', function (e) {
+    $(this).closest('ntr').toggleClass('open')
 })
-/* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */ var ic = function (document, location) {
+/* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */
+var ic = function (document, location) {
     // Internal variables
     var $ua = navigator.userAgent, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
         // Preloading-related variables
-        $history = {}, $xhr, $url = false, $title = false, $mustRedirect = false, $body = false, $timing = {}, $isPreloading = false, $isWaitingForCompletion = false, $trackedAssets = [],
+        $history = {}, $xhr, $url = false, $title = false, $mustRedirect = false, $body = false, $timing = {}, $isPreloading = false, $isWaitingForCompletion = false,
         // Variables defined by public functions
-        $eventsCallbacks = {
-            change: []
-        };
+        $eventsCallback = false;
     ////////// HELPERS //////////
     function removeHash(url) {
         return url.split("#")[0];
@@ -827,10 +724,8 @@ $(window).on('click', 'ntr', function (e) {
         var domain = location.protocol + "//" + location.host;
         return !(!b.is("a") || a.target || b.hasAttr("download") || a.href.indexOf(domain + "/") != 0 || removeHash(a.href) == $currentLocationWithoutHash || !!$(b).closest("[data-no-instant]").length);
     }
-    function triggerPageEvent(eventType) {
-        for (var i = 0; i < $eventsCallbacks[eventType].length; i++) {
-            $eventsCallbacks[eventType][i]();
-        }
+    function triggerChange() {
+        if ($eventsCallback) $eventsCallback();
     }
     function changePage(title, body, newUrl, scrollY) {
         document.documentElement.replaceChild(body, document.body)
@@ -848,7 +743,7 @@ $(window).on('click', 'ntr', function (e) {
         location.hash = newUrl[1] ? `#${newUrl[1]}` : "";
         instantanize();
         bar.done();
-        triggerPageEvent("change");
+        triggerChange();
     }
     function setPreloadingAsHalted() {
         $isPreloading = false;
@@ -879,11 +774,7 @@ $(window).on('click', 'ntr', function (e) {
         display(a[0].href);
     }
     function readystatechange() {
-        if ($xhr.readyState < 4) {
-            return;
-        }
-        if ($xhr.status == 0) {
-            /* Request aborted */
+        if ($xhr.readyState < 4 || $xhr.status == 0) {
             return;
         }
         $timing.ready = +new Date() - $timing.start;
@@ -903,14 +794,16 @@ $(window).on('click', 'ntr', function (e) {
         }
     }
     ////////// MAIN FUNCTIONS //////////
-    function instantanize(isInitializing) {
+    function instantanize() {
         let b = $("body");
-        let _startY = 0;
         let drg = false;
         let waitin = false;
+        var pStart = { x: 0, y: 0 };
+        var pStop = { x: 0, y: 0 };
         b.on("touchstart", e => {
-            _startY = e.touches[0].pageY;
-            if (_startY < 15) drg = true;
+            pStart.x = e.touches[0].pageX;
+            pStart.y = e.touches[0].pageY;
+
             $lastTouchTimestamp = +new Date();
             var a = getLinkTarget(e.target);
             if (!a.length || !isPreloadable(a)) {
@@ -924,33 +817,38 @@ $(window).on('click', 'ntr', function (e) {
         function closeThat() {
             if (!waitin) {
                 $("#rle").css({
-                    top: 0
-                }).removeClass("active");
+                    top: "",
+
+                });
                 $("body").removeClass("spin");
             }
         }
         b.on("touchmove", e => {
-            const y = e.touches[0].pageY;
-            // Activate custom pull-to-refresh effects when at the top fo the container
-            // and user is scrolling up.
-            if (drg && !waitin && document.scrollingElement.scrollTop === 0 && y > _startY) {
+            drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
+            $('body').toggleClass('no-scroll', drg)
+            if (drg && !waitin) {
+                const y = e.touches[0].pageY - pStart.y;
                 $("#rle").css({
-                    top: Math.min(y - 20, 50) + "px"
-                }).addClass("active");
+                    top: Math.min(y, 120) + "px"
+                });
             } else closeThat();
         }, {
                 passive: true
             });
         b.on("touchend", e => {
+            pStop.x = e.changedTouches[0].pageX;
+            pStop.y = e.changedTouches[0].pageY;
             if (drg) {
-                if (!waitin && $("#rle").css("top").replace("px", "") > 45 && document.scrollingElement.scrollTop === 0) {
-                    _startY = 0;
-                    $("#rle").css({
-                        top: ""
-                    });
-                    $("body").toggleClass("spin");
+                var dY = Math.abs(pStart.y - pStop.y);
+                var dX = Math.abs(pStart.x - pStop.x);
+                if (!waitin && pStart.y < pStop.y && (
+                    (dX <= 100 && dY >= 90)
+                    || (dX / dY <= 0.3 && dY >= 60)
+                )) {
+                    closeThat();
+                    $("body").addClass("spin");
                     waitin = true;
-                    display(addParam(location.href, "fr=true"));
+                    display(addParam(location.href, "fr", "true"));
                 } else closeThat();
                 drg = false;
             }
@@ -977,7 +875,7 @@ $(window).on('click', 'ntr', function (e) {
         $timing = {
             start: +new Date()
         };
-        url = addParam(url, "just_html=1");
+        url = addParam(url, "just_html", "1");
         $xhr.open("GET", url);
         $xhr.send();
     }
@@ -1042,12 +940,13 @@ $(window).on('click', 'ntr', function (e) {
     }
     ////////// PROGRESS BAR FUNCTIONS //////////
     var bar = function () {
-        var $barContainer, $barElement, $barTransformProperty, $barProgress, $barTimer;
+        var $barContainer, $barElement, $barProgress, $barTimer;
         function init() {
             $barContainer = $('<div id="ic"></div>');
+            $('body').append($barContainer)
             $barElement = $('<div id="ic-bar" class="ic-bar"></div>');
             $barContainer.append($barElement);
-            $barTransformProperty = prefix + "transform";
+
             var transitionProperty = prefix + "transition";
             var style = $("<style/>");
             style.html("#ic{position:" + ($hasTouch ? "absolute" : "fixed") + ";top:0;left:0;width:100%;pointer-events:none;z-index:9999;" + transitionProperty + ":all .25s .1s}" + ".ic-bar{background:red;width:100%;margin-left:-100%;height:2px;" + transitionProperty + ":all .25s}")
@@ -1079,16 +978,14 @@ $(window).on('click', 'ntr', function (e) {
             update();
         }
         function inc() {
-            $barProgress += 1 + Math.random() * 2;
-            if ($barProgress >= 98) {
-                $barProgress = 98;
-            } else {
+            if ($barProgress < 98) {
+                $barProgress += 1 + Math.random() * 2;
                 $barTimer = setTimeout(inc, 500);
             }
             update();
         }
         function update() {
-            $barElement.css($barTransformProperty, "translate(" + $barProgress + "%)");
+            $barElement.css("transform", "translate(" + $barProgress + "%)");
             if (!$("#ic").length && document.body) {
                 $("body").append($barContainer);
             }
@@ -1122,7 +1019,7 @@ $(window).on('click', 'ntr', function (e) {
             /* We multiply the size by 2 because the progress bar is harder
                to notice on a mobile device.
             */;
-            $barContainer.css($barTransformProperty, "scaleY(" + scaleY + ")");
+            $barContainer.css("transform", "scaleY(" + scaleY + ")");
         }
         return {
             init,
@@ -1138,7 +1035,7 @@ $(window).on('click', 'ntr', function (e) {
             return;
         }
         if (!supported) {
-            triggerPageEvent("change");
+            triggerChange();
             return;
         }
         $preloadOnMousedown = true;
@@ -1152,7 +1049,7 @@ $(window).on('click', 'ntr', function (e) {
         $xhr.addEventListener("readystatechange", readystatechange);
         instantanize(true);
         bar.init();
-        triggerPageEvent("change");
+        triggerChange();
         addEventListener("popstate", function () {
             var loc = removeHash(location.href);
             if (loc == $currentLocationWithoutHash) {
@@ -1169,8 +1066,8 @@ $(window).on('click', 'ntr', function (e) {
             changePage($history[loc].title, $history[loc].body, false, $history[loc].scrollY);
         });
     }
-    function on(eventType, callback) {
-        $eventsCallbacks[eventType].push(callback);
+    function on(callback) {
+        $eventsCallback = callback;
     }
     ////////////////////
     return {
