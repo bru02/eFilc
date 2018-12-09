@@ -36,7 +36,8 @@ if (count($routes) > 1 && $routes[0] == "api") {
     array_shift($routes);
 }
 
-if (isset($_GET['fr'])) {
+if (isset($_GET['fr']) && $_SESSION['authed']) {
+    reval();
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
 }
 switch ($routes[0]) {
@@ -230,46 +231,8 @@ case "hianyzasok":
     ?>
 <ul class="collapsible collection">
 <?php
-$data = $_SESSION['data'];
 ob_flush();
-$out = [];
-usort($data['Absences'], "sanyi");
-foreach ($data['Absences'] as $v) {
-    if ($v['Type'] == 'Absence') {
-        if (!isset($out[$v['LessonStartTime']])) {
-            $j = $v['JustificationStateName'];
-            $out[$v['LessonStartTime']] = array(
-                'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
-                's' => 0,
-                't' => $v['TypeName'],
-                'a' => ' db tanítási óra',
-                'h' => [],
-                'id' => $v['AbsenceId']
-            );
-
-        }
-        $out[$v['LessonStartTime']]['s']++;
-        $li = $v['NumberOfLessons'];
-        $out[$v['LessonStartTime']]['h'][] = array(
-            'sub' => $v['Subject'] . ' (' . $li . '. óra)',
-            'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
-            'i' => $li
-        );
-    } else {
-        $out[] = array(
-            'd' => date(
-                'Y. m. d.',
-                strtotime($v['LessonStartTime'])
-            ),
-            's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-            't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . " perc)" : ''),
-            'a' => '',
-            'id' => $v['AbsenceId']
-
-        );
-    }
-}
-foreach ($out as $val) : ?>
+foreach ($_SESSION['data']['Absences'] as $val) : ?>
     <li id="i<?= $val['id']; ?>" class="collection-item">
         <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
         <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span>
@@ -463,32 +426,7 @@ echo '</div>';
     <div class="collection with-header">
         <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
         <?php
-        ob_flush();
-        $out = [];
-        usort($data['Absences'], "sanyi");
-        foreach ($data['Absences'] as $v) {
-            if ($v['Type'] == 'Absence') {
-                if (!isset($out[$v['LessonStartTime']])) $out[$v['LessonStartTime']] = array(
-                    'd' => date('m. d.', strtotime($v['LessonStartTime'])),
-                    's' => 0,
-                    't' => $v['TypeName'],
-                    'a' => ' db tanítási óra',
-                    'id' => $v['AbsenceId']
-                );
-                $out[$v['LessonStartTime']]['s']++;
-            } else {
-                $out[] = array(
-                    'd' => date('m. d.', strtotime($v['LessonStartTime'])),
-                    's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-                    't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . ")" : ''),
-                    'a' => '',
-                    'id' => $v['AbsenceId']
-                );
-                $v;
-            }
-            if (count($out) >= 5) break;
-        }
-        foreach (array_slice($out, 0, 6) as $val) : ?>
+        foreach (array_slice($_SESSION['data']['Absences'], 0, 6) as $val) : ?>
         <a href="hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span></a>
 <?php endforeach; ?>
     </div>

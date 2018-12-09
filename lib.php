@@ -200,6 +200,44 @@ function getStudent($s, $tok)
         }
     }
     $out['Evaluations'] = $j;
+    $absences = [];
+    usort($out['Absences'], "sanyi");
+    foreach ($out['Absences'] as $v) {
+        if ($v['Type'] == 'Absence') {
+            if (!isset($absences[$v['LessonStartTime']])) {
+                $j = $v['JustificationStateName'];
+                $absences[$v['LessonStartTime']] = array(
+                    'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
+                    's' => 0,
+                    't' => $v['TypeName'],
+                    'a' => ' db tanítási óra',
+                    'h' => [],
+                    'id' => $v['AbsenceId']
+                );
+
+            }
+            $absences[$v['LessonStartTime']]['s']++;
+            $li = $v['NumberOfLessons'];
+            $absences[$v['LessonStartTime']]['h'][] = array(
+                'sub' => $v['Subject'] . ' (' . $li . '. óra)',
+                'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
+                'i' => $li
+            );
+        } else {
+            $absences[] = array(
+                'd' => date(
+                    'Y. m. d.',
+                    strtotime($v['LessonStartTime'])
+                ),
+                's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
+                't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . " perc)" : ''),
+                'a' => '',
+                'id' => $v['AbsenceId']
+
+            );
+        }
+    }
+    $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
         $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET', '', [], true);
         $doc = new \DOMDocument();
@@ -391,7 +429,7 @@ function logIn($s, $usr, $psw)
     return $res;
 }
 
-function showHeader($title)
+function showHeader($title, $a = false)
 {
     header("Connection: keep-alive");
     header("Cache-Control: private");
@@ -428,8 +466,10 @@ function showHeader($title)
     <title><?php echo $title; ?> | E-filc</title>
 </head>
 <body>
+<?php if (!$a) : ?>
 <div id="rle"></div>
 <?php
+endif;
 ob_flush();
 
 }
@@ -494,24 +534,23 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     if (!isset($_SESSION['_token'])) {
         $_SESSION['_token'] = sha1(uniqid());
     }
-    showHeader('Belépés');
+    showHeader('Belépés', true);
     ?>
     <form action="login" method="post" class="container">
     <h1>Bejelentkezés</h1>
     <p>
-        Ez egy nem hivatalos eKréta kliens. 
+        Ez egy nem hivatalos eKréta kliens, Toldys extrákkal 
     </p>
     <?php
     if (isset($_GET['toldy'])) {
         echo "<input type='hidden' name='school' value='klik035220001'>";
     } else if (isset($_GET['sch'])) {
         echo "<input type='hidden' name='school' value='" . htmlentities($_GET['sch']) . "'>";
-
     } else {
         ?>
 
     <div class="input-field">
-                <input name="school" id="sc" list="slc" type="text" class="validate" value="<?= $sch ?>" required autocomplete="off">
+                <input name="school" id="sc" list="slc" type="text" class="validate" value="<?= $sch ?>" required>
                 <label for="sc">Iskola</label>
                 <datalist id="slc">
                 <select name="school" id="rslc">

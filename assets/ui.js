@@ -1,5 +1,3 @@
-window._opening = false;
-window._opened = false;
 function addParam(uri, key, v) {
     return uri
         .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=" + v)
@@ -795,12 +793,67 @@ var ic = function (document, location) {
     }
     ////////// MAIN FUNCTIONS //////////
     function instantanize() {
+        var scrollTimeout;
         let b = $("body");
         let drg = false;
         let waitin = false;
         var pStart = { x: 0, y: 0 };
         var pStop = { x: 0, y: 0 };
-        b.on("touchstart", e => {
+        var scrolling = false;
+
+        let _currentOffsetX = 0;
+        let _moved = false;
+        var _opening = false;
+        var _opened = false;
+        // Sets options
+        let _tolerance = 70;
+        let _padding = 307;
+
+        var menuElement = $('#menu');
+        function transformTo(val) {
+            menuElement.css({ transform: `translateX(${val})` });
+        }
+
+        $(document).on('scroll', function () {
+            if (!_moved) {
+                clearTimeout(scrollTimeout);
+                scrolling = true;
+                scrollTimeout = setTimeout(function () {
+                    scrolling = false;
+                }, 250);
+            }
+        });
+
+        function open() {
+            b.addClass('no-scroll');
+            transformTo(0);
+            menuElement.addClass('open')
+            _opened = true
+        }
+        function close() {
+            b.removeClass('no-scroll');
+            transformTo('-110%');
+            menuElement.removeClass('open')
+            _opened = false
+        }
+        $('.overlay').on('click', close);
+
+        $('#mo').on('click', () => {
+            open()
+        })
+
+        function closeThat() {
+            if (!waitin) {
+                $("#rle").css({
+                    top: "",
+
+                });
+                $("body").removeClass("spin");
+            }
+        }
+        b.on('touchstart', function (e) {
+            _moved = false;
+            _opening = false;
             pStart.x = e.touches[0].pageX;
             pStart.y = e.touches[0].pageY;
 
@@ -811,31 +864,52 @@ var ic = function (document, location) {
             }
             a.off("mousedown", mousedown);
             preload(a[0].href);
-        }, {
-                passive: true
-            });
-        function closeThat() {
-            if (!waitin) {
-                $("#rle").css({
-                    top: "",
 
-                });
-                $("body").removeClass("spin");
+        }).on('touchmove', function (eve) {
+            if (
+                scrolling ||
+                typeof eve.touches === 'undefined'
+            ) {
+                return;
             }
-        }
-        b.on("touchmove", e => {
+
+            var dif_x = eve.touches[0].clientX - pStart.x;
+            var translateX = _currentOffsetX = dif_x;
+
+            if (Math.abs(translateX) > _padding) {
+                return;
+            }
+
+            if (Math.abs(dif_x) > 20) {
+                _opening = true;
+
+                if (_opened && dif_x > 0 || !_opened && dif_x < 0) {
+                    return;
+                }
+
+                if (dif_x <= 0) {
+                    translateX = dif_x + _padding;
+                    _opening = false;
+                }
+                transformTo("calc(-110% + " + translateX + "px)");
+                _moved = true;
+            }
             drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
-            $('body').toggleClass('no-scroll', drg)
+            b.toggleClass('no-scroll', drg)
             if (drg && !waitin) {
-                const y = e.touches[0].pageY - pStart.y;
+                const y = eve.touches[0].pageY - pStart.y;
                 $("#rle").css({
                     top: Math.min(y, 120) + "px"
                 });
             } else closeThat();
-        }, {
-                passive: true
-            });
-        b.on("touchend", e => {
+        }).on('touchcancel', function () {
+            _moved = false;
+            _opening = false;
+        }).on('touchend', function (e) {
+            if (_moved) {
+                (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
+            }
+            _moved = false;
             pStop.x = e.changedTouches[0].pageX;
             pStop.y = e.changedTouches[0].pageY;
             if (drg) {
@@ -853,6 +927,8 @@ var ic = function (document, location) {
                 drg = false;
             }
         });
+
+
         b.on("mousedown", mousedown, true);
         b.on("click", click, true);
     }

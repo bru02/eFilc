@@ -1,7 +1,6 @@
-var cacheName = 'eFilc';
+var cacheName = 'eFilc-v1';
 var filesToCache = [
     './assets/main.js',
-    './assets/menu.js',
     './assets/ui.js',
     './assets/ui.css',
 ];
@@ -22,7 +21,7 @@ self.addEventListener('activate', function (e) {
     e.waitUntil(
         caches.keys().then(function (keyList) {
             return Promise.all(keyList.map(function (key) {
-                if (key !== cacheName && key !== cacheName) {
+                if (key !== cacheName) {
                     console.log('[ServiceWorker] Removing old cache', key);
                     return caches.delete(key);
                 }
@@ -69,7 +68,7 @@ self.addEventListener('fetch', function (event) {
 });
 self.addEventListener('push', function (event) {
     event.waitUntil(async function () {
-        const cache = await caches.open('cacheName');
+        const cache = await caches.open(cacheName);
         const response = await fetch('faliujsag');
         await cache.put('faliujsag', response.clone());
         console.info('Event: Push');

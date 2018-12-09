@@ -49,109 +49,10 @@ if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
         });
     });
 function init() {
-    var scrollTimeout;
-    var scrolling = false;
-    let _startOffsetX = 0;
-    let _currentOffsetX = 0;
-    let _moved = false;
-    window._opening = false;
-    window._opened = false;
-    // Sets options
-    let _tolerance = 70;
-    let _padding = 307;
     let he = $(location.hash);
     if (he.length) {
         requestAnimationFrame(() => { he[0].scrollIntoView() });
     }
-    var menuElement = $('#menu');
-    function transformTo(val) {
-        menuElement.css({ transform: `translateX(${val})` });
-    }
-    //To hide menu
-    var touchStartPoint, touchMovePoint;
-    /*Swipe from edge to open menu*/
-    var body = $('body');
-    //`TouchStart` event to find where user start the touch
-    body.on('touchstart', function (event) {
-        touchStartPoint = event.changedTouches[0].pageX;
-        touchMovePoint = touchStartPoint;
-    }, false);
-
-    function open() {
-        body.addClass('no-scroll');
-        transformTo(0);
-        menuElement.addClass('open')
-        _opened = true
-    }
-    function close() {
-        body.removeClass('no-scroll');
-        transformTo('-110%');
-        menuElement.removeClass('open')
-        _opened = false
-    }
-    $('.overlay').on('click', close);
-    //`TouchMove` event to determine user touch movement
-    $(document).on('scroll', function () {
-        if (!_moved) {
-            clearTimeout(scrollTimeout);
-            scrolling = true;
-            scrollTimeout = setTimeout(function () {
-                scrolling = false;
-            }, 250);
-        }
-    });
-    body.on('touchstart', function (eve) {
-        if (typeof eve.touches === 'undefined') {
-            return;
-        }
-
-        _moved = false;
-        _opening = false;
-        _startOffsetX = eve.touches[0].pageX;
-    }).on('touchmove', function (eve) {
-        if (
-            scrolling ||
-            typeof eve.touches === 'undefined'
-        ) {
-            return;
-        }
-
-        var dif_x = eve.touches[0].clientX - _startOffsetX;
-        var translateX = _currentOffsetX = dif_x;
-
-        if (Math.abs(translateX) > _padding) {
-            return;
-        }
-
-        if (Math.abs(dif_x) > 20) {
-            _opening = true;
-
-            if (_opened && dif_x > 0 || !_opened && dif_x < 0) {
-                return;
-            }
-
-            if (dif_x <= 0) {
-                translateX = dif_x + _padding;
-                _opening = false;
-            }
-            transformTo("calc(-110% + " + translateX + "px)");
-            _moved = true;
-        }
-
-    }).on('touchcancel', function () {
-        _moved = false;
-        _opening = false;
-    }).on('touchend', function () {
-        if (_moved) {
-            (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
-        }
-        _moved = false;
-    });
-
-    $('#mo').on('click', () => {
-        open()
-    })
-    //////////////////////////////////////////
     if (location.href.match(/\/orarend/g)) {
         s();
         var elems = $('#modal');
