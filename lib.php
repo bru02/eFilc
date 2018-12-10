@@ -203,6 +203,7 @@ function getStudent($s, $tok)
     $absences = [];
     usort($out['Absences'], "sanyi");
     foreach ($out['Absences'] as $v) {
+        $li = $v['NumberOfLessons'];
         if ($v['Type'] == 'Absence') {
             if (!isset($absences[$v['LessonStartTime']])) {
                 $j = $v['JustificationStateName'];
@@ -217,7 +218,6 @@ function getStudent($s, $tok)
 
             }
             $absences[$v['LessonStartTime']]['s']++;
-            $li = $v['NumberOfLessons'];
             $absences[$v['LessonStartTime']]['h'][] = array(
                 'sub' => $v['Subject'] . ' (' . $li . '. óra)',
                 'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
@@ -229,9 +229,16 @@ function getStudent($s, $tok)
                     'Y. m. d.',
                     strtotime($v['LessonStartTime'])
                 ),
-                's' => $v['Subject'] . ' (' . $v['NumberOfLessons'] . '. óra)',
-                't' => $v['TypeName'] . ($v['Type'] == 'Delay' ? " (" . $v['DelayTimeMinutes'] . " perc)" : ''),
+                's' => '1 db óra',
+                't' => $v['TypeName'],
                 'a' => '',
+                'h' => [
+                    [
+                        'sub' => $v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)',
+                        'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $v['JustificationStateName'] . '</span>',
+                        'i' => $li
+                    ]
+                ],
                 'id' => $v['AbsenceId']
 
             );
@@ -588,7 +595,7 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 <?php
 showFooter(true);
 }
-function showNavbar($key)
+function showNavbar($key, $container = false)
 {
     $data = array(
         'faliujsag' => 'Faliújság',
@@ -643,7 +650,7 @@ function showNavbar($key)
         </ul>
       </div>
       <div class="overlay"></div>
-      <main>
+      <main <?= $container ? 'class="container"' : "" ?>>
 <?php
 
 }

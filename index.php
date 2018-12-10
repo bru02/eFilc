@@ -240,9 +240,11 @@ foreach ($_SESSION['data']['Absences'] as $val) : ?>
         <?php if (isset($val['h'])) : ?>
         <div class="collapsible-body">
         <?php 
-        usort($val['h'], function ($a, $b) {
-            return $a['i'] - $b['i'];
-        });
+        if (count($val['h']) > 1) {
+            usort($val['h'], function ($a, $b) {
+                return $a['i'] - $b['i'];
+            });
+        }
         foreach ($val['h'] as $g) {
             ?>
             <p class="collection-item"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
@@ -259,7 +261,7 @@ break;
 case "profil":
     reval();
     showHeader('Profil');
-    showNavbar('profil');
+    showNavbar('profil', true);
     $data = $_SESSION['data'];
     ?>
     <p>Név: <?= $data['Name'] ?></p>
@@ -408,9 +410,8 @@ echo '</div>';
         reval();
         showHeader('Faliújság');
         $data = $_SESSION['data'];
-        showNavbar('faliujsag');
+        showNavbar('faliujsag', true);
         ?>
-    <div class="container">
         <div class="col s12 m6">
             <div class="collection with-header">
             <div class="collection-header"><b>Legutóbbi jegyek</b></div>
@@ -448,7 +449,6 @@ echo '</div>';
 <?php 
 } ?>
     </ul>
-</div>
 </div>
 <?php
 showFooter();
