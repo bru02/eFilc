@@ -201,49 +201,32 @@ function getStudent($s, $tok)
     }
     $out['Evaluations'] = $j;
     $absences = [];
-    usort($out['Absences'], "sanyi");
     foreach ($out['Absences'] as $v) {
         $li = $v['NumberOfLessons'];
-        if ($v['Type'] == 'Absence') {
-            if (!isset($absences[$v['LessonStartTime']])) {
-                $j = $v['JustificationStateName'];
-                $absences[$v['LessonStartTime']] = array(
-                    'd' => date('Y. m. d.', strtotime($v['LessonStartTime'])),
-                    's' => 0,
-                    't' => $v['TypeName'],
-                    'a' => ' db tanítási óra',
-                    'h' => [],
-                    'id' => $v['AbsenceId']
-                );
-
-            }
-            $absences[$v['LessonStartTime']]['s']++;
-            $absences[$v['LessonStartTime']]['h'][] = array(
-                'sub' => $v['Subject'] . ' (' . $li . '. óra)',
-                'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
-                'i' => $li
-            );
-        } else {
-            $absences[] = array(
-                'd' => date(
-                    'Y. m. d.',
-                    strtotime($v['LessonStartTime'])
-                ),
-                's' => '1 db óra',
+        if (!isset($absences[$v['LessonStartTime']])) {
+            $j = $v['JustificationStateName'];
+            $t = strtotime($v['LessonStartTime']);
+            $absences[$v['LessonStartTime']] = array(
+                'd' => date('Y. m. d.', $t),
+                'time' => $t,
+                's' => 0,
                 't' => $v['TypeName'],
-                'a' => '',
-                'h' => [
-                    [
-                        'sub' => $v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)',
-                        'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $v['JustificationStateName'] . '</span>',
-                        'i' => $li
-                    ]
-                ],
+                'a' => ' db óra',
+                'h' => [],
                 'id' => $v['AbsenceId']
-
             );
+
         }
+        $absences[$v['LessonStartTime']]['s']++;
+        $absences[$v['LessonStartTime']]['h'][] = array(
+            'sub' => $v['Type'] == 'Delay' ? ($v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)') : ($v['Subject'] . ' (' . $li . '. óra)'),
+            'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
+            'i' => $li
+        );
     }
+    usort($absences, function ($a, $b) {
+        return $b['time'] - $a['time'];
+    });
     $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
         $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET', '', [], true);
@@ -531,10 +514,7 @@ if (!$a) echo '<script data-no-instant src="assets/notification.js"></script>';
 
 
 }
-function sanyi($a, $b)
-{
-    return strtotime($b['LessonStartTime']) - strtotime($a['LessonStartTime']);
-}
+
 function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 {
 

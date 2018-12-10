@@ -244,8 +244,10 @@ window.prefix = function () {
         css: function (prop, value) {
             if (isString(prop)) {
                 return arguments.length > 1 ? this.each(function (v) {
-                    v.style[prop] = value;
-                    if ($(this).css(prop) != value && prop.indexOf(prefix) < 0) $(this).css(prefix + prop, value);
+                    if (prop in v.style)
+                        v.style[prop] = value;
+                    else
+                        v.style[preix + prop] = value;
                 }) : win.getComputedStyle(this[0])[prop];
             }
             for (var key in prop) {
