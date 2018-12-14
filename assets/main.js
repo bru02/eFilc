@@ -48,6 +48,7 @@ if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
             }
         });
     });
+const average = (list, l = list.length) => list.reduce((prev, curr) => prev + curr) / l;
 function init() {
     let he = $(location.hash);
     if (he.length) {
@@ -76,12 +77,55 @@ function init() {
             inst.open();
         });
     }
+    if (location.href.match(/\/lecke/g)) {
+        s();
+        var elems = $('#modal')
+        var inst = Modal(elems);
+        var inst2 = Modal($('#addModal'));
+        $('.collection-item').on('click', function (t) {
+            $('#modal span').html('-');
+            let a = $(this);
+            let attrs = ['lecke', 'sender', 'cdate'];
+            $(attrs).each(function (e) {
+                let ar = a.attr(`data-${e}`);
+                ar && (elems.find(`[data-${e}]`).html(ar))
+            });
+            elems.find(`[data-deadline]`).html(a.find('a').html());
+            elems.find(`[data-tr]`).html(a[0].innerHTML.split('<')[0]);
+            let b = elems.find('a').css({ display: 'none' });
+            if (a.hasAttr('data-del')) {
+                b.css({ display: 'block' }).attr('href', "../lecke/torles?did=" + a.attr('data-del'));
+            }
+            inst.open();
+        });
+        var dp = new DatePicker();
+        dp.renderCalendar()
+        $('.fab').on('click', function () {
+            inst2.open();
+        });
+    }
     Collapsible($('.collapsible'))
     if (location.href.match(/\/jegyek/g)) {
-        he.closest('ntr').addClass('open')
+        he.closest('ntr').addClass('open');
+        let inst = Modal($('#addModal'));
+        $(".fab").on('click', inst.open);
+        let tr = $('#tr');
+        $("#cnn").on('click', function () {
+            let ntds = $(`[data-v="${tr.val()}"]`).parent().find("ntd:not(:empty)"), avrb = $(ntds.slice(-3, -2)), davr = $(ntds.slice(-1)), nn = $("#nn").val(), w = $("#tz")[0].checked, tag = w ? "b" : "span", n = w ? 2 : 1;
+            $(ntds[ntds.length - 4])[0].innerHTML += ` <${tag} tooltip='Milenna ha-val hozzáadott jegy&#xa;Súly: ${n}00%'>${nn}</${tag}> `;
+            let cnl = ntds.find("b, span").length, cu = avrb.html(), arr = [cu * cnl, n * Number(nn)], h = tr[0].selectedOptions[0];
+            let nu = Math.round(100 * average(arr, cnl + n)) / 100;
+            avrb.html(nu), h.innerHTML = h.innerHTML.replace(cu, nu);
+            let v = Math.round(100 * (nu - $(ntds.slice(-2, -1)).html())) / 100;
+            davr.html(v).removeClass("gr red").addClass(v < 0 ? "red" : "gr");
+        })
     }
     $('[tooltip]').on('mouseenter', function () {
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 20) <= 0);
+    });
+    $('a[href*=logout]').on('click', function () {
+        deleteCookie('naplo');
+        deleteCookie('rme');
     });
 }
 $.fn.ready(() => {
@@ -89,11 +133,14 @@ $.fn.ready(() => {
     ic.init("mousedown");
 });
 
-function addCookie(n) {
+function addCookie(n, v = 1) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + 365);
+    document.cookie = `${n}=${v};expires=${exdate.toUTCString()};path=/`;
+}
+function deleteCookie(n) {
+    document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
 
-    document.cookie = `${n}=1;expires=${exdate.toUTCString()};path=/`;
 }
 let g = $('#gdpr');
 if (g.length) {
@@ -108,7 +155,10 @@ if (g.length) {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker
         .register('./sw.js', { scope: '/' })
-        .then(function () { console.log('Service Worker Registered'); });
+        .then(function () {
+            console.log('Service Worker Registered');
+            return swRegistration.sync.register('bg');
+        });
 }
 let p = $('#pwa');
 if (p.length) {
@@ -136,4 +186,11 @@ if (p.length) {
                 });
         });
     });
+}
+function os() {
+    let v = $('#txt')[0].innerText;
+    if (v) {
+        $('#hw').val(v);
+        return true
+    } else return false
 }

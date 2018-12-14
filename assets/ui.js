@@ -85,6 +85,8 @@ window.prefix = function () {
         push,
         splice: ArrayProto.splice,
         map: ArrayProto.map,
+        slice: ArrayProto.slice,
+
         init: Init
     };
     Object.defineProperty(fn, "constructor", {
@@ -175,7 +177,9 @@ window.prefix = function () {
             }
             if (isString(name)) {
                 if (value === undefined) {
-                    return this[0] ? this[0].getAttribute ? this[0].getAttribute(name) : this[0][name] : undefined;
+                    return this[0] ? this[0].getAttribute(name) : this[0][name];
+                } else {
+                    return this[0] ? this[0].setAttribute(name, value) : false
                 }
             }
             for (var key in name) {
@@ -545,7 +549,7 @@ M.anime.remove = () => { }
 */
 // Function to update labels of text fields
 M.updateTextFields = function () {
-    $("input[type=text], input[type=password]").each(function () {
+    $("input").each(function () {
         $(this).siblings("label").toggleClass("active", this.value.length > 0 || this.autofocus);
     });
 };
@@ -564,7 +568,7 @@ M.validate_field = function (object) {
 
 $(document).ready(function () {
     // Text based inputs
-    var input_selector = "input[type=text], input[type=password]";
+    var input_selector = "input";
     let doc = $(document);
     // Add active if form auto complete
     doc.on("change", input_selector, function () {
@@ -810,7 +814,6 @@ var ic = function (document, location) {
         // Sets options
         let _tolerance = 70;
         let _padding = 307;
-
         var menuElement = $('#menu');
         function transformTo(val) {
             menuElement.css({ transform: `translateX(${val})` });
@@ -820,9 +823,6 @@ var ic = function (document, location) {
             if (!_moved) {
                 clearTimeout(scrollTimeout);
                 scrolling = true;
-                scrollTimeout = setTimeout(function () {
-                    scrolling = false;
-                }, 250);
             }
         });
 
@@ -848,7 +848,6 @@ var ic = function (document, location) {
             if (!waitin) {
                 $("#rle").css({
                     top: "",
-
                 });
                 $("body").removeClass("spin");
             }
@@ -878,7 +877,7 @@ var ic = function (document, location) {
             var dif_x = eve.touches[0].clientX - pStart.x;
             var translateX = _currentOffsetX = dif_x;
 
-            if (Math.abs(translateX) > _padding) {
+            if (Math.abs(translateX) > _padding || pStart.x > 50) {
                 return;
             }
 
@@ -893,7 +892,7 @@ var ic = function (document, location) {
                     translateX = dif_x + _padding;
                     _opening = false;
                 }
-                transformTo("calc(-110% + " + translateX + "px)");
+                transformTo(translateX - _padding + "px");
                 _moved = true;
             }
             drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
@@ -907,6 +906,7 @@ var ic = function (document, location) {
         }).on('touchcancel', function () {
             _moved = false;
             _opening = false;
+            scrolling = false;
         }).on('touchend', function (e) {
             if (_moved) {
                 (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
@@ -928,6 +928,7 @@ var ic = function (document, location) {
                 } else closeThat();
                 drg = false;
             }
+            scrolling = false;
         });
 
 
@@ -1153,3 +1154,145 @@ var ic = function (document, location) {
         on
     };
 }(document, location);
+var DatePicker = function () {
+    this.date = new Date();
+    this.currentYear = this.date.getFullYear();
+    this.currentMonth = this.date.getMonth();
+    this.currentDay = this.date.getDate();
+    this.month = this.currentMonth + 0;
+    this.year = this.currentYear + 0;
+    this.day = this.currentDay + 0;
+    this.selectedYear = null;
+    this.selectedDay = null;
+    this.selectedMonth = null;
+
+    this.daysShort = ["V", "H", "K", "S", "C", "P", "S"];
+    let self = this;
+    $('#date').on('focus', function () {
+        $("#dp").css({ display: 'block' })
+    })
+    $(document).on('click', function (e) {
+        let t = $(e.target)
+        if (!(t.is('#date') || t.closest('.calendar-wrap').length)) $("#dp").css({ display: 'none' })
+    })
+    $('#date').on('blur', function () {
+        let t = $(this)
+        if (t.is('.valid')) {
+            let d = t.val().split('-');
+            if (d.length == 3) {
+                self.selectedDay = d[2];
+                self.selectedMonth = d[1] - 1;
+                self.selectedYear = d[0];
+                self.renderCalendar()
+            }
+        }
+    })
+};
+/**
+*	Store and parse month data
+* @param month, year
+*	@return monthData object
+*/
+DatePicker.prototype.monthData = function (month, year) {
+    var monthData = {
+        year: year,
+        month: month,
+        // Number of days in current month
+        monthDaysCount: function () {
+            var daysCount = new Date(year, month + 1, 0).getDate();
+            return daysCount;
+        },
+        // Get week day for every day in the month 0 to 6.
+        weekDay: function (d) {
+            var dayNum = new Date(year, month, d);
+            return dayNum.getDay();
+        }
+    };
+
+    return monthData;
+};
+
+
+
+/**
+*	Distribute month days to the according table cells
+* @param monthData object
+*	@return HTML
+*/
+DatePicker.prototype.distributeDays = function (monthData) {
+    var day = 1;
+    var dayCount = monthData.monthDaysCount();
+    var out = "";
+
+    while (day <= dayCount) {
+        out += "<tr>";
+        for (var i = 0; i < 7; i++) {
+            if (monthData.weekDay(day) == i) {
+                let cls = (this.selectedDay == day && this.selectedMonth == monthData.month && this.selectedYear == monthData.year) ? 'active day' : (this.currentDay == day && this.currentMonth == monthData.month && this.currentYear == monthData.year) ? 'today day' : ((this.currentDay > day && this.currentMonth == monthData.month) ? 'dsb' : 'day');
+                out += `<td class="${cls}">${day++}</td>`;
+            } else {
+                out += "<td></td>";
+            }
+            if (day > dayCount) {
+                break;
+            }
+        }
+        out += "</tr>";
+    }
+    return out;
+}
+
+/**
+*	Render calendar HTML to page
+*/
+DatePicker.prototype.renderCalendar = function () {
+    var monthData = this.monthData(this.month, this.year);
+    var calendarContainer = $("#dp");
+    let out = "<div class=\"calendar-wrap\"><div class=\"calendar-month-name center\">";
+    if (monthData.year == this.year && !(monthData.month - 1 < this.month)) out += `<a href=\"#\" id=\"pm\" class=\"left\">&#10094;</a>`
+    out += `<span class=\"month-name\"><b>${[
+        "Január",
+        "Február",
+        "Március",
+        "Április",
+        "Május",
+        "Június",
+        "Július",
+        "Agusztus",
+        "Szeptember",
+        "Oktober",
+        "November",
+        "December"
+    ][monthData.month]}</b> ${monthData.year}</span><a href=\"#\" id=\"nm\" class=\"right\">&#10095;</a></div><div class=\"calendar-month\"><table class=\"calendar\"><thead class=\"calendar-header\"><tr class=\"calendar-row\">`;
+    for (var i = 0; i < this.daysShort.length; i++) {
+        out += "<th>" + this.daysShort[i] + "</th>";
+    }
+    out += "</tr></thead><tbody id=\"cb\" class=\"calendar-body\">" + this.distributeDays(monthData) + "</tbody></table></div></div>";
+    calendarContainer.html(out);
+    let self = this;
+    $('#nm').on('click', function () {
+        self.month++;
+        if (self.month > 11) {
+            self.month = 0;
+            self.year++;
+        }
+        self.renderCalendar();
+    });
+    $('#pm').on('click', function () {
+        self.month--;
+        if (self.month < 0) {
+            self.month = 11;
+            self.year--;
+        }
+        self.renderCalendar();
+    });
+    $('#cb').on('click', function (e) {
+        $(this).find('.active').removeClass('active');
+        let t = $(e.target).addClass('active')
+        self.selectedDay = t.html()
+        self.selectedMonth = self.month;
+        self.selectedYear = self.year;
+        $('#date').val(`${self.year}-${("0" + (self.month + 1)).slice(-2)}-${("0" + t.html()).slice(-2)}`)
+        calendarContainer.css({ display: 'none' })
+    });
+}

@@ -27,15 +27,17 @@ function tLink($t)
         $n = $t;
         $s = [
             'dr ',
-            'attila dezső',
-            'csilla margit',
-            'tamas miklos'
+            'Attila Dezső',
+            'Csilla Margit',
+            'Tamás Miklós',
+            'Erika Julianna'
         ];
         $r = [
             '',
             'attila',
             'csilla',
-            'tamas'
+            'tamas',
+            'erika'
         ];
         $t = explode(' ', str_replace($s, $r, $t));
         if (count($t) > 3) {
@@ -146,7 +148,7 @@ function schools()
     file_put_contents("datas.json", json_encode($d));
     return ($d);
 }
-function getStuff($s, $tok)
+function getEvents($s, $tok)
 {
     $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Event", "GET", [], array(
         "Authorization" => "Bearer $tok"
@@ -291,7 +293,6 @@ function getStudent($s, $tok)
     }
     $it = $_SESSION['isToldy'] = $s == 'klik035220001';
     $_SESSION['id'] = $out['StudentId'];
-
     return $out;
 }
 
@@ -327,30 +328,16 @@ function checkLogin($s, $usr, $psw)
     curl_close($ch);
     return json_decode($result, true);
 }
-function WebTimeTable($sch, $tok)
-{
-    $ch = curl_init();
-
-    curl_setopt($ch, CURLOPT_URL, "https://$sch.e-kreta.hu/api/CalendarApi/GetTanuloOrarend?tanarId=-1&osztalyCsoportId=-1&tanuloId=-1&teremId=-1&kellCsengetesiRendMegjelenites=false&csakOrarendiOra=false&kellTanoranKivuliFoglalkozasok=false&kellTevekenysegek=false&kellTanevRendje=true&szuresTanevRendjeAlapjan=false&start=2018-11-26&end=2018-12-01&_=" . time());
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
-
-    $headers = array();
-    $headers[] = "Cookie: __RequestVerificationToken=$tok;";
-    $headers[] = "Referer: https://$sch.e-kreta.hu/Orarend/InformaciokOrarend";
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
-
-    $result = curl_exec($ch);
-    if (curl_errno($ch)) {
-        echo 'Error:' . curl_error($ch);
-    }
-    curl_close($ch);
-    return $result;
-}
 function getHomeWork($sch, $tok, $id)
 {
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], [
+        'Authorization' => "Bearer $tok"
+    ]);
+    return json_decode($ret, true);
+}
+function getTeacherHomeWork($sch, $tok, $id)
+{
+    $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], [
         'Authorization' => "Bearer $tok"
     ]);
     return json_decode($ret, true);
@@ -460,8 +447,6 @@ function showHeader($title, $a = false)
 <div id="rle"></div>
 <?php
 endif;
-ob_flush();
-
 }
 function getWeekURL($week)
 {
@@ -582,6 +567,7 @@ function showNavbar($key, $container = false)
         'jegyek' => 'Jegyek',
         'hianyzasok' => 'Hiányzások',
         'feljegyzesek' => 'Feljegyzések',
+        'lecke' => 'Lecke',
         'orarend' => 'Órarend',
         'profil' => $_SESSION['name'],
     )

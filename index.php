@@ -5,9 +5,10 @@ if (isset($_GET['logout'])) {
     logout();
 }
 
-$_SESSION['tries'] = isset($_SESSION['tries']) ? $_SESSION['tries'] : 0;
-$_SESSION['tyid'] = isset($_SESSION['tyid']) ? $_SESSION['tyid'] : false;
-$_SESSION['authed'] = isset($_SESSION['authed']) ? $_SESSION['authed'] : (hasCookie('rme') ? loginViaRME() : false);
+if (!isset($_SESSION['tries'])) $_SESSION['tries'] = 0;
+if (!isset($_SESSION['tyid'])) $_SESSION['tyid'] = false;
+if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
+if (!isset($_SESSION['authed'])) $_SESSION['authed'] = (hasCookie('rme') ? loginViaRME() : false);
 
 $base_url = getCurrentUri();
 $routes = array();
@@ -91,6 +92,30 @@ switch ($routes[0]) {
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
+          <div id="addModal" class="modal modal-fixed-footer n">
+    <div class="modal-content">
+        <h3>Milenne ha...</h3>
+        <p>Tantárgy: </p>
+            <select id="tr">
+                <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
+                    <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?> - <?php echo $avr['Value']; ?></option>
+                <?php 
+                endforeach; ?>
+            </select>
+            <div class="input-field">
+                <input type="number" id="nn" min="1" max="5" class="validate">
+                    <label for="nn">Kapnék egy...</label>
+                </div>
+                <label>
+        <input type="checkbox" id="tz" style="width:auto">
+        <span>TZ</span>
+        </label><br>
+                <button id="cnn" class="modal-close btn">Hozzáadás</button>
+               </div>
+    <div class="modal-footer">
+        <button class="modal-close btn">Bezárás</button>
+        </div>
+        </div>
 <notes class="responsive-table striped notes">
     <nhead>
         <ntr>
@@ -125,8 +150,10 @@ foreach ($avrg as $d) {
 }
 
 foreach ($out as $key => $day) {
-    usort($day, "date_sort");
-    echo "<ntr><ntd>$key</ntd>"; // class='collapsible-header'
+    usort($day, function ($b, $a) {
+        return strtotime($b['Date']) - strtotime($a['Date']);
+    });
+    echo "<ntr><ntd data-v=\"$key\">$key</ntd>"; // class='collapsible-header'
     foreach (array_merge(range(9, 12), ['1/I', 'fi', '1/II'], range(2, 6), ['ei', 'atl', 'oatl', 'diff']) as $h) {
         if ($h != 'diff') echo "<ntd>";
         switch ($h) {
@@ -163,7 +190,7 @@ foreach ($out as $key => $day) {
             case '1/II':
                 break;
             default:
-                $day = array_reverse($day);
+                // $day = array_reverse($day);
                 foreach ($day as $v) {
                     if (intval(date('n', strtotime($v['Date']))) == $h) {
                         $w = $v['Weight'];
@@ -183,6 +210,7 @@ foreach ($out as $key => $day) {
 ?>
         </nbody>
 </notes>
+<div class="fab">+</div>
 <?php
 showFooter();
 break;
@@ -290,7 +318,10 @@ case "orarend":
     }
     $monday = date('Y-m-d', strtotime('monday this week', strtotime("$week weeks")));
     $friday = date('Y-m-d', strtotime('sunday this week', strtotime("$week weeks")));
-    $data = json_decode(timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday), true);
+    if (isset($_SESSION['tt'][$week]) && !isset($_GET['fr']))
+        $data = $_SESSION['tt'][$week];
+    else
+        $data = json_decode(timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday), true);
     if (!$is_api) {
         showHeader('Órarend');
         showNavbar('orarend');
@@ -406,12 +437,133 @@ echo '</div>';
         <button class="btn np" onclick="window.print()">Nyomtatás</button>
        <?php showFooter();
         break;
+    case "lecke":
+        if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['date']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
+            $date = time();
+            $name = $_SESSION['name'];
+            $deadline = strtotime($_POST['date']);
+            $txt = str_replace(["|", ","], ["&#124;", "&#44;"], $_POST['txt']);
+            $tr = str_replace(["|", ","], ["&#124;", "&#44;"], htmlspecialchars($_POST['tr']));
+            $nw = "$date|$name|$deadline|$txt|$tr";
+
+            if (hasCookie('lecke')) {
+                setcookie('lecke', $_COOKIE['lecke'] . ',' . $nw, strtotime('1 year'));
+            } else {
+                setcookie('lecke', $nw, strtotime('1 year'));
+            }
+            unset($_POST, $_SESSION['Homework']);
+            redirect('../lecke', 303);
+        }
+        if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
+            $d = urldecode($_GET['did']);
+            setcookie('lecke', str_replace(',,', ',', str_replace($d, '', $_COOKIE['lecke']), strtotime('1 year')));
+            unset($_GET, $_SESSION['Homework']);
+            redirect('../lecke', 303);
+        }
+        reval();
+        showHeader('Lecke');
+        showNavbar('lecke', true);
+        if (!isset($_SESSION['Homework']) || isset($_GET['fr'])) {
+            $_SESSION['Homework'] = [];
+            if (!isset($_SESSION['tt']['+0'])) {
+                $_SESSION['tt']['+0'] = json_decode(timetable($_SESSION['school'], $_SESSION["token"], strtotime('monday this week'), strtotime('sunday this week')), true);
+            }
+            $hasStudentHomework = false;
+            foreach ($_SESSION['tt']['+0'] as $lesson) {
+                if (isset($lesson['TeacherHomeworkId'])) {
+                    $hw = json_decode(getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']), true);
+                    $hw['Tantargy'] = $lesson['Subject'];
+                    $_SESSION['Homework'][] = $hw;
+                }
+                $hasStudentHomework = $hasStudentHomework || $lesson['IsTanuloHaziFeladatEnabled'];
+            }
+            $r = json_decode(getHomeWork($_SESSION['school'], $_SESSION['token'], $_SESSION['data']['StudentId']), true);
+            $r = isset($r) ? $r : [];
+            $_SESSION['Homework'] = array_merge($_SESSION['Homework'], $r);
+            if (hasCookie('lecke')) {
+                $v = explode(',', $_COOKIE['lecke']);
+                $c = [];
+                foreach ($v as $h) {
+                    $s = explode('|', $h);
+                    if (count($s) !== 5 || $s[2] < time()) continue;
+                    $n = [];
+                    $n['FeladasDatuma'] = date('Y-m-d', $s[0]);
+                    $n['TanuloNev'] = $s[1];
+                    $n['Hatarido'] = date('Y-m-d', $s[2]);
+                    $n['Szoveg'] = $s[3];
+                    $n['Tantargy'] = $s[4];
+                    $n['DID'] = $h;
+                    $c[] = $h;
+                    $_SESSION['Homework'][] = $n;
+                }
+                if (!$c == $v) {
+                    setcookie('lecke', implode(',', $c));
+                }
+            }
+        }
+
+        ?>
+         <div id="modal" class="modal modal-fixed-footer n">
+    <div class="modal-content">
+        <p>Határidő: <span data-deadline></span></p>
+        <p>Tantárgy: <span data-tr></span></p>
+        <p>Házi: <span data-lecke></span></p>
+        <p>Feladó: <span data-sender></span></p>
+        <p>Feladás dátuma: <span data-cdate></span></p>
+        <a href="#" class="btn rd">Törlés</a>
+    </div>
+    <div class="modal-footer">
+        <button class="modal-close btn">Bezárás</button>
+    </div>
+    </div>
+    <div id="addModal" class="modal modal-fixed-footer n">
+    <div class="modal-content">
+        <form action="../lecke/ujLecke" method="post" onsubmit="return os()">
+        <h3>Új lecke</h3>
+        <p>Ezek csak a te gépeden lesznek el mentve!</p>
+    <select name="tr">
+        <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
+            <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?></option>
+        <?php 
+        endforeach; ?>
+    </select>
+       <p>Feladat:</p>
+       <div contenteditable="true" id="txt" required></div>
+       <div class="input-field">
+            <input type="date" id="date" min="<?= date('Y-m-d'); ?>" class="validate" name="date" placeholder required>
+            <label for="date">Határ idő</label>
+           <div id="dp"></div>
+       </div>
+       <input type="hidden" id="hw" name="txt">
+       <input class="btn" type="submit" value="Mentés" style="width:auto">
+    </form>
+    </div>
+    <div class="modal-footer">
+        <button class="modal-close btn">Bezárás</button>
+    </div>
+    </div>
+    <?php if (count($_SESSION['Homework']) > 0) {
+        ?>
+        <ul class="collection">
+        <?php
+        foreach ($_SESSION['Homework'] as $h) {
+            echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
+        }
+        ?>
+        </ul>
+    <?php 
+}
+?>
+        <div class="fab">+</div>
+        <?php
+        showFooter();
+        break;
     case "faliujsag":
         reval();
         showHeader('Faliújság');
         $data = $_SESSION['data'];
         showNavbar('faliujsag', true);
-        ?>
+        if (count($data['Evaluations']) > 0) { ?>
         <div class="col s12 m6">
             <div class="collection with-header">
             <div class="collection-header"><b>Legutóbbi jegyek</b></div>
@@ -423,15 +575,22 @@ echo '</div>';
         <?php endforeach; ?>
         </div>
     </div>
+    <?php 
+}
+if (count($data['Absences']) > 0) { ?>
 <div class="col s12 m6">
     <div class="collection with-header">
         <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
         <?php
-        foreach (array_slice($_SESSION['data']['Absences'], 0, 6) as $val) : ?>
+        foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
         <a href="hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span></a>
 <?php endforeach; ?>
     </div>
 </div>
+<?php
+
+}
+if (count($data['Notes']) > 0) { ?>
 <div class="col s12">
     <ul class="collection with-header">
         <li class="collection-header"><b>Legutóbbi feljegyzések</b></li>
@@ -451,6 +610,30 @@ echo '</div>';
     </ul>
 </div>
 <?php
+
+}
+ob_flush();
+if (!isset($_SESSION['events']) || isset($_GET['fr'])) $_SESSION['events'] = json_decode(getEvents($_SESSION['school'], $_SESSION['token']));
+if (count($_SESSION['events']) > 0) {
+    ?>
+<div class="col s12">
+<ul class="collection with-header">
+        <li class="collection-header"><b>Faliújság</b></li>
+    <?php
+    foreach (array_slice($_SESSION['events'], 0, 6) as $event) {
+        ?>
+        <li class="collection-item">
+            <p><?= $event['Content'] ?>
+            </p>
+            <a href="faliujsag#i<?= $event['EventId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($event['Date'])); ?></a>
+        </li>
+<?php 
+} ?>
+    </ul>
+</div>
+<?php
+
+}
 showFooter();
 break;
 default:
