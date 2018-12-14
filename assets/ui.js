@@ -1288,11 +1288,13 @@ DatePicker.prototype.renderCalendar = function () {
     });
     $('#cb').on('click', function (e) {
         $(this).find('.active').removeClass('active');
-        let t = $(e.target).addClass('active')
-        self.selectedDay = t.html()
-        self.selectedMonth = self.month;
-        self.selectedYear = self.year;
-        $('#date').val(`${self.year}-${("0" + (self.month + 1)).slice(-2)}-${("0" + t.html()).slice(-2)}`)
-        calendarContainer.css({ display: 'none' })
+        let t = $(e.target);
+        if (!t.is('.dsb')) {
+        self.selectedDay = t.addClass('active').html()
+            self.selectedMonth = self.month;
+            self.selectedYear = self.year;
+            $('#date').val(`${self.year}-${("0" + (self.month + 1)).slice(-2)}-${("0" + t.html()).slice(-2)}`)
+            calendarContainer.css({ display: 'none' })
+        }
     });
 }

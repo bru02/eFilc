@@ -124,7 +124,7 @@ function request($url, $method, $data, $headers = [], $raw = false)
 function redirect($url, $code = 302)
 {
     header('Location: ' . $url, true, $code);
-    exit;
+    exit();
 }
 
 function schools()

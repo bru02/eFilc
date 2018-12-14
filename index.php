@@ -456,8 +456,8 @@ echo '</div>';
         }
         if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
             $d = urldecode($_GET['did']);
-            setcookie('lecke', str_replace(',,', ',', str_replace($d, '', $_COOKIE['lecke']), strtotime('1 year')));
-            unset($_GET, $_SESSION['Homework']);
+            setcookie('lecke', str_replace(',,', ',', str_replace($d, '', $_COOKIE['lecke'])), strtotime('1 year'));
+            unset($_SESSION['Homework']);
             redirect('../lecke', 303);
         }
         reval();
@@ -510,7 +510,7 @@ echo '</div>';
         <p>Házi: <span data-lecke></span></p>
         <p>Feladó: <span data-sender></span></p>
         <p>Feladás dátuma: <span data-cdate></span></p>
-        <a href="#" class="btn rd">Törlés</a>
+        <a href="#" data-no-instant class="btn rd">Törlés</a>
     </div>
     <div class="modal-footer">
         <button class="modal-close btn">Bezárás</button>
