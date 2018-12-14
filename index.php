@@ -518,7 +518,7 @@ echo '</div>';
     </div>
     <div id="addModal" class="modal modal-fixed-footer n">
     <div class="modal-content">
-        <form action="../lecke/ujLecke" method="post" onsubmit="return os()">
+        <form action="./lecke/ujLecke" method="post" onsubmit="return os()">
         <h3>Új lecke</h3>
         <p>Ezek csak a te gépeden lesznek el mentve!</p>
     <select name="tr">

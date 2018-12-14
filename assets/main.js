@@ -94,7 +94,7 @@ function init() {
             elems.find(`[data-tr]`).html(a[0].innerHTML.split('<')[0]);
             let b = elems.find('a').css({ display: 'none' });
             if (a.hasAttr('data-del')) {
-                b.css({ display: 'block' }).attr('href', "../lecke/torles?did=" + a.attr('data-del'));
+                b.css({ display: 'block' }).attr('href', "./lecke/torles?did=" + a.attr('data-del'));
             }
             inst.open();
         });
@@ -155,7 +155,7 @@ if (g.length) {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker
         .register('./sw.js', { scope: '/' })
-        .then(function () {
+        .then(function (swRegistration) {
             console.log('Service Worker Registered');
             return swRegistration.sync.register('bg');
         });
