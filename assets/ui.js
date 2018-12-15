@@ -731,13 +731,9 @@ var ic = function (document, location) {
     function triggerChange() {
         if ($eventsCallback) $eventsCallback();
     }
-    function changePage(title, body, newUrl, scrollY) {
-        document.documentElement.replaceChild(body, document.body)
-        /* We cannot just use `document.body = doc.body`, it causes Safari (tested
-           5.1, 6.0 and Mobile 7.0) to execute script tags directly.
-        */;
+    function changePage(title, body, newUrl) {
+        document.documentElement.replaceChild(body, document.body);
         $currentLocationWithoutHash = removeHash(newUrl);
-
         newUrl = newUrl.split("#");
         history.pushState(null, null, newUrl[0]);
         document.title = title + String.fromCharCode(160);
