@@ -1,6 +1,6 @@
 <?php
 require_once("lib.php");
-$uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
+$uri = "/" . str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
 define('ABS_URI', "$uri/");
 if (isset($_GET['logout'])) {
     logout();
