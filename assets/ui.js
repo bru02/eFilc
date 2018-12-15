@@ -736,11 +736,8 @@ var ic = function (document, location) {
         /* We cannot just use `document.body = doc.body`, it causes Safari (tested
            5.1, 6.0 and Mobile 7.0) to execute script tags directly.
         */;
-        if (newUrl) {
-            $currentLocationWithoutHash = removeHash(newUrl);
-        } else {
-            scrollTo(0, scrollY);
-        }
+        $currentLocationWithoutHash = removeHash(newUrl);
+
         newUrl = newUrl.split("#");
         history.pushState(null, null, newUrl[0]);
         document.title = title + String.fromCharCode(160);
@@ -1142,7 +1139,7 @@ var ic = function (document, location) {
             }
             $history[$currentLocationWithoutHash].scrollY = pageYOffset;
             $currentLocationWithoutHash = loc;
-            changePage($history[loc].title, $history[loc].body, false, $history[loc].scrollY);
+            changePage($history[loc].title, $history[loc].body, loc, $history[loc].scrollY);
         });
     }
     function on(callback) {
@@ -1290,7 +1287,7 @@ DatePicker.prototype.renderCalendar = function () {
         $(this).find('.active').removeClass('active');
         let t = $(e.target);
         if (!t.is('.dsb')) {
-        self.selectedDay = t.addClass('active').html()
+            self.selectedDay = t.addClass('active').html()
             self.selectedMonth = self.month;
             self.selectedYear = self.year;
             $('#date').val(`${self.year}-${("0" + (self.month + 1)).slice(-2)}-${("0" + t.html()).slice(-2)}`)

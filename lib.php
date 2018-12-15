@@ -205,29 +205,28 @@ function getStudent($s, $tok)
     $absences = [];
     foreach ($out['Absences'] as $v) {
         $li = $v['NumberOfLessons'];
-        if (!isset($absences[$v['LessonStartTime']])) {
-            $j = $v['JustificationStateName'];
-            $t = strtotime($v['LessonStartTime']);
-            $absences[$v['LessonStartTime']] = array(
-                'd' => date('Y. m. d.', $t),
-                'time' => $t,
-                's' => 0,
+        $j = $v['JustificationStateName'];
+        $date = $v['LessonStartTime'];
+        if (!isset($absences[$date])) {
+            $absences[$date] = array(
+                'd' => substr($date, 0, 10),
                 't' => $v['TypeName'],
-                'a' => ' db óra',
                 'h' => [],
+                'j' => false,
                 'id' => $v['AbsenceId']
             );
 
         }
-        $absences[$v['LessonStartTime']]['s']++;
-        $absences[$v['LessonStartTime']]['h'][] = array(
+        $ij = $v['JustificationState'] == 'Justified';
+        $absences[$date]['j'] = $ij;
+        $absences[$date]['h'][] = array(
             'sub' => $v['Type'] == 'Delay' ? ($v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)') : ($v['Subject'] . ' (' . $li . '. óra)'),
-            'stat' => '<span class="' . ($v['JustificationState'] == 'Justified' ? 'gr' : 'red') . '">' . $j . '</span>',
+            'stat' => '<span class="' . ($ij ? 'gr' : 'red') . '">' . $j . '</span>',
             'i' => $li
         );
     }
     usort($absences, function ($a, $b) {
-        return $b['time'] - $a['time'];
+        return strtotime($b['d']) - strtotime($a['d']);
     });
     $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
@@ -426,8 +425,8 @@ function showHeader($title, $a = false)
 <html lang="hu">
 <head>
 	<meta charset="UTF-8">
-	<link rel="manifest" href="manifest.json">
-	<link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon">
+	<link rel="manifest" href="<?= ABS_URI; ?>manifest.json">
+	<link rel="shortcut icon" href="<?= ABS_URI; ?>images/icons/icon-96x96.png" type="image/x-icon">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="application-name" content="E-filc">
@@ -439,7 +438,7 @@ function showHeader($title, $a = false)
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<meta name="Description" content="E-filc, gyors eKréta kliens a webre">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="assets/ui.css">
+    <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
     <title><?php echo $title; ?> | E-filc</title>
 </head>
 <body>
@@ -483,17 +482,17 @@ if (!hasCookie('gdpr')) {
 }
 if (!$a) { ?>
     <footer>
-        eFilc - <a href="github.com/bru02/eFilc">Github</a>
+        eFilc - <a href="https://github.com/bru02/eFilc">Github</a>
     </footer>
     <?php 
 } ?>
 </main>
     </body>
-<script src="assets/ui.js" data-no-instant></script>
+<script src="<?= ABS_URI; ?>assets/ui.js" data-no-instant></script>
 <?php
-if (!$a) echo '<script data-no-instant src="assets/notification.js"></script>';
+if (!$a) echo "<script data-no-instant src=\"" . ABS_URI . "assets/notification.js\"></script>";
 ?>
-<script data-no-instant src=assets/main.js></script>
+<script data-no-instant src="<?= ABS_URI; ?>assets/main.js"></script>
 </html>
 <?php
 
@@ -586,17 +585,17 @@ function showNavbar($key, $container = false)
                     <li class="active"><?= $txt; ?></li>
                     <?php 
                 } else { ?>
-                <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+                <li><a href="<?= ABS_URI . $url; ?>"><?= $txt; ?></a></li>      
                  <?php 
             }
         } ?>
-                <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
+                <li><a href="<?= ABS_URI; ?>login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
       <div id="menu">
         <div class="menu__header">
-            <a href="profil">
+            <a href="<?= ABS_URI; ?>profil">
                 <?php echo $_SESSION['name']; ?>
             </a>
         </div>
@@ -608,11 +607,11 @@ function showNavbar($key, $container = false)
             <li class="active"><?= $txt; ?></li>
             <?php 
         } else { ?>
-            <li><a href="<?= $url; ?>"><?= $txt; ?></a></li>      
+            <li><a href="<?= ABS_URI . $url; ?>"><?= $txt; ?></a></li>      
             <?php 
         }
     } ?>
-            <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
+            <li><a href="<?= ABS_URI; ?>login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
       <div class="overlay"></div>

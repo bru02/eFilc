@@ -1,6 +1,7 @@
 <?php
 require_once("lib.php");
-
+$uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
+define('ABS_URI', "$uri/");
 if (isset($_GET['logout'])) {
     logout();
 }
@@ -36,7 +37,6 @@ if (count($routes) > 1 && $routes[0] == "api") {
     $is_api = true;
     array_shift($routes);
 }
-
 if (isset($_GET['fr']) && $_SESSION['authed']) {
     reval();
     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
@@ -107,7 +107,7 @@ switch ($routes[0]) {
                     <label for="nn">Kapnék egy...</label>
                 </div>
                 <label>
-        <input type="checkbox" id="tz" style="width:auto">
+        <input type="checkbox" id="tz">
         <span>TZ</span>
         </label><br>
                 <button id="cnn" class="modal-close btn">Hozzáadás</button>
@@ -263,7 +263,7 @@ ob_flush();
 foreach ($_SESSION['data']['Absences'] as $val) : ?>
     <li id="i<?= $val['id']; ?>" class="collection-item">
         <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
-        <?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span>
+        <?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span>
         </div>
         <?php if (isset($val['h'])) : ?>
         <div class="collapsible-body">
@@ -500,6 +500,9 @@ echo '</div>';
                     setcookie('lecke', implode(',', $c));
                 }
             }
+            usort($_SESSION['Homework'], function ($a, $b) {
+                return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
+            });
         }
 
         ?>
@@ -518,7 +521,7 @@ echo '</div>';
     </div>
     <div id="addModal" class="modal modal-fixed-footer n">
     <div class="modal-content">
-        <form action="./lecke/ujLecke" method="post" onsubmit="return os()">
+        <form action="<?= ABS_URI; ?>lecke/ujLecke" method="post" onsubmit="return os()">
         <h3>Új lecke</h3>
         <p>Ezek csak a te gépeden lesznek el mentve!</p>
     <select name="tr">
@@ -535,7 +538,7 @@ echo '</div>';
            <div id="dp"></div>
        </div>
        <input type="hidden" id="hw" name="txt">
-       <input class="btn" type="submit" value="Mentés" style="width:auto">
+       <input class="btn" type="submit" value="Mentés">
     </form>
     </div>
     <div class="modal-footer">
@@ -552,7 +555,7 @@ echo '</div>';
         ?>
         </ul>
     <?php 
-}
+} else echo "Nincs leckéd!";
 ?>
         <div class="fab">+</div>
         <?php
@@ -571,7 +574,7 @@ echo '</div>';
             ob_flush();
             usort($data['Evaluations'], "date_sort");
             foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-            <a href="jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?php echo $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
+            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?php echo $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
         <?php endforeach; ?>
         </div>
     </div>
@@ -583,7 +586,7 @@ if (count($data['Absences']) > 0) { ?>
         <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
         <?php
         foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-        <a href="hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo $val['t'] . " - " . $val["s"] . $val["a"]; ?><span class="secondary-content"><?php echo $val['d']; ?></span></a>
+        <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span></a>
 <?php endforeach; ?>
     </div>
 </div>
@@ -603,7 +606,7 @@ if (count($data['Notes']) > 0) { ?>
             <p><?= $note['Content'] ?><br>
                 <?= tLink($note['Teacher']) ?>
             </p>
-            <a href="feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
+            <a href="<?= ABS_URI; ?>feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
         </li>
 <?php 
 } ?>
@@ -625,7 +628,7 @@ if (count($_SESSION['events']) > 0) {
         <li class="collection-item">
             <p><?= $event['Content'] ?>
             </p>
-            <a href="faliujsag#i<?= $event['EventId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($event['Date'])); ?></a>
+            <a href="#i<?= $event['EventId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($event['Date'])); ?></a>
         </li>
 <?php 
 } ?>
@@ -654,7 +657,7 @@ default:
         <title>404 | e-filc</title>
         <style>
             body {
-                background-image: url(assets/astronauta.jpg), url(assets/Stars404.png);
+                background-image: url(<?= ABS_URI; ?>assets/astronauta.jpg), url(<?= ABS_URI; ?>assets/Stars404.png);
                 background-color: #000;
                 background-position: right top, center center;
                 background-repeat: no-repeat, repeat;
@@ -690,7 +693,7 @@ default:
     <body class="e404">
         <div class="container">
             <div class="big">Hoppá! Nem kénne itt lenned</div>
-            <div>Úgy tűnik itt az ideje befejzni a küldetést és <a href="faliujsag">vissza</a> menni.</div>
+            <div>Úgy tűnik itt az ideje befejzni a küldetést és <a href="<?= ABS_URI; ?>faliujsag">vissza</a> menni.</div>
         </div>
     </body>
 </html>
