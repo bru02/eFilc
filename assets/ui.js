@@ -595,9 +595,7 @@ $(document).ready(function () {
 function Modal(el, options) {
     let self = {
         "open": function () {
-            if (self.isOpen) {
-                return;
-            }
+            if (self.isOpen) return;
             self.isOpen = true;
             Modal._modalsOpen++;
             self._nthModalOpened = Modal._modalsOpen;
