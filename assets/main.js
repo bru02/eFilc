@@ -177,9 +177,10 @@ if (p.length) {
             deferredPrompt.userChoice
                 .then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        addCookie('pwa');
+                        addCookie('pwa', 1);
                         console.log('User accepted the A2HS prompt');
                     } else {
+                        addCookie('pwa', 0);
                         console.log('User dismissed the A2HS prompt');
                     }
                     deferredPrompt = null;
