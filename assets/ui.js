@@ -799,7 +799,6 @@ var ic = function (document, location) {
         var pStart = { x: 0, y: 0 };
         var pStop = { x: 0, y: 0 };
         var scrolling = false;
-
         let _currentOffsetX = 0;
         let _moved = false;
         var _opening = false;
