@@ -70,10 +70,10 @@ function hasCookie($c)
 }
 function loginViaRME()
 {
-    $cookie = htmlentities($_COOKIE['rme']);
+    $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
     $cookie = explode(',', $cookie);
     if (count($cookie) == 2 && !getToken($cookie[0], $cookie[1])) {
-        setcookie('rme', '');
+        setcookie('rme');
         return false;
     }
     return true;
@@ -280,7 +280,7 @@ function getStudent($s, $tok)
             }
             $links[] = [
                 'Type' => 'Hirdetmény',
-                'Title' => ucfirst($tit),
+                'Title' => ucwords($tit),
                 'Date' => $date,
                 'Content' => $con,
                 'Teacher' => $author,
@@ -305,28 +305,7 @@ function timetable($s, $tok, $from, $to)
     ));
     return $out;
 }
-function checkLogin($s, $usr, $psw)
-{
-    $ch = curl_init();
 
-    curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/Adminisztracio/Login/LoginCheck");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"UserName\":\"$usr\",\"Password\":\"$psw\"}");
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_REFERER, "https://$s.e-kreta.hu/Adminisztracio/Login");
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-    $headers = array();
-    $headers[] = "Content-Type: application/x-www-form-urlencoded";
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-    $result = curl_exec($ch);
-    if (curl_errno($ch)) {
-        echo 'Error:' . curl_error($ch);
-    }
-    curl_close($ch);
-    return json_decode($result, true);
-}
 function getHomeWork($sch, $tok, $id)
 {
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], [
@@ -361,7 +340,7 @@ function getToken($s, $rt)
         $_SESSION["refresh_token"] = $res["refresh_token"];
         $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
         $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-        if (hasCookie('rme')) setcookie('rme', $_SESSION['school'] . "," . $res["refresh_token"], strtotime('+1 month'));
+        if (hasCookie('rme')) setcookie('rme', encrypt_decrypt('encrypt', $_SESSION['school'] . "," . $res["refresh_token"]), strtotime('+1 month'));
         return $res;
     } else return false;
 }
@@ -618,4 +597,24 @@ function showNavbar($key, $container = false)
       <main <?= $container ? 'class="container"' : "" ?>>
 <?php
 
+}
+
+function encrypt_decrypt($action, $string)
+{
+    $output = false;
+    $encrypt_method = "AES-256-CBC";
+    $secret_key = 'Noudontnf7z47hfjk598';
+    $secret_iv = 'dmsfunecnv9684v8u55349ff32fg';
+    // hash
+    $key = hash('sha256', $secret_key);
+    
+    // iv - encrypt method AES-256-CBC expects 16 bytes - else you will get a warning
+    $iv = substr(hash('sha256', $secret_iv), 0, 16);
+    if ($action == 'encrypt') {
+        $output = openssl_encrypt($string, $encrypt_method, $key, 0, $iv);
+        $output = base64_encode($output);
+    } else if ($action == 'decrypt') {
+        $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
+    }
+    return $output;
 }

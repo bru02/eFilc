@@ -1,10 +1,11 @@
+window.requestAnimationFrame || (window.requestAnimationFrame = function (f) { setTimeout(f, 0) })
 function addParam(uri, key, v) {
     return uri
         .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=" + v)
         .replace(/^([^?&]+)&/, "$1?");
 }
 window.prefix = function () {
-    var styles = window.getComputedStyle(document.documentElement, ""), pre = (Array.prototype.slice.call(styles).join("").match(/-(moz|webkit|ms)-/) || styles.OLink === "" && ["", "o"])[1];
+    var styles = getComputedStyle(document.documentElement, ""), pre = (Array.prototype.slice.call(styles).join("").match(/-(moz|webkit|ms)-/) || styles.OLink === "" && ["", "o"])[1];
     return "-" + pre + "-";
 }();
 /*! cash-dom 1.3.5, https://github.com/kenwheeler/cash @license MIT */
@@ -161,6 +162,72 @@ window.prefix = function () {
             v.className = v.className.replace(c, "");
         }
     }
+    function compute(el, prop) {
+        return parseInt(win.getComputedStyle(el[0], null)[prop], 10) || 0;
+    }
+    each(["Width", "Height"], function (v) {
+        var lower = v.toLowerCase();
+        fn[lower] = function () {
+            return this[0].getBoundingClientRect()[lower];
+        };
+        fn["inner" + v] = function () {
+            return this[0]["client" + v];
+        };
+        fn["outer" + v] = function (margins) {
+            return this[0]["offset" + v] + (margins ? compute(this, "margin" + (v === "Width" ? "Left" : "Top")) + compute(this, "margin" + (v === "Width" ? "Right" : "Bottom")) : 0);
+        };
+    });
+    function registerEvent(node, eventName, callback) {
+        node.addEventListener(eventName, callback);
+    }
+    function removeEvent(node, eventName, callback) {
+        if (callback) {
+            node.removeEventListener(eventName, callback);
+        }
+    }
+    function getSelectSingle_(el) {
+        var selectedIndex = el.selectedIndex;
+        return selectedIndex >= 0 ? el.options[selectedIndex].value : null;
+    }
+    function getValue(el) {
+        var type = el.type;
+        if (!type) {
+            return null;
+        }
+        switch (type.toLowerCase()) {
+            case "select-one":
+                return getSelectSingle_(el);
+            case "radio":
+            case "checkbox":
+                return el.checked ? el.value : null;
+
+            default:
+                return el.value ? el.value : null;
+        }
+    }
+    function insertElement(el, child, prepend) {
+        if (prepend) {
+            var first = el.childNodes[0];
+            el.insertBefore(child, first);
+        } else {
+            el.appendChild(child);
+        }
+    }
+    function insertContent(parent, child, prepend) {
+        var str = isString(child);
+        if (!str && child.length) {
+            each(child, function (v) {
+                return insertContent(parent, v, prepend);
+            });
+            return;
+        }
+        each(parent, str ? function (v) {
+            return v.insertAdjacentHTML(prepend ? "afterbegin" : "beforeend", child);
+        } : function (v, i) {
+            return insertElement(v, i === 0 ? child : child.cloneNode(true), prepend);
+        });
+    }
+    var docEl = doc.documentElement;
     fn.extend({
         addClass: function (c) {
             var classes = getClasses(c);
@@ -226,9 +293,7 @@ window.prefix = function () {
                     }
                 });
             }) : this;
-        }
-    });
-    fn.extend({
+        },
         each: function (callback) {
             each(this, callback);
             return this;
@@ -241,10 +306,7 @@ window.prefix = function () {
             return cash(filter.call(this, function (e) {
                 return comparator(e, selector);
             }));
-        }
-    });
-
-    fn.extend({
+        },
         css: function (prop, value) {
             if (isString(prop)) {
                 return arguments.length > 1 ? this.each(function (v) {
@@ -258,54 +320,21 @@ window.prefix = function () {
                 this.css(key, prop[key]);
             }
             return this;
-        }
-    });
-    function compute(el, prop) {
-        return parseInt(win.getComputedStyle(el[0], null)[prop], 10) || 0;
-    }
-    each(["Width", "Height"], function (v) {
-        var lower = v.toLowerCase();
-        fn[lower] = function () {
-            return this[0].getBoundingClientRect()[lower];
-        };
-        fn["inner" + v] = function () {
-            return this[0]["client" + v];
-        };
-        fn["outer" + v] = function (margins) {
-            return this[0]["offset" + v] + (margins ? compute(this, "margin" + (v === "Width" ? "Left" : "Top")) + compute(this, "margin" + (v === "Width" ? "Right" : "Bottom")) : 0);
-        };
-    });
-    function registerEvent(node, eventName, callback) {
-        node.addEventListener(eventName, callback);
-    }
-    function removeEvent(node, eventName, callback) {
-        if (callback) {
-            node.removeEventListener(eventName, callback);
-        }
-    }
-    fn.extend({
+        },
         off: function (eventName, callback) {
             return this.each(function (v) {
                 return removeEvent(v, eventName, callback);
             });
         },
-        on: function (eventName, delegate, callback, runOnce) {
+        on: function (eventName, delegate, callback) {
             // jshint ignore:line
             var originalCallback;
-            if (!isString(eventName)) {
-                for (var key in eventName) {
-                    this.on(key, delegate, eventName[key]);
-                }
-                return this;
-            }
             if (isFunction(delegate)) {
                 callback = delegate;
                 delegate = null;
             }
-            if (eventName === "ready") {
-                onReady(callback);
-                return this;
-            }
+
+
             if (delegate) {
                 originalCallback = callback;
                 callback = function (e) {
@@ -322,52 +351,9 @@ window.prefix = function () {
                 };
             }
             return this.each(function (v) {
-                var finalCallback = callback;
-                if (runOnce) {
-                    finalCallback = function () {
-                        callback.apply(this, arguments);
-                        removeEvent(v, eventName, finalCallback);
-                    };
-                }
-                registerEvent(v, eventName, finalCallback);
+                registerEvent(v, eventName, callback);
             });
         },
-        ready: onReady
-    });
-    function getSelectMultiple_(el) {
-        var values = [];
-        each(el.options, function (o) {
-            if (o.selected) {
-                values.push(o.value);
-            }
-        });
-        return values.length ? values : null;
-    }
-    function getSelectSingle_(el) {
-        var selectedIndex = el.selectedIndex;
-        return selectedIndex >= 0 ? el.options[selectedIndex].value : null;
-    }
-    function getValue(el) {
-        var type = el.type;
-        if (!type) {
-            return null;
-        }
-        switch (type.toLowerCase()) {
-            case "select-one":
-                return getSelectSingle_(el);
-
-            case "select-multiple":
-                return getSelectMultiple_(el);
-
-            case "radio":
-            case "checkbox":
-                return el.checked ? el.value : null;
-
-            default:
-                return el.value ? el.value : null;
-        }
-    }
-    fn.extend({
         val: function (value) {
             if (value === undefined) {
                 return getValue(this[0]);
@@ -375,31 +361,7 @@ window.prefix = function () {
             return this.each(function (v) {
                 return v.value = value;
             });
-        }
-    });
-    function insertElement(el, child, prepend) {
-        if (prepend) {
-            var first = el.childNodes[0];
-            el.insertBefore(child, first);
-        } else {
-            el.appendChild(child);
-        }
-    }
-    function insertContent(parent, child, prepend) {
-        var str = isString(child);
-        if (!str && child.length) {
-            each(child, function (v) {
-                return insertContent(parent, v, prepend);
-            });
-            return;
-        }
-        each(parent, str ? function (v) {
-            return v.insertAdjacentHTML(prepend ? "afterbegin" : "beforeend", child);
-        } : function (v, i) {
-            return insertElement(v, i === 0 ? child : child.cloneNode(true), prepend);
-        });
-    }
-    fn.extend({
+        },
         append: function (content) {
             insertContent(this, content);
             return this;
@@ -428,19 +390,14 @@ window.prefix = function () {
                     return v.parentNode.removeChild(v);
                 }
             });
-        }
-    });
-    var docEl = doc.documentElement;
-    fn.extend({
+        },
         offset: function () {
             var rect = this[0].getBoundingClientRect();
             return {
                 top: rect.top + win.pageYOffset - docEl.clientTop,
                 left: rect.left + win.pageXOffset - docEl.clientLeft
             };
-        }
-    });
-    fn.extend({
+        },
         children: function (selector) {
             var elems = [];
             this.each(function (el) {
@@ -566,7 +523,7 @@ M.validate_field = function (object) {
     }
 };
 
-$(document).ready(function () {
+$(function () {
     // Text based inputs
     var input_selector = "input";
     let doc = $(document);
@@ -594,7 +551,7 @@ $(document).ready(function () {
 });
 function Modal(el, options) {
     let self = {
-        "open": function () {
+        open: function () {
             if (self.isOpen) return;
             self.isOpen = true;
             Modal._modalsOpen++;
@@ -637,7 +594,7 @@ function Modal(el, options) {
             // Focus modal
             self.el.focus();
         },
-        "close": function () {
+        close: function () {
             if (!self.isOpen) {
                 return;
             }
@@ -740,10 +697,6 @@ var ic = function (document, location) {
         bar.done();
         triggerChange();
     }
-    function setPreloadingAsHalted() {
-        $isPreloading = false;
-        $isWaitingForCompletion = false;
-    }
     ////////// EVENT HANDLERS //////////
     function mousedown(e) {
         if ($lastTouchTimestamp > +new Date() - 500) {
@@ -772,7 +725,7 @@ var ic = function (document, location) {
         if ($xhr.readyState < 4 || $xhr.status == 0) {
             return;
         }
-        $timing.ready = +new Date() - $timing.start;
+        $timing.ready = Date.now() - $timing.start;
         var doc = document.implementation.createHTMLDocument("");
         doc.documentElement.innerHTML = $xhr.responseText.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
         $title = doc.title;
@@ -922,8 +875,8 @@ var ic = function (document, location) {
         });
 
 
-        b.on("mousedown", mousedown, true);
-        b.on("click", click, true);
+        b.on("mousedown", mousedown);
+        b.on("click", click);
     }
     function preload(url) {
         if ($preloadTimer) {
@@ -942,7 +895,7 @@ var ic = function (document, location) {
         $body = false;
         $mustRedirect = false;
         $timing = {
-            start: +new Date()
+            start: Date.now()
         };
         url = addParam(url, "just_html", "1");
         $xhr.open("GET", url);
@@ -950,7 +903,7 @@ var ic = function (document, location) {
     }
     function display(url) {
         if (!("display" in $timing)) {
-            $timing.display = +new Date() - $timing.start;
+            $timing.display = Date.now() - $timing.start;
         }
         if ($preloadTimer || !$isPreloading) {
             /* $preloadTimer:
@@ -1004,7 +957,8 @@ var ic = function (document, location) {
             return;
         }
         $history[$currentLocationWithoutHash].scrollY = pageYOffset;
-        setPreloadingAsHalted();
+        $isPreloading = false;
+        $isWaitingForCompletion = false;
         changePage($title, $body, $url);
     }
     ////////// PROGRESS BAR FUNCTIONS //////////
@@ -1036,7 +990,7 @@ var ic = function (document, location) {
             });
             update();
             if (jump) {
-                window.requestAnimationFrame(jumpStart, 0)
+                requestAnimationFrame(jumpStart)
                 /* Must be done in a timer, otherwise the CSS animation doesn't happen. */;
             }
             clearTimeout($barTimer);
@@ -1072,7 +1026,7 @@ var ic = function (document, location) {
             }
             /* The bar container hasn't been appended: It's a new page. */            start($barProgress == 100 ? 0 : $barProgress)
             /* $barProgress is 100 on popstate, usually. */;
-            window.requestAnimationFrame(done)
+            requestAnimationFrame(done)
             /* Must be done in a timer, otherwise the CSS animation doesn't happen. */;
         }
         function updatePositionAndScale() {

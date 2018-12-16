@@ -77,6 +77,13 @@ function init() {
             inst.open();
         });
     }
+    if (location.href.match(/\/faliujsag/g)) {
+        $('.s12:not(.m6) .collection-item').on('click', function (e) {
+            if (!$(e.target).is('a')) {
+                $(this).find('.secondary-content')[0].click()
+            }
+        });
+    }
     if (location.href.match(/\/lecke/g)) {
         s();
         var elems = $('#modal')
@@ -128,7 +135,7 @@ function init() {
         deleteCookie('rme');
     });
 }
-$.fn.ready(() => {
+$(() => {
     ic.on(init);
     ic.init("mousedown");
 });

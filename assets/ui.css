@@ -549,12 +549,6 @@ h6 {
   outline: 0;
 }
 
-
-
-.btn:focus {
-  background-color: #104d92;
-}
-
 .btn {
   text-decoration: none;
   color: #fff;

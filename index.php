@@ -70,7 +70,7 @@ switch ($routes[0]) {
                     $_SESSION['authed'] = true;
                     $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
                     if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                        setcookie('rme', $_SESSION['school'] . "," . $_SESSION['refresh_token'], strtotime('+1 year'));
+                        setcookie('rme', encrypt_decrypt('encrypt', $_SESSION['school'] . "," . $_SESSION['refresh_token']), strtotime('+1 year'));
                     }
                     redirect("faliujsag");
                 } else {
@@ -447,16 +447,16 @@ echo '</div>';
             $nw = "$date|$name|$deadline|$txt|$tr";
 
             if (hasCookie('lecke')) {
-                setcookie('lecke', $_COOKIE['lecke'] . ',' . $nw, strtotime('1 year'));
+                setcookie('lecke', encrypt_decrypt('encrypt', encrypt_decrypt('decrypt', $_COOKIE['lecke']) . ',' . $nw), strtotime('1 year'));
             } else {
-                setcookie('lecke', $nw, strtotime('1 year'));
+                setcookie('lecke', encrypt_decrypt('encrypt', $nw), strtotime('1 year'));
             }
             unset($_POST, $_SESSION['Homework']);
             redirect('../lecke', 303);
         }
         if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
             $d = urldecode($_GET['did']);
-            setcookie('lecke', str_replace(',,', ',', str_replace($d, '', $_COOKIE['lecke'])), strtotime('1 year'));
+            setcookie('lecke', encrypt_decrypt('encrypt', str_replace(',,', ',', str_replace($d, '', encrypt_decrypt('decrypt', $_COOKIE['lecke'])))), strtotime('1 year'));
             unset($_SESSION['Homework']);
             redirect('../lecke', 303);
         }
@@ -481,7 +481,7 @@ echo '</div>';
             $r = isset($r) ? $r : [];
             $_SESSION['Homework'] = array_merge($_SESSION['Homework'], $r);
             if (hasCookie('lecke')) {
-                $v = explode(',', $_COOKIE['lecke']);
+                $v = explode(',', encrypt_decrypt('decrypt', $_COOKIE['lecke']));
                 $c = [];
                 foreach ($v as $h) {
                     $s = explode('|', $h);
@@ -497,7 +497,7 @@ echo '</div>';
                     $_SESSION['Homework'][] = $n;
                 }
                 if (!$c == $v) {
-                    setcookie('lecke', implode(',', $c));
+                    setcookie('lecke', encrypt_decrypt('encrypt', implode(',', $c)), strtotime('1 year'));
                 }
             }
             usort($_SESSION['Homework'], function ($a, $b) {
