@@ -72,11 +72,14 @@ function loginViaRME()
 {
     $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
     $cookie = explode(',', $cookie);
-    if (count($cookie) == 2 && !getToken($cookie[0], $cookie[1])) {
-        setcookie('rme');
-        return false;
+    if (count($cookie) == 2) {
+        if (!getToken($cookie[0], $cookie[1])) {
+            setcookie('rme');
+            return false;
+        }
+        return true;
     }
-    return true;
+    return false;
 }
 function reval()
 {
@@ -311,14 +314,16 @@ function getHomeWork($sch, $tok, $id)
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], [
         'Authorization' => "Bearer $tok"
     ]);
-    return json_decode($ret, true);
+    if (!$ret || empty($ret)) return "[]";
+    return $ret;
 }
 function getTeacherHomeWork($sch, $tok, $id)
 {
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], [
         'Authorization' => "Bearer $tok"
     ]);
-    return json_decode($ret, true);
+    if (!$ret || empty($ret)) return "[]";
+    return $ret;
 }
 function getToken($s, $rt)
 {

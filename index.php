@@ -468,14 +468,25 @@ echo '</div>';
             if (!isset($_SESSION['tt']['+0'])) {
                 $_SESSION['tt']['+0'] = json_decode(timetable($_SESSION['school'], $_SESSION["token"], strtotime('monday this week'), strtotime('sunday this week')), true);
             }
-            $hasStudentHomework = false;
+
             foreach ($_SESSION['tt']['+0'] as $lesson) {
                 if (isset($lesson['TeacherHomeworkId'])) {
-                    $hw = json_decode(getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']), true);
-                    $hw['Tantargy'] = $lesson['Subject'];
-                    $_SESSION['Homework'][] = $hw;
+                    $hw = "[]";
+                    if ($lesson['IsTanuloHaziFeladatEnabled']) {
+                        $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                    }
+                    if ($hw == "[]") {
+                        $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                    }
+                    $hw = json_decode($hw, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        continue;
+                    }
+                    foreach ($hw as $homework) {
+                        $hw['Tantargy'] = $lesson['Subject'];
+                        $_SESSION['Homework'][] = $hw;
+                    }
                 }
-                $hasStudentHomework = $hasStudentHomework || $lesson['IsTanuloHaziFeladatEnabled'];
             }
             $r = json_decode(getHomeWork($_SESSION['school'], $_SESSION['token'], $_SESSION['data']['StudentId']), true);
             $r = isset($r) ? $r : [];
