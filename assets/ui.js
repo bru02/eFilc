@@ -398,6 +398,14 @@ window.prefix = function () {
                 left: rect.left + win.pageXOffset - docEl.clientLeft
             };
         },
+        show: function () {
+            this.css({ display: 'block' })
+            return this
+        },
+        hide: function () {
+            this.css({ display: 'none' })
+            return this
+        },
         children: function (selector) {
             var elems = [];
             this.each(function (el) {
@@ -569,8 +577,7 @@ function Modal(el, options) {
             if (self.options.preventScrolling) {
                 $("body").addClass('no-scroll');
             }
-            self.$overlay.css({
-                display: "block",
+            self.$overlay.show().css({
                 opacity: self.options.opacity
             });
             // Animate overlay
@@ -758,6 +765,7 @@ var ic = function (document, location) {
         let _tolerance = 70;
         let _padding = 307;
         var menuElement = $('#menu');
+        var overlay = menuElement.next();
         function transformTo(val) {
             menuElement.css({ transform: `translateX(${val})` });
         }
@@ -770,12 +778,14 @@ var ic = function (document, location) {
         });
 
         function open() {
+            overlay.show().css({ opacity: '' })
             b.addClass('no-scroll');
             transformTo(0);
             menuElement.addClass('open')
             _opened = true
         }
         function close() {
+            overlay.hide()
             b.removeClass('no-scroll');
             transformTo('-110%');
             menuElement.removeClass('open')
@@ -810,6 +820,8 @@ var ic = function (document, location) {
             preload(a[0].href);
 
         }).on('touchmove', function (eve) {
+            overlay.hide()
+            if (_opening || _opened) overlay.show()
             if (
                 scrolling ||
                 typeof eve.touches === 'undefined'
@@ -826,7 +838,6 @@ var ic = function (document, location) {
 
             if (Math.abs(dif_x) > 20) {
                 _opening = true;
-
                 if (_opened && dif_x > 0 || !_opened && dif_x < 0) {
                     return;
                 }
@@ -835,7 +846,11 @@ var ic = function (document, location) {
                     translateX = dif_x + _padding;
                     _opening = false;
                 }
-                transformTo(translateX - _padding + "px");
+                let a = translateX - _padding;
+                overlay.css({
+                    opacity: ((280 + a) / 280) * 0.2
+                })
+                transformTo(a + "px");
                 _moved = true;
             }
             drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
@@ -1113,11 +1128,11 @@ var DatePicker = function () {
     this.daysShort = ["V", "H", "K", "S", "C", "P", "S"];
     let self = this;
     $('#date').on('focus', function () {
-        $("#dp").css({ display: 'block' })
+        $("#dp").show()
     })
     $(document).on('click', function (e) {
         let t = $(e.target)
-        if (!(t.is('#date') || t.closest('.calendar-wrap').length)) $("#dp").css({ display: 'none' })
+        if (!(t.is('#date') || t.closest('.calendar-wrap').length)) $("#dp").hide()
     })
     $('#date').on('blur', function () {
         let t = $(this)
@@ -1238,7 +1253,7 @@ DatePicker.prototype.renderCalendar = function () {
             self.selectedMonth = self.month;
             self.selectedYear = self.year;
             $('#date').val(`${self.year}-${("0" + (self.month + 1)).slice(-2)}-${("0" + t.html()).slice(-2)}`)
-            calendarContainer.css({ display: 'none' })
+            calendarContainer.hide()
         }
     });
 }

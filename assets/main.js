@@ -1,14 +1,3 @@
-function getf(url, cb) {
-    xhr = new XMLHttpRequest();
-    xhr.open('GET', url);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function () {
-        if (xhr.status === 200 && xhr.responseText) {
-            cb(xhr.responseText);
-        }
-    };
-    xhr.send();
-}
 function s() {
     if (!location.href.match(/\/orarend/g)) return;
     window.mh = 0;
@@ -24,37 +13,47 @@ function s() {
 }
 
 $(window).on('resize', s);
-if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g))
-    getf('schools', function (data) {
-        var data = JSON.parse(data);
-        let inp = $('#sc');
-        let el = inp[0].list ? $('#slc') : $('#rslc')
-        let s = el.find('selected');
-        if (s.length) {
-            s = s.val();
-        }
-        el.html("");
-        $(data).each(function () {
-            el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
-        });
-        inp.on('blur', function () {
-            if (!this.value) return;
-            let f = $('option[value=' + this.value + ']');
-            if (f.length) {
-                this.setCustomValidity('');
-                M.validate_field($('#sc'))
-            } else {
-                this.setCustomValidity('Adjon meg egy érvényes értéket');
+if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g)) {
+    xhr = new XMLHttpRequest();
+    xhr.open('GET', "datas.json");
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+        if (xhr.status === 200 && xhr.responseText) {
+            var data = JSON.parse(xhr.responseText);
+            let inp = $('#sc');
+            let el = inp[0].list ? $('#slc') : $('#rslc')
+            let s = el.find('option:checked');
+            if (s.length) {
+                s = s.val();
             }
-        });
-    });
+            el.html("");
+            $(data).each(function () {
+                el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
+            });
+            inp.on('blur', function () {
+                if (!this.value) return;
+                let f = $('option[value=' + this.value + ']');
+                if (f.length) {
+                    this.setCustomValidity('');
+                    M.validate_field($('#sc'))
+                } else {
+                    this.setCustomValidity('Adjon meg egy érvényes értéket');
+                }
+            });
+        }
+    };
+    xhr.send();
+
+}
+
 const average = (list, l = list.length) => list.reduce((prev, curr) => prev + curr) / l;
 function init() {
     let he = $(location.hash);
     if (he.length) {
         requestAnimationFrame(() => { he[0].scrollIntoView() });
     }
-    if (location.href.match(/\/orarend/g)) {
+    let loc = location.href;
+    if (loc.match(/\/orarend/g)) {
         s();
         var elems = $('#modal');
         var inst = Modal(elems);
@@ -77,14 +76,14 @@ function init() {
             inst.open();
         });
     }
-    if (location.href.match(/\/faliujsag/g)) {
+    if (loc.match(/\/faliujsag/g)) {
         $('.s12:not(.m6) .collection-item').on('click', function (e) {
             if (!$(e.target).is('a')) {
                 $(this).find('.secondary-content')[0].click()
             }
         });
     }
-    if (location.href.match(/\/lecke/g)) {
+    if (loc.match(/\/lecke/g)) {
         s();
         var elems = $('#modal')
         var inst = Modal(elems);
@@ -99,9 +98,9 @@ function init() {
             });
             elems.find(`[data-deadline]`).html(a.find('a').html());
             elems.find(`[data-tr]`).html(a[0].innerHTML.split('<')[0]);
-            let b = elems.find('a').css({ display: 'none' });
+            let b = elems.find('a').hide();
             if (a.hasAttr('data-del')) {
-                b.css({ display: 'block' }).attr('href', "./lecke/torles?did=" + a.attr('data-del'));
+                b.show().attr('href', "./lecke/torles?did=" + a.attr('data-del'));
             }
             inst.open();
         });
@@ -112,7 +111,7 @@ function init() {
         });
     }
     Collapsible($('.collapsible'))
-    if (location.href.match(/\/jegyek/g)) {
+    if (loc.match(/\/jegyek/g)) {
         he.closest('ntr').addClass('open');
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);

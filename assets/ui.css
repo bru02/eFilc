@@ -452,7 +452,6 @@ h6 {
 }
 [tooltip]{
   position:relative;
-  display:inline-block;
   z-index: 3;
 }
 [tooltip]::before {
@@ -683,24 +682,6 @@ a.modal-close {
   opacity: 0;
   transition: all 150ms ease;
   will-change: opacity;
-}
-
-.modal.modal-fixed-footer {
-  height: 70%;
-}
-
-.modal.modal-fixed-footer .modal-content {
-  position: absolute;
-  height: calc(100% - 56px);
-  max-height: 100%;
-  width: 100%;
-  overflow-y: auto;
-}
-
-.modal.modal-fixed-footer .modal-footer {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  position: absolute;
-  bottom: 0;
 }
 
 .modal.bottom-sheet {
@@ -989,8 +970,9 @@ header {
   transform: translateX(-110%);
   will-change: transform;
   height: 100vh;
-  overflow: hidden auto;
+  overflow: hidden scroll;
   z-index: 998;
+  overscroll-behavior: contain;
 }
 
 #menu.open {
@@ -1203,6 +1185,7 @@ header ul a:hover, li.active {
 
 .no-scroll {
   overflow: hidden;
+  height: 100%;
 }
 
 nhead {

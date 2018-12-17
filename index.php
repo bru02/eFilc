@@ -1,7 +1,7 @@
 <?php
 require_once("lib.php");
 $uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
-define('ABS_URI', (empty($uri) ? "" : "/") . "$uri/");
+define('ABS_URI', 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://" . $_SERVER['SERVER_NAME'] . "/" . "$uri/");
 if (isset($_GET['logout'])) {
     logout();
 }
@@ -92,7 +92,7 @@ switch ($routes[0]) {
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
-          <div id="addModal" class="modal modal-fixed-footer n">
+          <div id="addModal" class="modal n">
     <div class="modal-content">
         <h3>Milenne ha...</h3>
         <p>Tantárgy: </p>
@@ -331,7 +331,7 @@ case "orarend":
     <a href="<?= getWeekURL($week + 1); ?>" class="right">&#10095;</a>
     <span class="center"><?= $monday . ' - ' . $friday; ?></span>
 </div>
-    <div id="modal" class="modal modal-fixed-footer n">
+    <div id="modal" class="modal n">
     <div class="modal-content">
         <span></span>
         <p>Időpont: <span data-nth></span>. óra, <span data-time></span></p>
@@ -506,7 +506,7 @@ echo '</div>';
         }
 
         ?>
-         <div id="modal" class="modal modal-fixed-footer n">
+         <div id="modal" class="modal n">
     <div class="modal-content">
         <p>Határidő: <span data-deadline></span></p>
         <p>Tantárgy: <span data-tr></span></p>
@@ -519,7 +519,7 @@ echo '</div>';
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
-    <div id="addModal" class="modal modal-fixed-footer n">
+    <div id="addModal" class="modal n">
     <div class="modal-content">
         <form action="<?= ABS_URI; ?>lecke/ujLecke" method="post" onsubmit="return os()">
         <h3>Új lecke</h3>

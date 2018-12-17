@@ -551,7 +551,7 @@ function showNavbar($key, $container = false)
     )
     ?>
         <header class="np">
-            <a href="#menu" id="mo" class="header__icon hide-on-large-only">
+            <a id="mo" class="header__icon hide-on-large-only">
             <svg class="menu__icon no--select" width="24px" height="24px" viewBox="0 0 48 48" fill="#fff">
                 <path d="M6 36h36v-4H6v4zm0-10h36v-4H6v4zm0-14v4h36v-4H6z"></path>
             </svg>
@@ -603,8 +603,8 @@ function encrypt_decrypt($action, $string)
 {
     $output = false;
     $encrypt_method = "AES-256-CBC";
-    $secret_key = 'Noudontnf7z47hfjk598';
-    $secret_iv = 'dmsfunecnv9684v8u55349ff32fg';
+    $secret_key = 'Noudont';
+    $secret_iv = 'Tnoduon';
     // hash
     $key = hash('sha256', $secret_key);
     
