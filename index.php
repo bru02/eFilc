@@ -98,19 +98,19 @@ switch ($routes[0]) {
         <p>Tantárgy: </p>
             <select id="tr">
                 <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
-                    <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?> - <?php echo $avr['Value']; ?></option>
+                    <option value="<?= $avr['Subject']; ?>"><?= $avr['Subject']; ?> - <?= $avr['Value']; ?></option>
                 <?php 
                 endforeach; ?>
             </select>
             <div class="input-field">
-                <input type="number" id="nn" min="1" max="5" class="validate">
+                <input type="number" id="nn" class="validate" min="1" max="5">
                     <label for="nn">Kapnék egy...</label>
                 </div>
                 <label>
         <input type="checkbox" id="tz">
         <span>TZ</span>
         </label><br>
-                <button id="cnn" class="modal-close btn">Hozzáadás</button>
+                <button id="cnn" class="btn">Hozzáadás</button>
                </div>
     <div class="modal-footer">
         <button class="modal-close btn">Bezárás</button>
@@ -236,12 +236,12 @@ case "feljegyzesek":
     foreach ($data['Notes'] as $h) {
         ?>
     <tr id="i<?= $h['NoteId']; ?>">
-    <td><?php echo date('m. d.', strtotime($h['Date'])); ?></td>
+    <td><?= date('m. d.', strtotime($h['Date'])); ?></td>
     <td tooltip="<?= $h['Type']; ?>"><?php
                                     echo $h["Title"];
                                     ?></td>
-    <td><?php echo tLink($h['Teacher']); ?></td>
-    <td><?php echo $h['Content']; ?></td>
+    <td><?= tLink($h['Teacher']); ?></td>
+    <td><?= $h['Content']; ?></td>
     </tr>
     <?php
     ob_flush();
@@ -257,13 +257,26 @@ case "hianyzasok":
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
+        <div id="modal" class="modal n">
+    <div class="modal-content">
+        <p>Típus: <span data-ty></span></p>
+        <p>Tantárgy: <span data-s></span></p>
+        <p>Dátum: <span data-d></span></p>
+        <p>Igazolás típusa: <span data-jst></span></p>
+        <p>Tanár: <span data-t></span></p>
+        <p>Naplózás dátuma: <span data-ct></span></p>
+        </div>
+    <div class="modal-footer">
+        <button class="modal-close btn">Bezárás</button>
+    </div>
+    </div>
 <ul class="collapsible collection">
 <?php
 ob_flush();
 foreach ($_SESSION['data']['Absences'] as $val) : ?>
     <li id="i<?= $val['id']; ?>" class="collection-item">
-        <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?>>
-        <?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span>
+        <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?> data-ty="<?= $val['t']; ?>">
+        <?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?= $val['d']; ?></span>
         </div>
         <?php if (isset($val['h'])) : ?>
         <div class="collapsible-body">
@@ -275,7 +288,7 @@ foreach ($_SESSION['data']['Absences'] as $val) : ?>
         }
         foreach ($val['h'] as $g) {
             ?>
-            <p class="collection-item"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
+            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= $g['t']; ?>"  data-s="<?= $g['s']; ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
         <?php 
     } ?>
         </div>
@@ -537,12 +550,12 @@ echo '</div>';
         <p>Ezek csak a te gépeden lesznek el mentve!</p>
     <select name="tr">
         <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
-            <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?></option>
+            <option value="<?= $avr['Subject']; ?>"><?= $avr['Subject']; ?></option>
         <?php 
         endforeach; ?>
     </select>
        <p>Feladat:</p>
-       <div contenteditable="true" id="txt" required></div>
+       <div contenteditable="true" id="txt" class="validate" required></div>
        <div class="input-field">
             <input type="date" id="date" min="<?= date('Y-m-d'); ?>" class="validate" name="date" placeholder required>
             <label for="date">Határ idő</label>
@@ -585,7 +598,7 @@ echo '</div>';
             ob_flush();
             usort($data['Evaluations'], "date_sort");
             foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?php echo $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
+            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
         <?php endforeach; ?>
         </div>
     </div>
@@ -597,7 +610,7 @@ if (count($data['Absences']) > 0) { ?>
         <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
         <?php
         foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-        <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span></a>
+        <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['d']; ?></span></a>
 <?php endforeach; ?>
     </div>
 </div>

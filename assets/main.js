@@ -111,19 +111,53 @@ function init() {
         });
     }
     Collapsible($('.collapsible'))
+    if (loc.match(/\/hianyzasok/g)) {
+        s();
+        var elems = $('#modal')
+        var inst = Modal(elems);
+        $('li p').on('click', function (t) {
+            $('#modal span').html('-');
+            let a = $(this);
+            let b = a.parent().prev()
+            let attrs = ['ct', 'jst', 't', 's'];
+            $(attrs).each(function (e) {
+                let ar = a.attr(`data-${e}`);
+                ar && (elems.find(`[data-${e}]`).html(ar))
+            });
+            elems.find(`[data-d]`).html(b.find('span').html());
+            elems.find(`[data-ty]`).html(b.attr('data-ty'));
+            inst.open();
+        });
+    }
     if (loc.match(/\/jegyek/g)) {
         he.closest('ntr').addClass('open');
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);
         let tr = $('#tr');
+        let input = $("#nn")
         $("#cnn").on('click', function () {
-            let ntds = $(`[data-v="${tr.val()}"]`).parent().find("ntd:not(:empty)"), avrb = $(ntds.slice(-3, -2)), davr = $(ntds.slice(-1)), nn = $("#nn").val(), w = $("#tz")[0].checked, tag = w ? "b" : "span", n = w ? 2 : 1;
-            $(ntds[ntds.length - 4])[0].innerHTML += ` <${tag} tooltip='Milenna ha-val hozzáadott jegy&#xa;Súly: ${n}00%'>${nn}</${tag}> `;
-            let cnl = ntds.find("b, span").length, cu = avrb.html(), arr = [cu * cnl, n * Number(nn)], h = tr[0].selectedOptions[0];
-            let nu = Math.round(100 * average(arr, cnl + n)) / 100;
-            avrb.html(nu), h.innerHTML = h.innerHTML.replace(cu, nu);
-            let v = Math.round(100 * (nu - $(ntds.slice(-2, -1)).html())) / 100;
-            davr.html(v).removeClass("gr red").addClass(v < 0 ? "red" : "gr");
+            if (input.is('.valid')) {
+                let ntds = $(`[data-v="${tr.val()}"]`).parent().find("ntd:not(:empty)"),
+                    avrb = $(ntds.slice(-3, -2)),
+                    davr = $(ntds.slice(-1)),
+                    nn = input.val(),
+                    w = $("#tz")[0].checked,
+                    tag = w ? "b" : "span",
+                    n = w ? 2 : 1;
+                $(ntds[ntds.length - 4])[0].innerHTML += ` <${tag} tooltip='Milenna ha-val hozzáadott jegy&#xa;Súly: ${n}00%'>${nn}</${tag}> `;
+                let cnl = ntds.find("b, span").length,
+                    cu = avrb.html(),
+                    arr = [cu * cnl, n * Number(nn)],
+                    h = tr[0].selectedOptions[0];
+                let nu = Math.round(100 * average(arr, cnl + n)) / 100;
+                avrb.html(nu);
+                h.innerHTML = h.innerHTML.replace(cu, nu);
+                let v = Math.round(100 * (nu - $(ntds.slice(-2, -1)).html())) / 100;
+                davr.html(v).removeClass("gr red").addClass(v < 0 ? "red" : "gr");
+                inst.close();
+            } else {
+                input[0].focus();
+            }
         })
     }
     $('[tooltip]').on('mouseenter', function () {
@@ -195,9 +229,12 @@ if (p.length) {
     });
 }
 function os() {
-    let v = $('#txt')[0].innerText;
+    let t = $('#txt')[0],
+        v = t.innerText;
     if (v) {
         $('#hw').val(v);
         return true
-    } else return false
+    }
+    t.focus();
+    return false
 }

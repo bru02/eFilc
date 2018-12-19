@@ -2,19 +2,14 @@
   'use strict';
 
   //Push notification button
-  var fabPushElement = $('.fab__push');
+  var fabPushElement = $('#push');
+  if (!'serviceWorker' in navigator || Notification.permission === 'denied' || !('PushManager' in window)) {
+    fabPushElement.attr('disabled', true)
+    return;
+  }
 
   //To check `push notification` is supported or not
   function isPushSupported() {
-    //To check `push notification` permission is denied by user
-    if (Notification.permission === 'denied') {
-      return;
-    }
-
-    //Check `push notification` is supported or not
-    if (!('PushManager' in window)) {
-      return;
-    }
 
     //Get `push notification` subscription
     //If `serviceWorker` is registered and ready

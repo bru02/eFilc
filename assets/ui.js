@@ -162,33 +162,8 @@ window.prefix = function () {
             v.className = v.className.replace(c, "");
         }
     }
-    function compute(el, prop) {
-        return parseInt(win.getComputedStyle(el[0], null)[prop], 10) || 0;
-    }
-    each(["Width", "Height"], function (v) {
-        var lower = v.toLowerCase();
-        fn[lower] = function () {
-            return this[0].getBoundingClientRect()[lower];
-        };
-        fn["inner" + v] = function () {
-            return this[0]["client" + v];
-        };
-        fn["outer" + v] = function (margins) {
-            return this[0]["offset" + v] + (margins ? compute(this, "margin" + (v === "Width" ? "Left" : "Top")) + compute(this, "margin" + (v === "Width" ? "Right" : "Bottom")) : 0);
-        };
-    });
-    function registerEvent(node, eventName, callback) {
-        node.addEventListener(eventName, callback);
-    }
-    function removeEvent(node, eventName, callback) {
-        if (callback) {
-            node.removeEventListener(eventName, callback);
-        }
-    }
-    function getSelectSingle_(el) {
-        var selectedIndex = el.selectedIndex;
-        return selectedIndex >= 0 ? el.options[selectedIndex].value : null;
-    }
+
+
     function getValue(el) {
         var type = el.type;
         if (!type) {
@@ -196,7 +171,8 @@ window.prefix = function () {
         }
         switch (type.toLowerCase()) {
             case "select-one":
-                return getSelectSingle_(el);
+                var selectedIndex = el.selectedIndex;
+                return selectedIndex >= 0 ? el.options[selectedIndex].value : null;
             case "radio":
             case "checkbox":
                 return el.checked ? el.value : null;
@@ -229,6 +205,9 @@ window.prefix = function () {
     }
     var docEl = doc.documentElement;
     fn.extend({
+        width: function () {
+            return this[0].getBoundingClientRect()['width'];
+        },
         addClass: function (c) {
             var classes = getClasses(c);
             return classes ? this.each(function (v) {
@@ -323,7 +302,9 @@ window.prefix = function () {
         },
         off: function (eventName, callback) {
             return this.each(function (v) {
-                return removeEvent(v, eventName, callback);
+                if (callback) {
+                    v.removeEventListener(eventName, callback);
+                }
             });
         },
         on: function (eventName, delegate, callback) {
@@ -351,7 +332,7 @@ window.prefix = function () {
                 };
             }
             return this.each(function (v) {
-                registerEvent(v, eventName, callback);
+                v.addEventListener(eventName, callback);
             });
         },
         val: function (value) {
@@ -457,6 +438,9 @@ window.prefix = function () {
         next: function () {
             return cash(this[0].nextElementSibling);
         },
+        prev: function () {
+            return cash(this[0].previousElementSibling);
+        },
         parent: function () {
             var result = [];
             this.each(function (item) {
@@ -521,13 +505,11 @@ M.updateTextFields = function () {
 
 M.validate_field = function (object) {
     object.removeClass("valid invalid");
-    if (object.is(".validate")) {
-        // Check for character counter attributes
-        if (object.is(":valid")) {
-            object.addClass("valid");
-        } else {
-            object.addClass("invalid");
-        }
+    // Check for character counter attributes
+    if (object.is(":valid")) {
+        object.addClass("valid");
+    } else {
+        object.addClass("invalid");
     }
 };
 

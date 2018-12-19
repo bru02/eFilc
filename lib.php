@@ -225,7 +225,11 @@ function getStudent($s, $tok)
         $absences[$date]['h'][] = array(
             'sub' => $v['Type'] == 'Delay' ? ($v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)') : ($v['Subject'] . ' (' . $li . '. óra)'),
             'stat' => '<span class="' . ($ij ? 'gr' : 'red') . '">' . $j . '</span>',
-            'i' => $li
+            'i' => $li,
+            't' => $v['Teacher'],
+            's' => $v['Subject'],
+            'ct' => substr($v['CreatingTime'], 0, 10),
+            'jst' => $v['JustificationTypeName']
         );
     }
     usort($absences, function ($a, $b) {
@@ -595,6 +599,12 @@ function showNavbar($key, $container = false)
             <?php 
         }
     } ?>
+            <li style="padding: 20px">Értesítések</span>
+<label class="right">
+                    <input type="checkbox" id="push" value="1">
+                    <span class="left">
+                    </label>
+            </li>
             <li><a href="<?= ABS_URI; ?>login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
