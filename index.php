@@ -358,7 +358,7 @@ case "orarend":
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
-    <div class="tt">
+    <div id="tt">
 <?php
 ob_flush();
 }
@@ -386,161 +386,163 @@ if (empty($hs)) {
     $sh = min($hs);
     $lh = max($hs);
 }
-$cls = 'm2' . (count($out) == 5 ? '5' : '');
+$db = count($out);
 $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 $btn = [];
-foreach (range(1, 6) as $h) {
-    $n = $weeknames[$h];
-    if (isset($out[$h])) {
-        echo "<ul class=\"collection with-header col s12 $cls\">";
-        $btn[] = mb_substr($n, 0, 2);
-        $th = $out[$h];
-        echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
-    } else {
-        $th = [];
-        if ($h != 6) {
-            $btn[] = mb_substr($n, 0, 2);
-            echo "<ul class=\"collection with-header col s12 $cls\">";
+if ($db !== 0) {
+    $w = 100 / $db;
+    foreach (range(1, 6) as $h) {
+        $n = $weeknames[$h];
+        if (isset($out[$h])) {
+            echo "<ul class=\"collection col s12\" style=\"width: $w%\">";
+            $btn[] = $h;
+            $th = $out[$h];
             echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
-            echo "Nincsenek óráid!";
-            echo "</ul>";
-
-        }
-        continue;
-    }
-
-    $i = 1;
-    $wl = 0;
-    $lout = [];
-    foreach ($th as $d) {
-        $key = $d['Count'];
-        if (!isset($lout[$key])) $lout[$key] = [];
-        $lout[$key][] = $d;
-    }
-    foreach (range($sh, $lh) as $hour) {
-        $was = false;
-        if (isset($lout[$hour])) {
-            $was = true;
-            if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
-                $c = json_decode(file_get_contents('sch.json'), true);
-                $e = explode('.', substr($lesson['ClassGroup'], 0, 3));
-                $b = intval(date('Y')) - ($e[0] - 7);
-                $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
-                file_put_contents('sch.json', json_encode($c));
-            }
-            echo '<li class="collection-item" data-nth="' . $hour . '">';
-            foreach ($lout[$hour] as $lesson) {
-                echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b><br/>';
-                echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</i><span class="secondary-content">';
-                echo $lesson['ClassRoom'];
-                echo '</span></div>';
-                $wl++;
-            }
-            echo '</li>';
         } else {
-            echo "<li class=\"collection-item\"></li>";
+            continue;
         }
-        if ($wl >= count($th)) break;
 
-        $i++;
+        $i = 1;
+        $wl = 0;
+        $lout = [];
+        foreach ($th as $d) {
+            $key = $d['Count'];
+            if (!isset($lout[$key])) $lout[$key] = [];
+            $lout[$key][] = $d;
+        }
+        foreach (range($sh, $lh) as $hour) {
+            $was = false;
+            if (isset($lout[$hour])) {
+                $was = true;
+                if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
+                    $c = json_decode(file_get_contents('sch.json'), true);
+                    $e = explode('.', substr($lesson['ClassGroup'], 0, 3));
+                    $b = intval(date('Y')) - ($e[0] - 7);
+                    $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
+                    file_put_contents('sch.json', json_encode($c));
+                }
+                echo '<li class="collection-item" data-nth="' . $hour . '">';
+                foreach ($lout[$hour] as $lesson) {
+                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b><br/>';
+                    echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</i><span class="secondary-content">';
+                    echo $lesson['ClassRoom'];
+                    echo '</span></div>';
+                    $wl++;
+                }
+                echo '</li>';
+            } else {
+                echo "<li class=\"collection-item\"></li>";
+            }
+            if ($wl >= count($th)) break;
+
+            $i++;
+        }
+        echo "</ul>";
     }
-    echo "</ul>";
-}
+} else echo "Ezen a héten nincsenek óráid!";
 echo '</div>';
-?>
+if ($db !== 0) {
+    ?>
 <div class="btns">
     <?php
-    $cls = str_replace('m', 's', $cls);
-    $f = false;
-    foreach ($btn as $b) {
-        echo "<b class=\"$cls" . ($f ? '' : ' active') . "\">$b</b>";
-        $f = true;
+    $was = false;
+    foreach ($btn as $h) {
+        $b = mb_substr($weeknames[$h], 0, 2);
+        if ($week == 0 && $h == date('w') || $week != 0 && !$was) {
+            echo "<b style=\"width: $w%\" class=\"active\">$b</b>";
+        } else {
+            echo "<b style=\"width: $w%\">$b</b>";
+        }
+        $was = true;
     }
     ?>
 </div>
         <button class="btn np" onclick="window.print()">Nyomtatás</button>
-       <?php showFooter();
-        break;
-    case "lecke":
-        if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['date']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
-            $date = time();
-            $name = $_SESSION['name'];
-            $deadline = strtotime($_POST['date']);
-            $txt = str_replace(["|", ","], ["&#124;", "&#44;"], $_POST['txt']);
-            $tr = str_replace(["|", ","], ["&#124;", "&#44;"], htmlspecialchars($_POST['tr']));
-            $nw = "$date|$name|$deadline|$txt|$tr";
+       <?php
 
-            if (hasCookie('lecke')) {
-                setcookie('lecke', encrypt_decrypt('encrypt', encrypt_decrypt('decrypt', $_COOKIE['lecke']) . ',' . $nw), strtotime('1 year'));
-            } else {
-                setcookie('lecke', encrypt_decrypt('encrypt', $nw), strtotime('1 year'));
-            }
-            unset($_POST, $_SESSION['Homework']);
-            redirect('../lecke', 303);
-        }
-        if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
-            $d = urldecode($_GET['did']);
-            setcookie('lecke', encrypt_decrypt('encrypt', str_replace(',,', ',', str_replace($d, '', encrypt_decrypt('decrypt', $_COOKIE['lecke'])))), strtotime('1 year'));
-            unset($_SESSION['Homework']);
-            redirect('../lecke', 303);
-        }
-        reval();
-        showHeader('Lecke');
-        showNavbar('lecke', true);
-        if (!isset($_SESSION['Homework']) || isset($_GET['fr'])) {
-            $_SESSION['Homework'] = [];
-            if (!isset($_SESSION['tt']['+0'])) {
-                $_SESSION['tt']['+0'] = json_decode(timetable($_SESSION['school'], $_SESSION["token"], strtotime('monday this week'), strtotime('sunday this week')), true);
-            }
+    }
+    showFooter();
+    break;
+case "lecke":
+    if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['date']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
+        $date = time();
+        $name = $_SESSION['name'];
+        $deadline = strtotime($_POST['date']);
+        $txt = str_replace(["|", ","], ["&#124;", "&#44;"], $_POST['txt']);
+        $tr = str_replace(["|", ","], ["&#124;", "&#44;"], htmlspecialchars($_POST['tr']));
+        $nw = "$date|$name|$deadline|$txt|$tr";
 
-            foreach ($_SESSION['tt']['+0'] as $lesson) {
-                if (isset($lesson['TeacherHomeworkId'])) {
-                    $hw = "[]";
-                    if ($lesson['IsTanuloHaziFeladatEnabled']) {
-                        $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
-                    }
-                    if ($hw == "[]") {
-                        $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
-                    }
-                    $hw = json_decode($hw, true);
-                    if (json_last_error() !== JSON_ERROR_NONE) {
-                        continue;
-                    }
-                    foreach ($hw as $homework) {
-                        $hw['Tantargy'] = $lesson['Subject'];
-                        $_SESSION['Homework'][] = $hw;
-                    }
-                }
-            }
-            $r = json_decode(getHomeWork($_SESSION['school'], $_SESSION['token'], $_SESSION['data']['StudentId']), true);
-            $r = isset($r) ? $r : [];
-            $_SESSION['Homework'] = array_merge($_SESSION['Homework'], $r);
-            if (hasCookie('lecke')) {
-                $v = explode(',', encrypt_decrypt('decrypt', $_COOKIE['lecke']));
-                $c = [];
-                foreach ($v as $h) {
-                    $s = explode('|', $h);
-                    if (count($s) !== 5 || $s[2] < time()) continue;
-                    $n = [];
-                    $n['FeladasDatuma'] = date('Y-m-d', $s[0]);
-                    $n['TanuloNev'] = $s[1];
-                    $n['Hatarido'] = date('Y-m-d', $s[2]);
-                    $n['Szoveg'] = $s[3];
-                    $n['Tantargy'] = $s[4];
-                    $n['DID'] = $h;
-                    $c[] = $h;
-                    $_SESSION['Homework'][] = $n;
-                }
-                if (!$c == $v) {
-                    setcookie('lecke', encrypt_decrypt('encrypt', implode(',', $c)), strtotime('1 year'));
-                }
-            }
-            usort($_SESSION['Homework'], function ($a, $b) {
-                return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
-            });
+        if (hasCookie('lecke')) {
+            setcookie('lecke', encrypt_decrypt('encrypt', encrypt_decrypt('decrypt', $_COOKIE['lecke']) . ',' . $nw), strtotime('1 year'));
+        } else {
+            setcookie('lecke', encrypt_decrypt('encrypt', $nw), strtotime('1 year'));
+        }
+        unset($_POST, $_SESSION['Homework']);
+        redirect('../lecke', 303);
+    }
+    if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
+        $d = urldecode($_GET['did']);
+        setcookie('lecke', encrypt_decrypt('encrypt', str_replace(',,', ',', str_replace($d, '', encrypt_decrypt('decrypt', $_COOKIE['lecke'])))), strtotime('1 year'));
+        unset($_SESSION['Homework']);
+        redirect('../lecke', 303);
+    }
+    reval();
+    showHeader('Lecke');
+    showNavbar('lecke', true);
+    if (!isset($_SESSION['Homework']) || isset($_GET['fr'])) {
+        $_SESSION['Homework'] = [];
+        if (!isset($_SESSION['tt']['+0'])) {
+            $_SESSION['tt']['+0'] = json_decode(timetable($_SESSION['school'], $_SESSION["token"], strtotime('monday this week'), strtotime('sunday this week')), true);
         }
 
-        ?>
+        foreach ($_SESSION['tt']['+0'] as $lesson) {
+            if (isset($lesson['TeacherHomeworkId'])) {
+                $hw = "[]";
+                if ($lesson['IsTanuloHaziFeladatEnabled']) {
+                    $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                }
+                if ($hw == "[]") {
+                    $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                }
+                $hw = json_decode($hw, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    continue;
+                }
+                foreach ($hw as $homework) {
+                    $hw['Tantargy'] = $lesson['Subject'];
+                    $_SESSION['Homework'][] = $hw;
+                }
+            }
+        }
+        $r = json_decode(getHomeWork($_SESSION['school'], $_SESSION['token'], $_SESSION['data']['StudentId']), true);
+        $r = isset($r) ? $r : [];
+        $_SESSION['Homework'] = array_merge($_SESSION['Homework'], $r);
+        if (hasCookie('lecke')) {
+            $v = explode(',', encrypt_decrypt('decrypt', $_COOKIE['lecke']));
+            $c = [];
+            foreach ($v as $h) {
+                $s = explode('|', $h);
+                if (count($s) !== 5 || $s[2] < time()) continue;
+                $n = [];
+                $n['FeladasDatuma'] = date('Y-m-d', $s[0]);
+                $n['TanuloNev'] = $s[1];
+                $n['Hatarido'] = date('Y-m-d', $s[2]);
+                $n['Szoveg'] = $s[3];
+                $n['Tantargy'] = $s[4];
+                $n['DID'] = $h;
+                $c[] = $h;
+                $_SESSION['Homework'][] = $n;
+            }
+            if (!$c == $v) {
+                setcookie('lecke', encrypt_decrypt('encrypt', implode(',', $c)), strtotime('1 year'));
+            }
+        }
+        usort($_SESSION['Homework'], function ($a, $b) {
+            return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
+        });
+    }
+
+    ?>
          <div id="modal" class="modal n">
     <div class="modal-content">
         <p>Határidő: <span data-deadline></span></p>

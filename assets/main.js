@@ -10,6 +10,8 @@ function s() {
         })
         els.css('height', m + 'px')
     }
+    $('#tt')[0].scrollTo(window.innerWidth * $('b.active').index(), 0);
+
 }
 
 $(window).on('resize', s);
@@ -77,7 +79,15 @@ function init() {
         });
         $('.btns b').on('click', function () {
             let t = $(this);
-            $('.tt')[0].scrollTo(window.innerWidth * Array.prototype.indexOf.call(t.parent().children().removeClass('active'), t.addClass('active')[0]), 0);
+            $('#tt')[0].scrollTo(window.innerWidth * t.addClass('active').index(), 0);
+            t.siblings().removeClass('active');
+        });
+        let st = null;
+        $('#tt').on('scroll', () => {
+            clearTimeout(st);
+            st = setTimeout(function () {
+                $('.btns b').removeClass('active').eq(Math.round($('#tt')[0].scrollLeft / window.innerWidth)).addClass('active');
+            }, 200)
         })
     }
     if (loc.match(/\/faliujsag/g)) {

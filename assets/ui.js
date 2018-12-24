@@ -237,6 +237,13 @@ window.prefix = function () {
             }
             return this;
         },
+        eq: function (index) {
+            if (index === undefined) return slice.call(this);
+            return $(this[index < 0 ? index + this.length : index]);
+        },
+        index: function () {
+            return Array.prototype.indexOf.call(this.parent().children(), this[0]);
+        },
         hasAttr: function (n) {
             return this.attr(n) != null;
         },
