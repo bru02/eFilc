@@ -15,7 +15,7 @@ function s() {
 }
 
 $(window).on('resize', s);
-if (location.href.match(/^(?=.*\/login)(?!.*(toldy|sch)).*/g)) {
+if (location.href.match(/login/g)) {
     xhr = new XMLHttpRequest();
     xhr.open('GET', "datas.json");
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -182,9 +182,45 @@ function init() {
         deleteCookie('rme');
     });
 }
-$(() => {
+if ('ic' in window) $(() => {
     ic.on(init);
     ic.init("mousedown");
+    let g = $('#gdpr');
+    if (g.length) {
+        Modal(g, {
+            opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
+                addCookie('gdpr');
+            }
+        }).open();
+    }
+    let p = $('#pwa');
+    if (p.length) {
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can add to home screen
+            (Modal(p, { opacity: 0, preventScrolling: false })).open();
+            $('#pwa-btn').on('click', () => {
+                // Show the prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                deferredPrompt.userChoice
+                    .then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            addCookie('pwa', 1);
+                            console.log('User accepted the A2HS prompt');
+                        } else {
+                            addCookie('pwa', 0);
+                            console.log('User dismissed the A2HS prompt');
+                        }
+                        deferredPrompt = null;
+                    });
+            });
+        });
+    }
 });
 
 function addCookie(n, v = 1) {
@@ -194,54 +230,17 @@ function addCookie(n, v = 1) {
 }
 function deleteCookie(n) {
     document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
-
 }
-let g = $('#gdpr');
-if (g.length) {
-    Modal(g, {
-        opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
-            addCookie('gdpr');
-        }
-    }).open();
-}
-
 // TODO add service worker code here
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker
         .register('./sw.js', { scope: '/' })
         .then(function (swRegistration) {
             console.log('Service Worker Registered');
-            return swRegistration.sync.register('bg');
+            if (location.href.indexOf('login') < 0) swRegistration.sync.register('bg');
         });
 }
-let p = $('#pwa');
-if (p.length) {
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        // Update UI notify the user they can add to home screen
-        (Modal(p, { opacity: 0, preventScrolling: false })).open();
-        $('#pwa-btn').on('click', () => {
-            // Show the prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            deferredPrompt.userChoice
-                .then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        addCookie('pwa', 1);
-                        console.log('User accepted the A2HS prompt');
-                    } else {
-                        addCookie('pwa', 0);
-                        console.log('User dismissed the A2HS prompt');
-                    }
-                    deferredPrompt = null;
-                });
-        });
-    });
-}
+
 function os() {
     let t = $('#txt')[0],
         v = t.innerText;

@@ -3,9 +3,10 @@ var filesToCache = [
     './assets/main.js',
     './assets/ui.js',
     './assets/ui.css',
+    './assets/base.js',
 ];
 var datas = ['faliujsag', 'orarend', 'jegyek', 'hianyzasok', 'feljegyzesek', 'lecke', 'profil'];
-var rgx = new RegExp(datas.join('|'));
+var urlsToLoad = datas.map(u => new Request(`${u}?just_html=1`));
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
     e.waitUntil(
@@ -34,14 +35,14 @@ self.addEventListener('activate', function (e) {
 
 
 self.addEventListener('fetch', function (event) {
-    if (event.request.url.match(/notify/g) || event.request.url.match(/login/g) || event.request.method !== 'GET') return;
+    if (event.request.url.indexOf('notify') > 0 || event.request.url.indexOf('login') > 0 || event.request.method !== 'GET') return;
     event.respondWith(
         load(event.request)
     );
 });
 self.addEventListener('push', function (event) {
     event.waitUntil(async function () {
-        await load(datas.map(u => new Request(`${u}?just_html=1`)));
+        await load(urlsToLoad);
         console.info('Event: Push');
 
         var title = 'Valami történt az univerzumban';
@@ -60,7 +61,7 @@ self.addEventListener('push', function (event) {
 });
 self.addEventListener('sync', function (event) {
     if (event.tag == 'bg') {
-        event.waitUntil(load(datas.map(u => new Request(`${u}?just_html=1`))));
+        event.waitUntil(load(urlsToLoad));
     }
 });
 
@@ -83,9 +84,10 @@ function load(request) {
             return cache.match(request).then(function (response) {
                 var fetchPromise = fetch(request).then(function (networkResponse) {
                     var clone = networkResponse.clone();
-                    var url = request.url;
-                    if (networkResponse.url.indexOf('login') < 0)
+                    var url = networkResponse.url;
+                    if (url.indexOf('login') < 0)
                         cache.put(request, networkResponse);
+                    else return clone;
                     if (url.match(datas)) {
                         if (url.indexOf('just_html') < 0) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());

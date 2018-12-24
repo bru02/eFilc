@@ -468,11 +468,11 @@ if (!$a) { ?>
 } ?>
 </main>
     </body>
-<script src="<?= ABS_URI; ?>assets/ui.js" data-no-instant></script>
+    <script src="<?= ABS_URI; ?>assets/base.js" defer data-no-instant></script>
 <?php
-if (!$a) echo "<script data-no-instant src=\"" . ABS_URI . "assets/notification.js\"></script>";
+if (!$a) echo "<script defer data-no-instant src=\"" . ABS_URI . "assets/ui.js\"></script><script async defer data-no-instant src=\"" . ABS_URI . "assets/notification.js\"></script>";
 ?>
-<script data-no-instant src="<?= ABS_URI; ?>assets/main.js"></script>
+<script data-no-instant defer src="<?= ABS_URI; ?>assets/main.js"></script>
 </html>
 <?php
 
@@ -481,9 +481,14 @@ if (!$a) echo "<script data-no-instant src=\"" . ABS_URI . "assets/notification.
 
 function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 {
-
     if (!isset($_SESSION['_token'])) {
         $_SESSION['_token'] = sha1(uniqid());
+    }
+    if (isset($_GET['sch'])) {
+        $sch = htmlentities($_GET['sch']);
+    }
+    if (isset($_GET['toldy'])) {
+        $sch = "klik035220001";
     }
     showHeader('Belépés', true);
     ?>
@@ -492,14 +497,6 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     <p>
         Ez egy nem hivatalos eKréta kliens, Toldys extrákkal 
     </p>
-    <?php
-    if (isset($_GET['toldy'])) {
-        echo "<input type='hidden' name='school' value='klik035220001'>";
-    } else if (isset($_GET['sch'])) {
-        echo "<input type='hidden' name='school' value='" . htmlentities($_GET['sch']) . "'>";
-    } else {
-        ?>
-
     <div class="input-field">
                 <input name="school" id="sc" list="slc" type="text" class="validate" value="<?= $sch ?>" required>
                 <label for="sc">Iskola</label>
@@ -514,14 +511,12 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     </select>
     </datalist>
         </div>
-<?php 
-} ?>
         <div class="input-field">
                 <input type="text" name="usr" id="usr" value="<?php echo $usr; ?>" class="validate" required autocomplete="on">
                 <label for="usr">Felhasználónév</label>
         </div>
         <div class="input-field">
-                <input type="password" name="psw" id="psw" value="<?php echo $psw; ?>" class="validate" required autocomplete="off">
+                <input type="password" name="psw" id="psw" value="<?php echo $psw; ?>" class="validate" required autocomplete="on">
                 <label for="psw">Jelszó</label>
         </div>
         <label>

@@ -76,7 +76,8 @@ switch ($routes[0]) {
                 } else {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
-                    promptLogin("", "", $_POST['school'], "Token mismatch!");
+                    unset($_SESSION['_token']);
+                    promptLogin($_POST['usr'], $_POST['psw'], $_POST['school'], "Token mismatch!");
                     exit();
                 }
             } else {
@@ -358,6 +359,7 @@ case "orarend":
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
+    <button class="btn np" onclick="window.print()">Nyomtatás</button>
     <div id="tt">
 <?php
 ob_flush();
@@ -439,7 +441,7 @@ if ($db !== 0) {
         }
         echo "</ul>";
     }
-} else echo "Ezen a héten nincsenek óráid!";
+} else echo "<p class=\"center\">Ezen a héten nincsenek óráid!</p>";
 echo '</div>';
 if ($db !== 0) {
     ?>
@@ -457,12 +459,11 @@ if ($db !== 0) {
     }
     ?>
 </div>
-        <button class="btn np" onclick="window.print()">Nyomtatás</button>
-       <?php
+<?php
 
-    }
-    showFooter();
-    break;
+}
+showFooter();
+break;
 case "lecke":
     if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['date']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
         $date = time();
