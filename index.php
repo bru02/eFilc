@@ -1,7 +1,7 @@
 <?php
 require_once("lib.php");
 $uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
-define('ABS_URI', 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://" . $_SERVER['SERVER_NAME'] . "/" . "$uri/");
+define('ABS_URI', 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://" . $_SERVER['SERVER_NAME'] . str_replace('//', '/', "/" . "$uri/"));
 if (isset($_GET['logout'])) {
     logout();
 }
@@ -76,7 +76,7 @@ switch ($routes[0]) {
                 } else {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
-                    promptLogin("", "");
+                    promptLogin("", "", $_POST['school'], "Token mismatch!");
                     exit();
                 }
             } else {
@@ -358,7 +358,7 @@ case "orarend":
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
-    <div class="row">
+    <div class="tt">
 <?php
 ob_flush();
 }
@@ -386,20 +386,21 @@ if (empty($hs)) {
     $sh = min($hs);
     $lh = max($hs);
 }
-
+$cls = 'm2' . (count($out) == 5 ? '5' : '');
 $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
+$btn = [];
 foreach (range(1, 6) as $h) {
     $n = $weeknames[$h];
     if (isset($out[$h])) {
+        echo "<ul class=\"collection with-header col s12 $cls\">";
+        $btn[] = mb_substr($n, 0, 2);
         $th = $out[$h];
-        echo '<ul class="collection with-header col s12 m2' . (count($out) == 5 ? '5' : '') . '">';
-
         echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
     } else {
         $th = [];
         if ($h != 6) {
-            echo '<ul class="collection with-header col s12 m25">';
-
+            $btn[] = mb_substr($n, 0, 2);
+            echo "<ul class=\"collection with-header col s12 $cls\">";
             echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
             echo "Nincsenek óráid!";
             echo "</ul>";
@@ -447,6 +448,16 @@ foreach (range(1, 6) as $h) {
 }
 echo '</div>';
 ?>
+<div class="btns">
+    <?php
+    $cls = str_replace('m', 's', $cls);
+    $f = false;
+    foreach ($btn as $b) {
+        echo "<b class=\"$cls" . ($f ? '' : ' active') . "\">$b</b>";
+        $f = true;
+    }
+    ?>
+</div>
         <button class="btn np" onclick="window.print()">Nyomtatás</button>
        <?php showFooter();
         break;

@@ -75,6 +75,10 @@ function init() {
 
             inst.open();
         });
+        $('.btns b').on('click', function () {
+            let t = $(this);
+            $('.tt')[0].scrollTo(window.innerWidth * Array.prototype.indexOf.call(t.parent().children().removeClass('active'), t.addClass('active')[0]), 0);
+        })
     }
     if (loc.match(/\/faliujsag/g)) {
         $('.s12:not(.m6) .collection-item').on('click', function (e) {

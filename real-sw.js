@@ -34,7 +34,7 @@ self.addEventListener('activate', function (e) {
 
 
 self.addEventListener('fetch', function (event) {
-    if (event.request.url.match(/(notify)*/g) || event.request.method !== 'GET') return;
+    if (event.request.url.match(/notify/g) || event.request.url.match(/login/g) || event.request.method !== 'GET') return;
     event.respondWith(
         load(event.request)
     );
@@ -79,12 +79,13 @@ self.addEventListener('notificationclick', function (event) {
 function load(request) {
     if (request instanceof Request) {
 
-        caches.open(cacheName).then(function (cache) {
+        return caches.open(cacheName).then(function (cache) {
             return cache.match(request).then(function (response) {
                 var fetchPromise = fetch(request).then(function (networkResponse) {
                     var clone = networkResponse.clone();
-                    cache.put(request, networkResponse);
                     var url = request.url;
+                    if (networkResponse.url.indexOf('login') < 0)
+                        cache.put(request, networkResponse);
                     if (url.match(datas)) {
                         if (url.indexOf('just_html') < 0) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
@@ -103,7 +104,7 @@ function load(request) {
                 }, function () {
                     return caches.match(request) || new Response('Offline : (');
                 })
-                if (request.url.match(/(fr\=)*/)) return fetchPromise;
+                if (request.url.match(/(fr\=)*/) || request.url.indexOf('login') > 0) return fetchPromise;
                 return response || fetchPromise;
             })
         })

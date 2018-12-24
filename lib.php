@@ -96,34 +96,53 @@ function reval()
         }
     }
 }
-function request($url, $method, $data, $headers = [], $raw = false)
+function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $curl_options = array())
 {
-    $h = "";
-    foreach ($headers as $key => $he) {
-        $h .= "$key: $he\r\n";
-    }
-    $options = array(
-        'http' => array(
-            'header' => "$h",
-            'method' => $method
-
-        )
+	// defaults
+    $default_curl_options = array(
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_FOLLOWLOCATION => true
     );
-    if (!empty($q)) {
-        $q = $raw ? $data : http_build_query($data);
-        if ($method == 'POST') {
-            $options['http']['content'] = $q;
-        } else {
-            $url = "$url?$q";
-        }
+
+    if (!is_string($data)) {
+        $data = http_build_query($data);
     }
+	// apply method specific options
+    if ($method == 'GET' && !empty($data)) {
+        $uri .= "?$data";
+    }
+    $curl = curl_init($uri);
 
-    $context = stream_context_create($options);
-    $data = file_get_contents($url, false, $context);
-
-    return $data;
+	// apply default options
+    curl_setopt_array($curl, $default_curl_options);
+	// apply user options
+    curl_setopt_array($curl, $curl_options);
+    if ($method == 'POST') {
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+    }
+    // add headers
+    $h = [];
+    foreach ($curl_headers as $k => $v) {
+        $h[] = "$k: $v";
+    }
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $h);
+	// parse result
+    $res = curl_exec($curl);
+    $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    if (curl_errno($curl)) {
+        print "Error: " . curl_error($curl);
+        exit();
+    }
+    curl_close($curl);
+	// return
+    return array(
+        'content' => $res,
+        'code' => $code
+    );
 }
-
 function redirect($url, $code = 302)
 {
     header('Location: ' . $url, true, $code);
@@ -153,19 +172,18 @@ function schools()
 }
 function getEvents($s, $tok)
 {
-    $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Event", "GET", [], array(
+    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Event", "GET", [], array(
         "Authorization" => "Bearer $tok"
-
     ));
-    return $out;
+    return $out['content'];
 }
 
 function getStudent($s, $tok)
 {
-    $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Student", "GET", '', array(
+    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Student", "GET", '', array(
         "Authorization" => "Bearer $tok"
-    ), true);
-    $out = json_decode($out, true);
+    ));
+    $out = json_decode($out['content'], true);
     $_SESSION['name'] = $out['Name'];
     $as = [];
     foreach ($out['Evaluations'] as $d) {
@@ -237,7 +255,7 @@ function getStudent($s, $tok)
     });
     $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
-        $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET', '', [], true);
+        $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET')['content'];
         $doc = new \DOMDocument();
         @$doc->loadHTML($htmlinput);
 
@@ -304,20 +322,20 @@ function getStudent($s, $tok)
 
 function timetable($s, $tok, $from, $to)
 {
-    $out = request("https://$s.e-kreta.hu:443/mapi/api/v1/Lesson", "GET", array(
+    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Lesson", "GET", array(
         "fromDate" => $from,
         "toDate" => $to
     ), array(
         "Authorization" => "Bearer $tok"
     ));
-    return $out;
+    return $out['content'];
 }
 
 function getHomeWork($sch, $tok, $id)
 {
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], [
         'Authorization' => "Bearer $tok"
-    ]);
+    ])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
 }
@@ -325,24 +343,15 @@ function getTeacherHomeWork($sch, $tok, $id)
 {
     $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], [
         'Authorization' => "Bearer $tok"
-    ]);
+    ])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
 }
 function getToken($s, $rt)
 {
-    $data = "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/idp/api/v1/Token");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
-    $res = curl_exec($ch);
-    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    if ($http_status != 200) return false;
-    $res = json_decode($res, true);
+    $res = request("https://$s.e-kreta.hu/idp/api/v1/Token", "POST", "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
+    if ($res['code'] != 200) return false;
+    $res = json_decode($res['content'], true);
     if (isset($res) && is_array($res)) {
         $_SESSION['school'] = $s;
         $_SESSION["token"] = $res["access_token"];
@@ -355,34 +364,17 @@ function getToken($s, $rt)
 }
 function getPushRegId($s, $uid, $h)
 {
-    $d = "instituteCode=$s&instituteUserId=$uid&platform=Gcm&notificationType=1&handle=$h";
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$s&instituteUserId=$uid&platform=Gcm&notificationType=1&handle=$h", array(
         "apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0"
     ));
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $d);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
-    $res = curl_exec($ch);
     //$res = json_decode($res, true);
-    return $res;
+    return $res['content'];
 }
 function logIn($s, $usr, $psw)
 {
     $usr = urlencode($usr);
-    $data = "institute_code=$s&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56";
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://$s.e-kreta.hu/idp/api/v1/Token");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // On dev server only!
-    $res = curl_exec($ch);
-    $res = json_decode($res, true);
+    $res = request("https://$s.e-kreta.hu/idp/api/v1/Token", "POST", "institute_code=$s&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
+    $res = json_decode($res['content'], true);
     if (isset($res["access_token"])) {
         $_SESSION["token"] = $res["access_token"];
         $_SESSION["refresh_token"] = $res["refresh_token"];

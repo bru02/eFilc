@@ -356,7 +356,53 @@ main:after, .row::after {
   left: auto;
   right: auto;
 }
+@media only screen and (max-width: 600px) {
+  .tt {
+    scroll-snap-type: x mandatory;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    display: flex;
+    scroll-behavior: smooth;
+  }
+  .s12 {
+    min-width: 100%;
+    scroll-snap-align: center;
+    margin: 10px;
+  }
+}
+.s2 {
+  width: 16.6666666667%;
+  margin-left: auto;
+  left: auto;
+  right: auto;
+}
+.s25 {
+  width: 20%;
+  margin-left: auto;
+}
+.btns {
+  background: #349ff7;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 9;
+  width: 100%;
+  display: flex;
+}
+.btns b {
+  color: #23408f;
+  text-align: center;
+  padding: 5px;
+  transition: all .3s;
+}
+b.active, .btns b:hover {
+  background: #6dbcfc;
+
+}
 @media only screen and (min-width: 601px), print {
+  .btns {
+    display: none
+  }
   .m2 {
     width: 16.6666666667%;
     margin-left: auto;
@@ -766,15 +812,12 @@ input.validate + label {
   width: 100%;
 }
 
-/* Validation Sass Placeholders */
 .valid {
-  border-bottom: 1px solid #4CAF50!important;
-  box-shadow: 0 1px 0 0 #4CAF50!important;
+  border-bottom: 2px solid #4CAF50!important;
 }
 
 .invalid {
-  border-bottom: 1px solid #F44336!important;
-  box-shadow: 0 1px 0 0 #F44336!important;
+  border-bottom: 2px solid #F44336!important;
 }
 
 input + label:after {
@@ -907,7 +950,7 @@ header {
   transition: all 250ms ease;
 }
 
-.no-select, header, [type="checkbox"], .collapsible-header {
+header, [type="checkbox"], .collapsible-header, .btns {
   -webkit-user-select: none;
   -moz-user-select: none;
    -ms-user-select: none;

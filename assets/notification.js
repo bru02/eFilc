@@ -44,7 +44,6 @@
         userVisibleOnly: true //Always show notification when received
       })
         .then(function (subscription) {
-          toast('Subscribed successfully.');
           console.info('Push notification subscribed.');
           console.log(subscription);
           saveSubscriptionID(subscription);
@@ -72,7 +71,6 @@
             //Unsubscribe `push notification`
             subscription.unsubscribe()
               .then(function () {
-                toast('Unsubscribed successfully.');
                 console.info('Push notification unsubscribed.');
                 console.log(subscription);
                 deleteSubscriptionID(subscription);
@@ -90,12 +88,12 @@
 
   //To change status
   function changePushStatus(status) {
-    fabPushElement.toggleClass('active', status)
+    fabPushElement[0].checked = status
   }
 
   //Click event for subscribe push
   fabPushElement.on('click', function () {
-    var isSubscribed = (fabPushElement.is('.active'));
+    var isSubscribed = (fabPushElement.is(':checked'));
     if (isSubscribed) {
       unsubscribePush();
     }
@@ -113,7 +111,7 @@
   }
 
   function deleteSubscriptionID(subscription) {
-    var subscription_id = susbcription.endpoint.split('gcm/send/')[1];
+    var subscription_id = subscription.endpoint.split('gcm/send/')[1];
     fetch('/notify?del=1&id=' + subscription_id);
   }
 

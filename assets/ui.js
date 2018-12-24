@@ -204,10 +204,14 @@ window.prefix = function () {
         });
     }
     var docEl = doc.documentElement;
+    each(['width', 'height'], e => {
+        let o = {};
+        o[e] = function () {
+            return this[0].getBoundingClientRect()[e];
+        }
+        fn.extend(o);
+    });
     fn.extend({
-        width: function () {
-            return this[0].getBoundingClientRect()['width'];
-        },
         addClass: function (c) {
             var classes = getClasses(c);
             return classes ? this.each(function (v) {
