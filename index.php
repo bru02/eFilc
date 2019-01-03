@@ -36,10 +36,7 @@ $is_api = false;
 if (count($routes) > 1 && $routes[0] == "api") {
     $is_api = true;
     array_shift($routes);
-}
-if (isset($_GET['fr']) && $_SESSION['authed']) {
-    reval();
-    $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($_REQUEST['token'])) $_SESSION['token'] = urlencode($_REQUEST['token']);
 }
 switch ($routes[0]) {
     case "notify":
@@ -90,6 +87,7 @@ switch ($routes[0]) {
         break;
     case "jegyek":
         reval();
+        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
@@ -124,7 +122,7 @@ switch ($routes[0]) {
                 Tantárgy
             </ntd>
         <?php
-        $months = [9, 10, 11, 12, '1/I', 'Félév', '1/II', 2, 3, 4, 5, 6, 'Évvége', 'Átlag', 'Osztály átlag', 'Különbség'];
+        $months = array_merge(range(9, 12), ['Félév'], range(1, 6), ['Évvége', 'Átlag', 'Osztály átlag', 'Különbség']);
         foreach ($months as $a) {
             echo "<ntd>$a</ntd>\n\r";
         }
@@ -155,22 +153,22 @@ foreach ($out as $key => $day) {
         return strtotime($b['Date']) - strtotime($a['Date']);
     });
     echo "<ntr><ntd data-v=\"$key\">$key</ntd>"; // class='collapsible-header'
-    foreach (array_merge(range(9, 12), ['1/I', 'fi', '1/II'], range(2, 6), ['ei', 'atl', 'oatl', 'diff']) as $h) {
-        if ($h != 'diff') echo "<ntd>";
+    foreach ($months as $h) {
+        if ($h != 'Különbség') echo "<ntd>";
         switch ($h) {
-            case 'atl':
+            case 'Átlag':
                 $val = $aout[$key]['Value'];
                 echo "$val";
                 break;
-            case 'oatl':
+            case 'Osztály átlag':
                 $val = $aout[$key]['ClassValue'];
                 echo "$val";
                 break;
-            case 'diff':
+            case 'Különbség':
                 $val = floatval($aout[$key]['Difference']);
                 echo "<ntd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
-            case 'fi':
+            case 'Félév':
                 foreach ($day as $d) {
                     if ($d['Type'] == 'HalfYear') {
                         echo $v['NumberValue'];
@@ -178,7 +176,7 @@ foreach ($out as $key => $day) {
                     }
                 }
                 break;
-            case 'ei':
+            case 'Évvége':
                 foreach ($day as $d) {
                     if ($d['Type'] == 'EndYear') {
                         echo $v['NumberValue'];
@@ -186,14 +184,10 @@ foreach ($out as $key => $day) {
                     }
                 }
                 break;
-            case '1/I': // Majd rájövök (vagy nem)
-                break;
-            case '1/II':
-                break;
             default:
                 // $day = array_reverse($day);
                 foreach ($day as $v) {
-                    if (intval(date('n', strtotime($v['Date']))) == $h) {
+                    if (intval(date('n', strtotime($v['Date']))) == $h && $v['Type'] == 'MidYear') {
                         $w = $v['Weight'];
                         $tag = $w == "200%" ? 'b' : 'span';
                         echo "<$tag id=\"i" . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . "</$tag> ";
@@ -202,7 +196,6 @@ foreach ($out as $key => $day) {
                 break;
         }
         ob_flush();
-
         echo "</ntd>";
     }
     echo "</ntr>";
@@ -217,6 +210,7 @@ showFooter();
 break;
 case "feljegyzesek":
     reval();
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
     showHeader('Feljegyzések');
     showNavbar('feljegyzesek');
     ?>
@@ -237,7 +231,7 @@ case "feljegyzesek":
     foreach ($data['Notes'] as $h) {
         ?>
     <tr id="i<?= $h['NoteId']; ?>">
-    <td><?= date('m. d.', strtotime($h['Date'])); ?></td>
+    <td><?= explode('T', $h['Date'])[0]; ?></td>
     <td tooltip="<?= $h['Type']; ?>"><?php
                                     echo $h["Title"];
                                     ?></td>
@@ -255,6 +249,7 @@ showFooter();
 break;
 case "hianyzasok":
     reval();
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
@@ -289,7 +284,7 @@ foreach ($_SESSION['data']['Absences'] as $val) : ?>
         }
         foreach ($val['h'] as $g) {
             ?>
-            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= $g['t']; ?>"  data-s="<?= $g['s']; ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
+            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?= $g['s']; ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
         <?php 
     } ?>
         </div>
@@ -302,6 +297,7 @@ showFooter();
 break;
 case "profil":
     reval();
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
     showHeader('Profil');
     showNavbar('profil', true);
     $data = $_SESSION['data'];
@@ -323,6 +319,8 @@ showFooter();
 break;
 case "orarend":
     reval();
+    if (isset($_GET['fr'])) $_SESSION['tt'] = [];
+
     $week = isset($_GET['week']) ? intval($_GET['week']) : (date('w') == 0 ? 1 : 0);
     if ($week < 0) {
         $week = abs($week);
@@ -332,14 +330,16 @@ case "orarend":
     }
     $monday = date('Y-m-d', strtotime('monday this week', strtotime("$week weeks")));
     $friday = date('Y-m-d', strtotime('sunday this week', strtotime("$week weeks")));
-    if (isset($_SESSION['tt'][$week]) && !isset($_GET['fr']))
-        $data = $_SESSION['tt'][$week];
-    else
-        $data = json_decode(timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday), true);
-    if (!$is_api) {
-        showHeader('Órarend');
-        showNavbar('orarend');
-        ?>
+    $data = timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday);
+    $data = array_shift($data);
+    if ($is_api) {
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        header("Content-Type: application/json");
+        break;
+    }
+    showHeader('Órarend');
+    showNavbar('orarend');
+    ?>
 <div class="container center np">
     <a href="<?= getWeekURL($week - 1); ?>" class="left">&#10094;</a>
     <a href="<?= getWeekURL($week + 1); ?>" class="right">&#10095;</a>
@@ -363,42 +363,30 @@ case "orarend":
     <div id="tt">
 <?php
 ob_flush();
-}
-$out = [];
-foreach ($data as $d) {
-    $date = date('Y-m-d', strtotime($d['Date']));
 
-    if (($date >= $monday) && ($date <= $friday)) {
-        $key = intval(date('w', strtotime($d['Date'])));
-        if (!isset($out[$key])) $out[$key] = [];
-        $out[$key][] = $d;
+$hs = [];
+foreach ($data as $day) {
+    foreach ($day as $lesson) {
+        $hs[] = $lesson['count'];
     }
-
 }
-$md = [];
-foreach (array_keys($out) as $k) {
-    $md = array_merge($md, $out[$k]);
-}
-$hs = array_map(function ($a) {
-    return intval($a['Count']);
-}, $md);
 if (empty($hs)) {
     $sh = $lh = 0;
 } else {
     $sh = min($hs);
     $lh = max($hs);
 }
-$db = count($out);
+$db = count($data);
 $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 $btn = [];
 if ($db !== 0) {
     $w = 100 / $db;
     foreach (range(1, 6) as $h) {
         $n = $weeknames[$h];
-        if (isset($out[$h])) {
+        if (isset($data[$h])) {
             echo "<ul class=\"collection col s12\" style=\"width: $w%\">";
             $btn[] = $h;
-            $th = $out[$h];
+            $th = $data[$h];
             echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
         } else {
             continue;
@@ -408,7 +396,7 @@ if ($db !== 0) {
         $wl = 0;
         $lout = [];
         foreach ($th as $d) {
-            $key = $d['Count'];
+            $key = $d['count'];
             if (!isset($lout[$key])) $lout[$key] = [];
             $lout[$key][] = $d;
         }
@@ -418,16 +406,16 @@ if ($db !== 0) {
                 $was = true;
                 if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
                     $c = json_decode(file_get_contents('sch.json'), true);
-                    $e = explode('.', substr($lesson['ClassGroup'], 0, 3));
+                    $e = explode('.', substr($lesson['group'], 0, 3));
                     $b = intval(date('Y')) - ($e[0] - 7);
                     $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
                     file_put_contents('sch.json', json_encode($c));
                 }
                 echo '<li class="collection-item" data-nth="' . $hour . '">';
                 foreach ($lout[$hour] as $lesson) {
-                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['State'] == 'Missed' ? ' em' : '') . '">' . $lesson['Subject'] . '</b><br/>';
-                    echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['StartTime'])) . '-' . date('H:i', strtotime($lesson['EndTime'])) . '"  data-theme="' . $lesson['Theme'] . '" data-lecke="' . $lesson["Homework"] . '">' . tLink($lesson['Teacher']) . '</i><span class="secondary-content">';
-                    echo $lesson['ClassRoom'];
+                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/>';
+                    echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['start'])) . '-' . date('H:i', strtotime($lesson['end'])) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">';
+                    echo $lesson['room'];
                     echo '</span></div>';
                     $wl++;
                 }
@@ -465,6 +453,7 @@ if ($db !== 0) {
 showFooter();
 break;
 case "lecke":
+    reval();
     if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['date']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
         $date = time();
         $name = $_SESSION['name'];
@@ -490,34 +479,48 @@ case "lecke":
     reval();
     showHeader('Lecke');
     showNavbar('lecke', true);
-    if (!isset($_SESSION['Homework']) || isset($_GET['fr'])) {
+    $i = isset($_GET['ido']) ? strtolower($_GET['ido']) : 'nap';
+    $arr = [
+        'het' => '-1 week',
+        'honap' => '-1 months',
+        '3honap' => '-3 months',
+        'nap' => 'yesterday'
+    ];
+    $i = isset($arr[$i]) ? $i : 'nap';
+    $rt = $arr[$i];
+    $start = strtotime($rt);
+    if (!isset($_SESSION['Homework'][$i]) || isset($_GET['fr'])) {
         $_SESSION['Homework'] = [];
-        if (!isset($_SESSION['tt']['+0'])) {
-            $_SESSION['tt']['+0'] = json_decode(timetable($_SESSION['school'], $_SESSION["token"], strtotime('monday this week'), strtotime('sunday this week')), true);
+        $_SESSION['Homework'][$i] = [];
+        $data = timetable($_SESSION['school'], $_SESSION["token"], $start, time());
+        $tw = [];
+        foreach ($data as $day) {
+            foreach ($day as $lesson) {
+                $tw[] = $lesson;
+            }
         }
-
-        foreach ($_SESSION['tt']['+0'] as $lesson) {
-            if (isset($lesson['TeacherHomeworkId'])) {
+        foreach ($tw as $lesson) {
+            if (isset($lesson['teacherHW'])) {
                 $hw = "[]";
-                if ($lesson['IsTanuloHaziFeladatEnabled']) {
-                    $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                if ($lesson['studentHW']) {
+                    $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['teacherHW']);
                 }
                 if ($hw == "[]") {
-                    $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['TeacherHomeworkId']);
+                    $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['teacherHW']);
                 }
                 $hw = json_decode($hw, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     continue;
                 }
                 foreach ($hw as $homework) {
-                    $hw['Tantargy'] = $lesson['Subject'];
-                    $_SESSION['Homework'][] = $hw;
+                    $hw['Tantargy'] = $lesson['subject'];
+                    $_SESSION['Homework'][$i][] = $hw;
                 }
             }
         }
         $r = json_decode(getHomeWork($_SESSION['school'], $_SESSION['token'], $_SESSION['data']['StudentId']), true);
         $r = isset($r) ? $r : [];
-        $_SESSION['Homework'] = array_merge($_SESSION['Homework'], $r);
+        $_SESSION['Homework'][$i] = array_merge($_SESSION['Homework'][$i], $r);
         if (hasCookie('lecke')) {
             $v = explode(',', encrypt_decrypt('decrypt', $_COOKIE['lecke']));
             $c = [];
@@ -532,13 +535,13 @@ case "lecke":
                 $n['Tantargy'] = $s[4];
                 $n['DID'] = $h;
                 $c[] = $h;
-                $_SESSION['Homework'][] = $n;
+                if ($s[0] > $start) $_SESSION['Homework'][$i][] = $n;
             }
             if (!$c == $v) {
                 setcookie('lecke', encrypt_decrypt('encrypt', implode(',', $c)), strtotime('1 year'));
             }
         }
-        usort($_SESSION['Homework'], function ($a, $b) {
+        usort($_SESSION['Homework'][$i], function ($a, $b) {
             return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
         });
     }
@@ -583,11 +586,24 @@ case "lecke":
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
-    <?php if (count($_SESSION['Homework']) > 0) {
+    <p class="btn-group">
+    Szűrés: 
+
+<?php foreach ([
+    'nap' => 'Nap',
+    'het' => 'Hét',
+    'honap' => 'Hónap',
+    '3honap' => '3 hónap'
+] as $key => $val) { ?>
+<a href="?ido=<?= $key ?>" <?= $key == $i ? 'class="active"' : '' ?>><?= $val ?></a>
+<?php 
+} ?>
+</p>  
+    <?php if (count($_SESSION['Homework'][$i]) > 0) {
         ?>
         <ul class="collection">
         <?php
-        foreach ($_SESSION['Homework'] as $h) {
+        foreach ($_SESSION['Homework'][$i] as $h) {
             echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
         }
         ?>

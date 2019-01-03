@@ -32,15 +32,15 @@ if (location.href.match(/login/g)) {
             $(data).each(function () {
                 el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
             });
-            inp.on('blur', function () {
+            inp.on('change', function () {
                 if (!this.value) return;
                 let f = $('option[value=' + this.value + ']');
                 if (f.length) {
                     this.setCustomValidity('');
-                    M.validate_field($('#sc'))
                 } else {
                     this.setCustomValidity('Adjon meg egy érvényes értéket');
                 }
+                M.validate_field($('#sc'))
             });
         }
     };
@@ -174,8 +174,8 @@ function init() {
             }
         })
     }
-    $('[tooltip]').on('mouseenter', function () {
-        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 20) <= 0);
+    $(window).on('mousemove', '[tooltip]', function () {
+        $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 76) <= 0);
     });
     $('a[href*=logout]').on('click', function () {
         deleteCookie('naplo');
@@ -193,7 +193,7 @@ if ('ic' in window) $(() => {
             }
         }).open();
     }
-    let p = $('#pwa');
+    let p = $('.pwa');
     if (p.length) {
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -202,8 +202,8 @@ if ('ic' in window) $(() => {
             // Stash the event so it can be triggered later.
             deferredPrompt = e;
             // Update UI notify the user they can add to home screen
-            (Modal(p, { opacity: 0, preventScrolling: false })).open();
-            $('#pwa-btn').on('click', () => {
+
+            $('.pwa').show().on('click', () => {
                 // Show the prompt
                 deferredPrompt.prompt();
                 // Wait for the user to respond to the prompt

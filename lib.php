@@ -193,6 +193,9 @@ function getStudent($s, $tok)
         if ($d['Form'] == 'Diligence') {
             $d['Subject'] = "Szorgalom";
         }
+        if (!isset($d['NumberValue'])) {
+            $d['NumberValue'] = $d['Value'];
+        }
         $g = $d["Theme"];
         if (!isset($as[$g])) $as[$g] = [];
         $as[$g][] = $d;
@@ -290,14 +293,14 @@ function getStudent($s, $tok)
                 if ($item->parentNode->tagName == "article") {
                     $date = $item->textContent;
                     $date = explode(' ', $date);
-                    $m = $months[$date[0]];
-                    if ($m < 9) {
-                        $y = strtotime('+1 year');
+                    $day = array_pop($date);
+                    $m = $months[array_pop($date)];
+                    if (isset($date[0])) {
+                        $y = substr($date[0], 0, 4);
                     } else {
-                        $y = strtotime('this year');
+                        $y = date('Y');
                     }
-                    $y = date('Y', $y);
-                    $d = str_replace('.', '', $date[1]);
+                    $d = str_replace('.', '', $day);
                     $date = "$y-$m-$d";
                     $nxt = $xpath->query("following-sibling::*[1]", $item)->item(0);
                     $tit = trim(str_replace('▼', '', $nxt->textContent));
@@ -322,13 +325,54 @@ function getStudent($s, $tok)
 
 function timetable($s, $tok, $from, $to)
 {
-    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Lesson", "GET", array(
-        "fromDate" => $from,
-        "toDate" => $to
-    ), array(
-        "Authorization" => "Bearer $tok"
-    ));
-    return $out['content'];
+    $t1 = strtotime($from);
+    $t2 = strtotime($to);
+    $ws = [];
+    while ($t1 <= $t2) {
+        $ws[date('Y-m-d', strtotime('monday this week', $t1))] = date('Y-m-d', strtotime('sunday this week', $t1));
+        $t1 = strtotime('+1 week', $t1);
+    }
+    $res = [];
+    foreach ($ws as $start => $end) {
+        $i = "$start-$end";
+        if (isset($_SESSION['tt'][$i])) $res[$i] = $_SESSION['tt'][$i];
+        else {
+            $out = request("https://$s.e-kreta.hu/mapi/api/v1/Lesson", "GET", array(
+                "fromDate" => $start,
+                "toDate" => $end
+            ), array(
+                "Authorization" => "Bearer $tok"
+            ))['content'];
+            $out = json_decode($out, true);
+            if (!isset($res[$i])) {
+                $_SESSION['tt'][$i] = $res[$i] = [];
+            }
+            foreach ($out as $lesson) {
+                $d = date('w', strtotime($lesson['Date']));
+
+                if (!isset($res[$i][$d])) {
+                    $_SESSION['tt'][$i][$d] = $res[$i][$d] = [];
+                }
+                $_SESSION['tt'][$i][$d][] = $res[$i][$d][] = [
+                    'id' => $lesson['LessonId'],
+                    'subject' => $lesson['Subject'],
+                    'start' => strtotime($lesson['StartTime']),
+                    'end' => strtotime($lesson['EndTime']),
+                    'teacher' => $lesson['Teacher'],
+                    'room' => $lesson['ClassRoom'],
+                    'theme' => $lesson['Theme'],
+                    'homework' => $lesson["Homework"],
+                    'teacherHW' => $lesson['TeacherHomeworkId'],
+                    'state' => $lesson['State'],
+                    'group' => $lesson['ClassGroup'],
+                    'studentHW' => $lesson['IsTanuloHaziFeladatEnabled'],
+                    'date' => $lesson['Date'],
+                    'count' => $lesson['Count'],
+                ];
+            }
+        }
+    }
+    return $res;
 }
 
 function getHomeWork($sch, $tok, $id)
@@ -433,15 +477,14 @@ function getWeekURL($week)
 }
 function showFooter($a = false)
 {
-    if (isset($_REQUEST['just_html'])) {
-        ?>
+    ?>
         <footer>
-            eFilc - <a href="https://github.com/bru02/eFilc">Github</a>
+            eFilc - <a href="https://github.com/bru02/eFilc">Github</a>           <?php if (!hasCookie('pwa')) { ?>
+            <b class="pwa">- Letöltés</b><?php 
+                                    } ?>
         </footer>
     </main>
 <?php
-return;
-}
 if (!hasCookie('gdpr')) {
 
     ?>
@@ -452,21 +495,15 @@ if (!hasCookie('gdpr')) {
     </div>
         <?php 
     }
-    if (!$a && !hasCookie('pwa')) { ?>
-    <div id="pwa" class="modal bottom-sheet np modal-content">
-        Tetszik az e-filc? Töltsd le és offline és használhatod! 
-        <a href="#" class="right modal-close">&times;</a>
-        <button id="pwa-btn" class="right modal-close btn">Letöltés</button>
-    </div>
-    <?php 
-}
-if (!$a) { ?>
+    if ($a) { ?>
     <footer>
-        eFilc - <a href="https://github.com/bru02/eFilc">Github</a>
-    </footer>
-    <?php 
-} ?>
+    eFilc - <a href="https://github.com/bru02/eFilc">Github</a>           <?php if (!hasCookie('pwa')) { ?>
+    <b class="pwa">- Letöltés</b><?php 
+                            } ?>
+</footer>
 </main>
+                        <?php 
+                    } ?>
     </body>
     <script src="<?= ABS_URI; ?>assets/base.js" defer data-no-instant></script>
 <?php
@@ -586,12 +623,16 @@ function showNavbar($key, $container = false)
             <?php 
         }
     } ?>
-            <li style="padding: 20px">Értesítések</span>
+            <li class="not">Értesítések</span>
 <label class="right">
                     <input type="checkbox" id="push" value="1">
                     <span class="left">
                     </label>
             </li>
+           <?php if (!hasCookie('pwa')) { ?>
+           <li class="pwa">Letöltés</li>
+    <?php 
+} ?>
             <li><a href="<?= ABS_URI; ?>login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>

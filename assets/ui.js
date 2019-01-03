@@ -137,10 +137,10 @@ var ic = function (document, location) {
     function changePage(title, body, newUrl) {
         document.documentElement.replaceChild(body, document.body);
         $currentLocationWithoutHash = removeHash(newUrl);
-        newUrl = newUrl.split("#");
-        history.pushState(null, null, newUrl[0]);
+        url = newUrl.split("#");
+        history.pushState(null, null, newUrl);
         document.title = title + String.fromCharCode(160);
-        location.hash = newUrl[1] ? `#${newUrl[1]}` : "";
+        location.hash = url[1] ? `#${url[1]}` : "";
         instantanize();
         bar.done();
         triggerChange();
@@ -169,167 +169,143 @@ var ic = function (document, location) {
         e.preventDefault();
         display(a[0].href);
     }
-    function readystatechange() {
-        if ($xhr.readyState < 4 || $xhr.status == 0) {
-            return;
-        }
-        $timing.ready = Date.now() - $timing.start;
-        var doc = document.implementation.createHTMLDocument("");
-        doc.documentElement.innerHTML = $xhr.responseText.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
-        $title = doc.title;
-        $body = doc.body;
-        var urlWithoutHash = removeHash($url);
-        $history[urlWithoutHash] = {
-            body: $body,
-            title: $title,
-            scrollY: urlWithoutHash in $history ? $history[urlWithoutHash].scrollY : 0
-        };
-        if ($isWaitingForCompletion) {
-            $isWaitingForCompletion = false;
-            display($url);
-        }
-    }
     ////////// MAIN FUNCTIONS //////////
     function instantanize() {
-        var scrollTimeout;
         let b = $("body");
-        let drg = false;
-        let waitin = false;
-        var pStart = { x: 0, y: 0 };
-        var pStop = { x: 0, y: 0 };
-        var scrolling = false;
-        let _currentOffsetX = 0;
-        let _moved = false;
-        var _opening = false;
-        var _opened = false;
-        // Sets options
-        let _tolerance = 70;
-        let _padding = 307;
+
         var menuElement = $('#menu');
-        var overlay = menuElement.next();
-        function transformTo(val) {
-            menuElement.css({ transform: `translateX(${val})` });
-        }
-
-        $(document).on('scroll', function () {
-            if (!_moved) {
-                clearTimeout(scrollTimeout);
-                scrolling = true;
-            }
-        });
-
-        function open() {
-            overlay.show().css({ opacity: '' })
-            b.addClass('no-scroll');
-            transformTo(0);
-            menuElement.addClass('open')
-            _opened = true
-        }
-        function close() {
-            overlay.hide()
-            b.removeClass('no-scroll');
-            transformTo('-110%');
-            menuElement.removeClass('open')
-            _opened = false
-        }
-        $('.overlay').on('click', close);
-
-        $('#mo').on('click', () => {
-            open()
-        })
-
-        function closeThat() {
-            if (!waitin) {
-                $("#rle").css({
-                    top: "",
-                });
-                $("body").removeClass("spin");
-            }
-        }
-        b.on('touchstart', function (e) {
-            _moved = false;
-            _opening = false;
-            pStart.x = e.touches[0].pageX;
-            pStart.y = e.touches[0].pageY;
-
-            $lastTouchTimestamp = +new Date();
-            var a = getLinkTarget(e.target);
-            if (!a.length || !isPreloadable(a)) {
-                return;
-            }
-            a.off("mousedown", mousedown);
-            preload(a[0].href);
-
-        }).on('touchmove', function (eve) {
-            overlay.hide()
-            if (_opening || _opened) overlay.show()
-            if (
-                scrolling ||
-                typeof eve.touches === 'undefined'
-            ) {
-                return;
+        if (menuElement.length) {
+            let drg = false;
+            let waitin = false;
+            var pStart = { x: 0, y: 0 };
+            var pStop = { x: 0, y: 0 };
+            var scrolling = false;
+            let _currentOffsetX = 0;
+            let _moved = false;
+            var _opening = false;
+            var _opened = false;
+            // Sets options
+            let _tolerance = 70;
+            let _padding = 307;
+            var overlay = menuElement.next();
+            function transformTo(val) {
+                menuElement.css({ transform: `translateX(${val})` });
             }
 
-            var dif_x = eve.touches[0].clientX - pStart.x;
-            var translateX = _currentOffsetX = dif_x;
+            $(document).on('scroll', function () {
+                if (!_moved) {
+                    scrolling = true;
+                }
+            });
 
-            if (Math.abs(translateX) > _padding || pStart.x > 50) {
-                return;
+            function open() {
+                overlay.show().css({ opacity: '' })
+                b.addClass('no-scroll');
+                transformTo(0);
+                menuElement.addClass('open')
+                _opened = true
             }
+            function close() {
+                overlay.hide()
+                b.removeClass('no-scroll');
+                transformTo('-110%');
+                menuElement.removeClass('open')
+                _opened = false
+            }
+            $('.overlay').on('click', close);
 
-            if (Math.abs(dif_x) > 20) {
-                _opening = true;
-                if (_opened && dif_x > 0 || !_opened && dif_x < 0) {
+            $('#mo').on('click', () => {
+                open()
+            })
+
+            function closeThat() {
+                if (!waitin) {
+                    $("#rle").css({
+                        top: "",
+                    });
+                    $("body").removeClass("spin");
+                }
+            }
+            b.on('touchstart', function (e) {
+                _moved = false;
+                _opening = false;
+                pStart.x = e.touches[0].pageX;
+                pStart.y = e.touches[0].pageY;
+
+                $lastTouchTimestamp = +new Date();
+                var a = getLinkTarget(e.target);
+                if (!a.length || !isPreloadable(a)) {
+                    return;
+                }
+                a.off("mousedown", mousedown);
+                preload(a[0].href);
+
+            }).on('touchmove', function (eve) {
+                overlay.hide()
+                if (_opening || _opened) overlay.show()
+                if (
+                    scrolling ||
+                    typeof eve.touches === 'undefined'
+                ) {
                     return;
                 }
 
-                if (dif_x <= 0) {
-                    translateX = dif_x + _padding;
-                    _opening = false;
-                }
-                let a = translateX - _padding;
-                overlay.css({
-                    opacity: ((280 + a) / 280) * 0.2
-                })
-                transformTo(a + "px");
-                _moved = true;
-            }
-            drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
-            b.toggleClass('no-scroll', drg)
-            if (drg && !waitin) {
-                const y = eve.touches[0].pageY - pStart.y;
-                $("#rle").css({
-                    top: Math.min(y, 120) + "px"
-                });
-            } else closeThat();
-        }).on('touchcancel', function () {
-            _moved = false;
-            _opening = false;
-            scrolling = false;
-        }).on('touchend', function (e) {
-            if (_moved) {
-                (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
-            }
-            _moved = false;
-            pStop.x = e.changedTouches[0].pageX;
-            pStop.y = e.changedTouches[0].pageY;
-            if (drg) {
-                var dY = Math.abs(pStart.y - pStop.y);
-                var dX = Math.abs(pStart.x - pStop.x);
-                if (!waitin && pStart.y < pStop.y && (
-                    (dX <= 100 && dY >= 90)
-                    || (dX / dY <= 0.3 && dY >= 60)
-                )) {
-                    closeThat();
-                    $("body").addClass("spin");
-                    waitin = true;
-                    display(addParam(location.href, "fr", "true"));
-                } else closeThat();
-                drg = false;
-            }
-            scrolling = false;
-        });
+                var dif_x = eve.touches[0].clientX - pStart.x;
+                var translateX = _currentOffsetX = dif_x;
+                if (Math.abs(translateX) < _padding || pStart.x < 50) {
+                    if (Math.abs(dif_x) > 20) {
+                        _opening = true;
+                        if (!_opened && dif_x > 0 || _opened && dif_x < 0) {
 
+                            if (dif_x <= 0) {
+                                translateX = dif_x + _padding;
+                                _opening = false;
+                            }
+                            let a = translateX - _padding;
+                            overlay.css({
+                                opacity: ((280 + a) / 280) * 0.2
+                            })
+                            transformTo(Math.min(a, 0) + "px");
+                            _moved = true;
+                        }
+                    }
+                }
+                drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
+                b.toggleClass('no-scroll', drg)
+                if (drg && !waitin) {
+                    const y = eve.touches[0].pageY - pStart.y;
+                    $("#rle").css({
+                        top: Math.min(y, 120) + "px"
+                    });
+                } else closeThat();
+            }).on('touchcancel', function () {
+                _moved = false;
+                _opening = false;
+                scrolling = false;
+            }).on('touchend', function (e) {
+                if (_moved) {
+                    (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
+                }
+                _moved = false;
+                pStop.x = e.changedTouches[0].pageX;
+                pStop.y = e.changedTouches[0].pageY;
+                if (drg) {
+                    var dY = Math.abs(pStart.y - pStop.y);
+                    var dX = Math.abs(pStart.x - pStop.x);
+                    if (!waitin && pStart.y < pStop.y && (
+                        (dX <= 100 && dY >= 90)
+                        || (dX / dY <= 0.3 && dY >= 60)
+                    )) {
+                        closeThat();
+                        $("body").addClass("spin");
+                        waitin = true;
+                        display(addParam(location.href, "fr", "true"));
+                    } else closeThat();
+                    drg = false;
+                }
+                scrolling = false;
+            });
+        }
 
         b.on("mousedown", mousedown);
         b.on("click", click);
@@ -525,7 +501,26 @@ var ic = function (document, location) {
             scrollY: pageYOffset
         };
         $xhr = new XMLHttpRequest();
-        $xhr.addEventListener("readystatechange", readystatechange);
+        $xhr.addEventListener("readystatechange", function () {
+            if ($xhr.readyState < 4 || $xhr.status == 0) {
+                return;
+            }
+            $timing.ready = Date.now() - $timing.start;
+            var doc = document.implementation.createHTMLDocument("");
+            doc.documentElement.innerHTML = $xhr.responseText.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
+            $title = doc.title;
+            $body = doc.body;
+            var urlWithoutHash = removeHash($url);
+            $history[urlWithoutHash] = {
+                body: $body,
+                title: $title,
+                scrollY: urlWithoutHash in $history ? $history[urlWithoutHash].scrollY : 0
+            };
+            if ($isWaitingForCompletion) {
+                $isWaitingForCompletion = false;
+                display($url);
+            }
+        });
         instantanize(true);
         bar.init();
         triggerChange();

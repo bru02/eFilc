@@ -1,4 +1,4 @@
-var cacheName = 'eFilc-v1';
+var cacheName = 'eFilc-v1.0.0';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.js',
@@ -6,7 +6,7 @@ var filesToCache = [
     './assets/base.js',
 ];
 var datas = ['faliujsag', 'orarend', 'jegyek', 'hianyzasok', 'feljegyzesek', 'lecke', 'profil'];
-var urlsToLoad = datas.map(u => new Request(`${u}?just_html=1`));
+var urlsToLoad = datas.map(u => `${u}?just_html=1`);
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
     e.waitUntil(
@@ -104,13 +104,17 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    return caches.match(request) || new Response('Offline : (');
+                    return response || new Response('<p>Offline : (</p>', {
+                        headers: {
+                            'Content-Type': 'text/html'
+                        }
+                    });
                 })
                 if (request.url.match(/(fr\=)*/) || request.url.indexOf('login') > 0) return fetchPromise;
                 return response || fetchPromise;
             })
         })
     } else {
-        return Promise.all(request.map(w => load(w)));
+        return Promise.all(request.map(w => load(new Request(w))));
     }
 }

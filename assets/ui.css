@@ -772,19 +772,18 @@ select,
 input:focus,
 select:focus,
 #txt:focus {
-  border-bottom: 1px solid #1565C0!important;
-  box-shadow: 0 1px 0 0 #1565C0!important;
+  border-bottom: 2px solid #1565C0!important;
 }
 
 input:focus + label {
   color: #1565C0;
 }
 
-:focus.valid ~ label {
+.valid ~ label {
   color: #4CAF50;
 }
 
-:focus.invalid ~ label {
+.invalid ~ label {
   color: #F44336;
 }
 
@@ -990,7 +989,7 @@ header, [type="checkbox"], .collapsible-header, .btns {
 }
 
 .menu__list a:active,
-.menu__list a:hover {
+.menu__list a:hover, li.pwa:hover {
   background: #e7e7e7;
 }
 
@@ -1325,4 +1324,28 @@ nbody {
 
 .rd:hover {
   background: rgb(243, 66, 66);
+}
+
+.pwa {
+  display: none;
+  cursor: pointer;
+}
+
+li.pwa, .not {
+  padding: 20px;
+}
+
+.btn-group{
+  text-align: center;
+}
+
+.btn-group>a{
+padding: 10px;
+  background:rgb(122, 122, 122);
+  color:#fff;
+  transition: all .3s;
+}
+
+.btn-group :hover,.btn-group .active {
+  background:#4444ee;
 }
