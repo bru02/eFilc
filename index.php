@@ -413,10 +413,7 @@ if ($db !== 0) {
                 }
                 echo '<li class="collection-item" data-nth="' . $hour . '">';
                 foreach ($lout[$hour] as $lesson) {
-                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/>';
-                    echo '<i data-time="' . date('Y. m. d. H:i', strtotime($lesson['start'])) . '-' . date('H:i', strtotime($lesson['end'])) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">';
-                    echo $lesson['room'];
-                    echo '</span></div>';
+                    echo '<div class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/><i data-time="' . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">' . $lesson['room'] . '</span></div>';
                     $wl++;
                 }
                 echo '</li>';
@@ -617,6 +614,7 @@ case "lecke":
         break;
     case "faliujsag":
         reval();
+        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
         showHeader('Faliújság');
         $data = $_SESSION['data'];
         showNavbar('faliujsag', true);

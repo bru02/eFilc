@@ -1,7 +1,9 @@
 ﻿<?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+ini_set('log_errors', true); // Error logging
+touch('errors.log');
+ini_set('error_log', 'errors.log'); // Logging file
+ini_set('log_errors_max_len', 1024); // Logging file size
 session_name("naplo");
 session_start();
 mb_internal_encoding("UTF-8");
@@ -303,7 +305,11 @@ function getStudent($s, $tok)
                     $d = str_replace('.', '', $day);
                     $date = "$y-$m-$d";
                     $nxt = $xpath->query("following-sibling::*[1]", $item)->item(0);
-                    $tit = trim(str_replace('▼', '', $nxt->textContent));
+                    $tit = substr(
+                        join(', ', explode('▼', trim(preg_replace("/\s+/", " ", $nxt->textContent)))),
+                        0,
+                        -4
+                    );
                 }
             }
             $links[] = [
