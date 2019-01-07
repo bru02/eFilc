@@ -299,7 +299,7 @@ var ic = function (document, location) {
                         closeThat();
                         $("body").addClass("spin");
                         waitin = true;
-                        display(addParam(location.href, "fr", "true"));
+                        display(addParam(location.href, "fr"));
                     } else closeThat();
                     drg = false;
                 }
@@ -329,7 +329,7 @@ var ic = function (document, location) {
         $timing = {
             start: Date.now()
         };
-        url = addParam(url, "just_html", "1");
+        url = addParam(url, "just_html");
         $xhr.open("GET", url);
         $xhr.send();
     }

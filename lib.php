@@ -1,7 +1,6 @@
 ﻿<?php
 error_reporting(E_ALL);
 ini_set('log_errors', true); // Error logging
-touch('errors.log');
 ini_set('error_log', 'errors.log'); // Logging file
 ini_set('log_errors_max_len', 1024); // Logging file size
 session_name("naplo");
@@ -229,6 +228,8 @@ function getStudent($s, $tok)
     }
     $out['Evaluations'] = $j;
     $absences = [];
+    $igazolt = 0;
+    $igazolatlan = 0;
     foreach ($out['Absences'] as $v) {
         $li = $v['NumberOfLessons'];
         $j = $v['JustificationStateName'];
@@ -254,10 +255,19 @@ function getStudent($s, $tok)
             'ct' => substr($v['CreatingTime'], 0, 10),
             'jst' => $v['JustificationTypeName']
         );
+        $am = $v['Type'] == 'Delay' ? intval($v['DelayTimeMinutes']) : 45;
+        if ($ij) {
+            $igazolt += $am;
+        } else {
+            $igazolatlan += $am;
+        }
     }
     usort($absences, function ($a, $b) {
         return strtotime($b['d']) - strtotime($a['d']);
     });
+    $out['igazolt'] = $igazolt;
+    $out['igazolatlan'] = $igazolatlan;
+    $out['osszes'] = $igazolatlan + $igazolt;
     $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
         $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET')['content'];
@@ -331,8 +341,8 @@ function getStudent($s, $tok)
 
 function timetable($s, $tok, $from, $to)
 {
-    $t1 = strtotime($from);
-    $t2 = strtotime($to);
+    $t1 = $from;
+    $t2 = $to;
     $ws = [];
     while ($t1 <= $t2) {
         $ws[date('Y-m-d', strtotime('monday this week', $t1))] = date('Y-m-d', strtotime('sunday this week', $t1));
@@ -446,7 +456,7 @@ function showHeader($title, $a = false)
     header('Content-type: text/html; charset=utf-8');
     header("Content-Security-Policy: default-src 'none' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://cors-anywhere.herokuapp.com/; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
     if (isset($_REQUEST['just_html'])) {
-        echo "<title>$title | e-filc</title><div id=\"rle\"></div>
+        echo "<title>$title | eFilc</title><div id=\"rle\"></div>
         ";
         return;
     }
@@ -459,17 +469,17 @@ function showHeader($title, $a = false)
 	<link rel="shortcut icon" href="<?= ABS_URI; ?>images/icons/icon-96x96.png" type="image/x-icon">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
-	<meta name="application-name" content="E-filc">
-	<meta name="apple-mobile-web-app-title" content="E-filc">
+	<meta name="application-name" content="eFilc">
+	<meta name="apple-mobile-web-app-title" content="eFilc">
 	<meta name="theme-color" content="#2196F3">
 	<meta name="msapplication-navbutton-color" content="#2196F3">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="msapplication-starturl" content="/">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<meta name="Description" content="E-filc, gyors eKréta kliens a webre">
+	<meta name="Description" content="eFilc, gyors eKréta kliens a webre">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
-    <title><?php echo $title; ?> | E-filc</title>
+    <title><?php echo $title; ?> | eFilc</title>
 </head>
 <body>
 <?php if (!$a) : ?>
@@ -500,16 +510,7 @@ if (!hasCookie('gdpr')) {
             <button class="right modal-close btn">Oké</button>
     </div>
         <?php 
-    }
-    if ($a) { ?>
-    <footer>
-    eFilc - <a href="https://github.com/bru02/eFilc">Github</a>           <?php if (!hasCookie('pwa')) { ?>
-    <b class="pwa">- Letöltés</b><?php 
-                            } ?>
-</footer>
-</main>
-                        <?php 
-                    } ?>
+    } ?>
     </body>
     <script src="<?= ABS_URI; ?>assets/base.js" defer data-no-instant></script>
 <?php
@@ -535,6 +536,7 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     }
     showHeader('Belépés', true);
     ?>
+    <main>
     <form action="login" method="post" class="container">
     <h1>Bejelentkezés</h1>
     <p>
@@ -596,7 +598,7 @@ function showNavbar($key, $container = false)
             </svg>
             </a>
 
-            <span class="header__title no--select">E-filc</span>
+            <span class="header__title no--select">eFilc</span>
             <ul id="nav-mobile" class="right hide-on-med-and-down">
                  <?php foreach ($data as $url => $txt) { ?>
                     <?php if ($url == $key) { ?>
@@ -666,4 +668,17 @@ function encrypt_decrypt($action, $string)
         $output = openssl_decrypt(base64_decode($string), $encrypt_method, $key, 0, $iv);
     }
     return $output;
+}
+
+function prettyMins($min)
+{
+    $h = floor($min / 45);
+    $m = $min % 45;
+    $ret = "";
+    if ($h != 0) $ret .= "$h óra";
+    if ($m != 0) {
+        if ($h != 0) $ret .= ' , ';
+        $ret .= "$m perc";
+    }
+    return empty($ret) ? '-' : $ret;
 }

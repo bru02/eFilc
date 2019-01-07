@@ -1,7 +1,7 @@
 window.requestAnimationFrame || (window.requestAnimationFrame = function (f) { setTimeout(f, 0) })
-function addParam(uri, key, v) {
+function addParam(uri, key) {
     return uri
-        .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=" + v)
+        .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=1")
         .replace(/^([^?&]+)&/, "$1?");
 }
 window.prefix = function () {

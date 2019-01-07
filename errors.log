@@ -1,0 +1,22 @@
+[07-Jan-2019 14:20:03 UTC] PHP Notice:  Undefined index: igazolt in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:03 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:03 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:20:03 UTC] PHP Notice:  Undefined index: igazolatlan in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:03 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:03 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:20:03 UTC] PHP Notice:  Undefined index: osszes in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:03 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:03 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:20:05 UTC] PHP Notice:  Undefined index: igazolt in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:05 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:05 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:20:05 UTC] PHP Notice:  Undefined index: igazolatlan in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:05 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:05 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:20:05 UTC] PHP Notice:  Undefined index: osszes in C:\wamp\www\e-filc\index.php on line 295
+[07-Jan-2019 14:20:05 UTC] PHP Stack trace:
+[07-Jan-2019 14:20:05 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:29:01 UTC] PHP Notice:  Use of undefined constant ROUTES - assumed 'ROUTES' in C:\wamp\www\e-filc\lib.php on line 66
+[07-Jan-2019 14:29:01 UTC] PHP Stack trace:
+[07-Jan-2019 14:29:01 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[07-Jan-2019 14:29:01 UTC] PHP   2. logout() C:\wamp\www\e-filc\index.php:6

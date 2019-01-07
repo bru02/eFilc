@@ -292,6 +292,7 @@ foreach ($_SESSION['data']['Absences'] as $val) : ?>
     </li>
 <?php endforeach; ?>
 </ul>
+<p class="center">Igazolt hiányzás: <?= prettyMins($_SESSION['data']['igazolt']) ?>; Igazolatlan hiányzás: <?= prettyMins($_SESSION['data']['igazolatlan']) ?>; Összes hiányzás: <?= prettyMins($_SESSION['data']['osszes']) ?></p>
 <?php
 showFooter();
 break;
@@ -314,6 +315,14 @@ case "profil":
         <li class="collection-item"><?= $l ?></li>
             <?php endforeach; ?>
     </ul>
+    <ul class="collection with-header s12">
+        <li class="collection-header"><h4>Gondviselők</h4></li>
+            <?php
+            foreach ($data['Tutelaries'] as $t) :
+            ?>
+        <li class="collection-item"><?= $t['Name'] ?></li>
+            <?php endforeach; ?>
+    </ul>
 <?php
 showFooter();
 break;
@@ -328,9 +337,11 @@ case "orarend":
     } else {
         $week = "+$week";
     }
-    $monday = date('Y-m-d', strtotime('monday this week', strtotime("$week weeks")));
-    $friday = date('Y-m-d', strtotime('sunday this week', strtotime("$week weeks")));
+    $monday = strtotime('monday this week', strtotime("$week weeks"));
+    $friday = strtotime('sunday this week', strtotime("$week weeks"));
     $data = timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday);
+    $monday = date('Y-m-d', $monday);
+    $friday = date('Y-m-d', $friday);
     $data = array_shift($data);
     if ($is_api) {
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -706,7 +717,7 @@ default:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
-        <title>404 | e-filc</title>
+        <title>404 | eFilc</title>
         <style>
             body {
                 background-image: url(<?= ABS_URI; ?>assets/astronauta.jpg), url(<?= ABS_URI; ?>assets/Stars404.png);

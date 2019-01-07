@@ -1,4 +1,4 @@
-var cacheName = 'eFilc-v1.0.0';
+var cacheName = 'eFilc-v1.0.2';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.js',
@@ -6,6 +6,12 @@ var filesToCache = [
     './assets/base.js',
 ];
 var datas = ['faliujsag', 'orarend', 'jegyek', 'hianyzasok', 'feljegyzesek', 'lecke', 'profil'];
+var ignoredRegexes = [
+    /just_html/,
+    /fr/,
+    /week/,
+    /ido/
+];
 var urlsToLoad = datas.map(u => `${u}?just_html=1`);
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
@@ -77,9 +83,27 @@ self.addEventListener('notificationclick', function (event) {
     );
 
 });
+
 function load(request) {
     if (request instanceof Request) {
+        var url = new URL(request.url);
 
+        url.search = url.search.slice(1)
+            .split('&')
+            .map(function (kv) {
+                return kv.split('=');
+            })
+            .filter(function (kv) {
+                return ignoredRegexes.every(function (ignoredRegex) {
+                    return !ignoredRegex.test(kv[0]);
+                });
+            })
+            .map(function (kv) {
+                return kv.join('=');
+            })
+            .join('&');
+
+        request.url = url.toString();
         return caches.open(cacheName).then(function (cache) {
             return cache.match(request).then(function (response) {
                 var fetchPromise = fetch(request).then(function (networkResponse) {
@@ -93,7 +117,7 @@ function load(request) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
                         } else {
                             clone.clone().text().then(e => {
-                                cache.put(url.replace(/(\?|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="E-filc"><meta name="apple-mobile-web-app-title" content="E-filc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="E-filc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/ui.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
+                                cache.put(url.replace(/(\?|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/ui.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
                                     headers: {
                                         'Content-Type': 'text/html'
                                     }
@@ -104,7 +128,8 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    return response || new Response('<p>Offline : (</p>', {
+                    request.url = request.url.replace(/(\?|\&)(just_html|fr|ido)=1/);
+                    return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
                         headers: {
                             'Content-Type': 'text/html'
                         }
