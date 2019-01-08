@@ -128,7 +128,7 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    request.url = request.url.replace(/(\?|\&)(just_html|fr|ido)=1/);
+                    request.url = request.url.replace(/(?<=&|\?)(fr|just_html|ido)(=[^&]*)?(&|$)/g);
                     return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
                         headers: {
                             'Content-Type': 'text/html'

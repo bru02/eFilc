@@ -144,29 +144,32 @@ function init() {
         });
     }
     if (loc.match(/\/jegyek/g)) {
-        he.closest('ntr').addClass('open');
+        he.closest('nr').addClass('open');
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);
         let tr = $('#tr');
         let input = $("#nn")
         $("#cnn").on('click', function () {
             if (input.is('.valid')) {
-                let ntds = $(`[data-v="${tr.val()}"]`).parent().find("ntd:not(:empty)"),
-                    avrb = $(ntds.slice(-3, -2)),
-                    davr = $(ntds.slice(-1)),
+                let nds = $(`[data-v="${tr.val()}"]`).parent().find("nd:not(:empty)"),
+                    avrb = $(nds.slice(-3, -2)),
+                    davr = $(nds.slice(-1)),
                     nn = input.val(),
                     w = $("#tz")[0].checked,
                     tag = w ? "b" : "span",
-                    n = w ? 2 : 1;
-                $(ntds[ntds.length - 4])[0].innerHTML += ` <${tag} tooltip='Milenna ha-val hozzáadott jegy&#xa;Súly: ${n}00%'>${nn}</${tag}> `;
-                let cnl = ntds.find("b, span").length,
+                    n = w ? 2 : 1,
+                    y = nds[nds.length - 4], x = $(y);
+                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${n}00%' class='milenne'>${nn}</${tag}> `;
+                requestAnimationFrame(() => { y.scrollIntoView() });
+                x.parent().addClass('open')
+                let cnl = nds.find("b, span").length,
                     cu = avrb.html(),
                     arr = [cu * cnl, n * Number(nn)],
                     h = tr[0].selectedOptions[0];
                 let nu = Math.round(100 * average(arr, cnl + n)) / 100;
                 avrb.html(nu);
                 h.innerHTML = h.innerHTML.replace(cu, nu);
-                let v = Math.round(100 * (nu - $(ntds.slice(-2, -1)).html())) / 100;
+                let v = Math.round(100 * (nu - $(nds.slice(-2, -1)).html())) / 100;
                 davr.html(v).removeClass("gr red").addClass(v < 0 ? "red" : "gr");
                 inst.close();
             } else {
@@ -176,6 +179,9 @@ function init() {
     }
     $(window).on('mousemove', '[tooltip]', function () {
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 76) <= 0);
+    });
+    $(window).on('dblclick', '.milenne', function () {
+        $(this).remove();
     });
     $('a[href*=logout]').on('click', function () {
         deleteCookie('naplo');
@@ -198,7 +204,7 @@ if ('ic' in window) $(() => {
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             // Prevent Chrome 67 and earlier from automatically showing the prompt
-            e.preventDefault();
+            e.prevendefault();
             // Stash the event so it can be triggered later.
             deferredPrompt = e;
             // Update UI notify the user they can add to home screen

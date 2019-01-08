@@ -102,7 +102,7 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
 	// defaults
     $default_curl_options = array(
         CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_RETURnrANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => true
     );
@@ -195,7 +195,29 @@ function getStudent($s, $tok)
             $d['Subject'] = "Szorgalom";
         }
         if (!isset($d['NumberValue'])) {
-            $d['NumberValue'] = $d['Value'];
+            switch (ucfirst($d['Value'])) {
+                case "Példás":
+                    $nv = 5;
+                    break;
+                case "Jó":
+                    $nv = 4;
+                    break;
+                case "Változó":
+                case "Közepes":
+                    $nv = 3;
+                    break;
+                case "Hanyag":
+                case "Elégséges":
+                    $nv = 2;
+                    break;
+                case "Elégtelen":
+                    $nv = 1;
+                    break;
+                default:
+                    $nv = $d['Value'];
+                    break;
+            }
+            $d['NumberValue'] = $nv;
         }
         $g = $d["Theme"];
         if (!isset($as[$g])) $as[$g] = [];
@@ -209,7 +231,7 @@ function getStudent($s, $tok)
     foreach ($as as $d) {
         if (count($d) > 1) {
             for ($i = 0; $i < count($d); $i++) {
-                if (isset($d[$i + 1]) && $d[$i]['Date'] == $d[$i + 1]['Date']) {
+                if (isset($d[$i + 1]) && $d[$i]['Date'] == $d[$i + 1]['Date'] && $d[$i]['Weight'] == $d[$i + 1]['Weight'] && $d[$i]['Subject'] == $d[$i + 1]['Subject']) {
                     $a = $d[$i];
                     $b = $d[$i + 1];
                     $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? $b['NumberValue'] . '/' . $a['NumberValue'] : $a['NumberValue'] . '/' . $b['NumberValue'];
@@ -448,7 +470,7 @@ function logIn($s, $usr, $psw)
 function showHeader($title, $a = false)
 {
     header("Connection: keep-alive");
-    header("Cache-Control: private");
+    header("Cache-Conrol: private");
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("X-Content-Type-Options: nosniff");
@@ -519,7 +541,6 @@ if (!$a) echo "<script defer data-no-instant src=\"" . ABS_URI . "assets/ui.js\"
 <script data-no-instant defer src="<?= ABS_URI; ?>assets/main.js"></script>
 </html>
 <?php
-
 
 }
 

@@ -117,14 +117,14 @@ switch ($routes[0]) {
         </div>
 <notes class="responsive-table striped notes">
     <nhead>
-        <ntr>
-            <ntd>
+        <nr>
+            <nd>
                 Tantárgy
-            </ntd>
+            </nd>
         <?php
-        $months = array_merge(range(9, 12), ['Félév'], range(1, 6), ['Évvége', 'Átlag', 'Osztály átlag', 'Különbség']);
+        $months = array_merge(range(9, 12), [1, 'Félév'], range(2, 6), ['Évvége', 'Átlag', 'Osztály átlag', 'Különbség']);
         foreach ($months as $a) {
-            echo "<ntd>$a</ntd>\n\r";
+            echo "<nd>$a</nd>\n\r";
         }
         $data = $_SESSION['data'];
         $avrg = $data['SubjectAverages'];
@@ -152,9 +152,9 @@ foreach ($out as $key => $day) {
     usort($day, function ($b, $a) {
         return strtotime($b['Date']) - strtotime($a['Date']);
     });
-    echo "<ntr><ntd data-v=\"$key\">$key</ntd>"; // class='collapsible-header'
+    echo "<nr><nd data-v=\"$key\">$key</nd>"; // class='collapsible-header'
     foreach ($months as $h) {
-        if ($h != 'Különbség') echo "<ntd>";
+        if ($h != 'Különbség') echo "<nd>";
         switch ($h) {
             case 'Átlag':
                 $val = $aout[$key]['Value'];
@@ -166,7 +166,7 @@ foreach ($out as $key => $day) {
                 break;
             case 'Különbség':
                 $val = floatval($aout[$key]['Difference']);
-                echo "<ntd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
+                echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
             case 'Félév':
                 foreach ($day as $d) {
@@ -196,9 +196,9 @@ foreach ($out as $key => $day) {
                 break;
         }
         ob_flush();
-        echo "</ntd>";
+        echo "</nd>";
     }
-    echo "</ntr>";
+    echo "</nr>";
     ob_flush();
 }
 ?>
@@ -704,7 +704,7 @@ showFooter();
 break;
 default:
     header("Connection: keep-alive");
-    header("Cache-Control: private");
+    header("Cache-Conrol: private");
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("X-Content-Type-Options: nosniff");

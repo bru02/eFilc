@@ -109,7 +109,7 @@ select {
 
 /**
  * 1. Prevent a WebKit bug where (2) destroys native `audio` and `video`
- *    controls in Android 4.
+ *    conrols in Android 4.
  * 2. Correct the inability to style clickable types in iOS and Safari.
  */
 button,
@@ -206,7 +206,7 @@ a {
   }
 }
 
-table, th, td, notes, ntd {
+table, th, td, notes, nd {
   border: none;
 }
 
@@ -216,19 +216,19 @@ table, notes {
   border-spacing: 0;
 }
 
- tr,  ntr {
+ tr,  nr {
   border-bottom: none;
 }
 
-tr:nth-child(odd), ntr:nth-child(odd) {
+tr:nth-child(odd), nr:nth-child(odd) {
   background-color: rgba(242, 242, 242, 0.5);
 }
 
- td, ntd {
+ td, nd {
   border-radius: 0;
 }
 
-td, ntd {
+td, nd {
   padding: 15px 5px;
   display: table-cell;
   text-align: left;
@@ -929,7 +929,7 @@ header {
   transition: all 250ms ease;
 }
 
-header, [type="checkbox"], .collapsible-header, .btns {
+header, [type="checkbox"], .collapsible-header, .btns, [tooltip] {
   -webkit-user-select: none;
   -moz-user-select: none;
    -ms-user-select: none;
@@ -1184,11 +1184,11 @@ nhead {
   border-color: inherit;
 }
 
-ntr {display: table-row;
+nr {display: table-row;
   vertical-align: inherit;
   border-color: inherit;}
 
-ntd, nth {
+nd, nth {
   display: table-cell;
     vertical-align: inherit;
 }
@@ -1198,7 +1198,7 @@ nbody {
 
 @media only screen and (max-width: 992px) {
 
-  ntr {
+  nr {
     margin: 0.5rem 0 1rem 0;
     border: 1px solid #e0e0e0;
     border-radius: 2px;
@@ -1206,7 +1206,7 @@ nbody {
     position: relative;
   }
   
-  ntd {
+  nd {
     line-height: 1.5rem;
     padding: 5px 10px;
     margin: 0;
@@ -1214,10 +1214,10 @@ nbody {
     overflow: hidden;
   }
   
-  ntd:last-child {
+  nd:last-child {
     border-bottom: none;
   }
-  ntr>ntd:first-child {
+  nr>nd:first-child {
     font-size: 2.28rem;
     line-height: 110%;
     margin: 1.52rem 0 0.912rem 0;
@@ -1225,39 +1225,39 @@ nbody {
     padding: 5px 10px;
   }
 
-  ntr>ntd:last-child::before {
+  nr>nd:last-child::before {
     content: "Különbség: ";
     color: #000;
   }
-  ntr>ntd:nth-last-child(2)::before {
+  nr>nd:nth-last-child(2)::before {
     content: "Osztály átlag: ";
   }
-  ntr>ntd:nth-last-child(3)::before {
+  nr>nd:nth-last-child(3)::before {
     content: "Átlag: ";
   }
-  ntr [tooltip]::before {
+  nr [tooltip]::before {
     content: '';
   }
-  ntr [tooltip]::after {
+  nr [tooltip]::after {
     left:unset!important;
     top:50%;
     margin-left:8px;
     transform: translateX(0%)   translateY(-50%);
   }
-  ntr [tooltip] {
+  nr [tooltip] {
     position: unset;
   }
-  notes, nbody, ntr, ntd {
+  notes, nbody, nr, nd {
     display: block;
     z-index: 0;
   }
-  ntr>*:not(:first-child) {
+  nr>*:not(:first-child) {
     display: none;
   }
-  ntr.open ntd:not(:empty) {
+  nr.open nd:not(:empty) {
     display: block;
   }
-  nhead, ntd:empty, n {
+  nhead, nd:empty, n {
     display: none;
   }
 }
