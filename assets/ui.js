@@ -166,7 +166,7 @@ var ic = function (document, location) {
             // Opening in new tab
             return;
         }
-        e.prevendefault();
+        e.preventDefault();
         display(a[0].href);
     }
     ////////// MAIN FUNCTIONS //////////
@@ -553,10 +553,10 @@ var DatePicker = function () {
     this.date = new Date();
     this.currentYear = this.date.getFullYear();
     this.currentMonth = this.date.getMonth();
-    this.currenday = this.date.getDate();
+    this.currentDay  = this.date.getDate();
     this.month = this.currentMonth + 0;
     this.year = this.currentYear + 0;
-    this.day = this.currenday + 0;
+    this.day = this.currentDay  + 0;
     this.selectedYear = null;
     this.selectedDay = null;
     this.selectedMonth = null;
@@ -623,7 +623,7 @@ DatePicker.prototype.distributeDays = function (monthData) {
         out += "<tr>";
         for (var i = 0; i < 7; i++) {
             if (monthData.weekDay(day) == i) {
-                let cls = (this.selectedDay == day && this.selectedMonth == monthData.month && this.selectedYear == monthData.year) ? 'active day' : (this.currenday == day && this.currentMonth == monthData.month && this.currentYear == monthData.year) ? 'today day' : ((this.currenday > day && this.currentMonth == monthData.month) ? 'dsb' : 'day');
+                let cls = (this.selectedDay == day && this.selectedMonth == monthData.month && this.selectedYear == monthData.year) ? 'active day' : (this.currentDay  == day && this.currentMonth == monthData.month && this.currentYear == monthData.year) ? 'today day' : ((this.currentDay  > day && this.currentMonth == monthData.month) ? 'dsb' : 'day');
                 out += `<td class="${cls}">${day++}</td>`;
             } else {
                 out += "<td></td>";

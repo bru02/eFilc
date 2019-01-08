@@ -102,7 +102,7 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
 	// defaults
     $default_curl_options = array(
         CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_RETURnrANSFER => true,
+        CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
         CURLOPT_FOLLOWLOCATION => true
     );
@@ -470,7 +470,7 @@ function logIn($s, $usr, $psw)
 function showHeader($title, $a = false)
 {
     header("Connection: keep-alive");
-    header("Cache-Conrol: private");
+    header("Cache-Control: private");
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("X-Content-Type-Options: nosniff");

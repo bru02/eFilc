@@ -704,7 +704,7 @@ showFooter();
 break;
 default:
     header("Connection: keep-alive");
-    header("Cache-Conrol: private");
+    header("Cache-Control: private");
     header("X-Frame-Options: SAMEORIGIN");
     header("X-XSS-Protection: 1; mode=block");
     header("X-Content-Type-Options: nosniff");
