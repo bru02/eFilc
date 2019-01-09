@@ -1,4 +1,4 @@
-var cacheName = 'eFilc-v1.0.2';
+var cacheName = 'eFilc-v1.0.3';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.js',

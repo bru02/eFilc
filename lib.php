@@ -462,7 +462,6 @@ function logIn($s, $usr, $psw)
         $_SESSION["refresh_token"] = $res["refresh_token"];
         $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
         $_SESSION['school'] = $s;
-        $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
     }
     return $res;
 }

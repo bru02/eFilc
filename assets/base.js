@@ -1,4 +1,7 @@
 window.requestAnimationFrame || (window.requestAnimationFrame = function (f) { setTimeout(f, 0) })
+function toView(e) {
+    requestAnimationFrame(() => { e.scrollIntoView() });
+}
 function addParam(uri, key) {
     return uri
         .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=1")

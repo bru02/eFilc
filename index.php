@@ -20,7 +20,7 @@ foreach ($routess as $route) {
 }
 define('ROUTES', $routes);
 if ($routes[0] == "schools") {
-    echo json_encode(schools());
+    echo file_get_contents("datas.json");
     exit();
 }
 if ($routes[0] == "sw.js") {
@@ -61,7 +61,7 @@ switch ($routes[0]) {
                     if (isset($res['error'])) {
                         $_SESSION['tries']++;
                         sleep(($_SESSION['tries'] - 1) ^ 2);
-                        promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz jelszó/felhasználónév!");
+                        promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz felhasználónév/jelszó!");
                         exit();
                     }
                     $_SESSION['authed'] = true;
@@ -74,11 +74,11 @@ switch ($routes[0]) {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
                     unset($_SESSION['_token']);
-                    promptLogin($_POST['usr'], $_POST['psw'], $_POST['school'], "Token mismatch!");
+                    promptLogin("", '', '', "Token mismatch!");
                     exit();
                 }
             } else {
-                promptLogin("", "");
+                promptLogin();
                 exit();
             }
         } else {
@@ -101,10 +101,18 @@ switch ($routes[0]) {
                 <?php 
                 endforeach; ?>
             </select>
-            <div class="input-field">
-                <input type="number" id="nn" class="validate" min="1" max="5">
-                    <label for="nn">Kapnék egy...</label>
-                </div>
+            <p class="center">
+    <input type="radio" id="j1" name="j" value=1>
+    <label for="j1">1</label>
+    <input type="radio" id="j2" name="j" value=2>
+    <label for="j2">2</label>
+    <input type="radio" id="j3" name="j" value=3>
+    <label for="j3">3</label>
+    <input type="radio" id="j4" name="j" value=4>
+    <label for="j4">4</label>
+    <input type="radio" id="j5" name="j" value=5>
+    <label for="j5">5</label>
+            </p>
                 <label>
         <input type="checkbox" id="tz">
         <span>TZ</span>
@@ -190,7 +198,7 @@ foreach ($out as $key => $day) {
                     if (intval(date('n', strtotime($v['Date']))) == $h && $v['Type'] == 'MidYear') {
                         $w = $v['Weight'];
                         $tag = $w == "200%" ? 'b' : 'span';
-                        echo "<$tag id=\"i" . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . ' " >' . $v['NumberValue'] . "</$tag> ";
+                        echo "<$tag id=\"i" . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . '">' . $v['NumberValue'] . "</$tag> ";
                     }
                 }
                 break;
@@ -232,9 +240,7 @@ case "feljegyzesek":
         ?>
     <tr id="i<?= $h['NoteId']; ?>">
     <td><?= explode('T', $h['Date'])[0]; ?></td>
-    <td tooltip="<?= $h['Type']; ?>"><?php
-                                    echo $h["Title"];
-                                    ?></td>
+    <td tooltip="<?= $h['Type']; ?>"><?= $h["Title"]; ?></td>
     <td><?= tLink($h['Teacher']); ?></td>
     <td><?= $h['Content']; ?></td>
     </tr>

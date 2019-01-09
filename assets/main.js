@@ -48,18 +48,39 @@ if (location.href.match(/login/g)) {
 
 }
 
-const average = (list, l = list.length) => list.reduce((prev, curr) => prev + curr) / l;
+const szazasra = n => Math.round(100 * n) / 100;
+function calcAvr(row) {
+    let toAvr = [];
+    let len = 0;
+    row.find('b,span').each(e => {
+        e = $(e);
+        let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5;
+        let val = e.html();
+        if (val.indexOf('/') < 0)
+            toAvr.push(weight * val);
+        else
+            toAvr.push(...val.split('/').map(e => (e * (weight / 2))));
+        len += weight;
+    });
+    let avr = szazasra(toArr.reduce((prev, curr) => Number(prev) + Number(curr)) / len);
+    let nds = row.find('nd');
+    let diff = szazasra(avr - nds.eq(-2).html());
+    nds.eq(-1).html(diff).removeClass("red gr").addClass(diff < 0 ? 'red' : 'gr');
+    nds.eq(-3).html(avr);
+    let h = $(`[value="${nds.eq(0).attr('data-v')}"]`);
+    h.html([h.html().split(' - ').shift(), avr].join(' - '));
+}
 function init() {
     let he = $(location.hash);
     if (he.length) {
-        requestAnimationFrame(() => { he[0].scrollIntoView() });
+        toView(he[0]);
     }
     let loc = location.href;
     if (loc.match(/\/orarend/g)) {
         s();
         var elems = $('#modal');
         var inst = Modal(elems);
-        $('.lesson').on('click', function (t) {
+        $('.lesson').on('click', function () {
             $('#modal span').html('-');
             let a = $(this);
             let c = a.find('b');
@@ -87,7 +108,7 @@ function init() {
             clearTimeout(st);
             st = setTimeout(function () {
                 $('.btns b').removeClass('active').eq(Math.round($('#tt')[0].scrollLeft / window.innerWidth)).addClass('active');
-            }, 200)
+            }, 25)
         })
     }
     if (loc.match(/\/faliujsag/g)) {
@@ -148,32 +169,18 @@ function init() {
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);
         let tr = $('#tr');
-        let input = $("#nn")
         $("#cnn").on('click', function () {
-            if (input.is('.valid')) {
-                let nds = $(`[data-v="${tr.val()}"]`).parent().find("nd:not(:empty)"),
-                    avrb = $(nds.slice(-3, -2)),
-                    davr = $(nds.slice(-1)),
-                    nn = input.val(),
+            let fa = $('p>:checked').val();
+            if (fa !== null) {
+                let row = $(`[data-v="${tr.val()}"]`).parent(),
                     w = $("#tz")[0].checked,
                     tag = w ? "b" : "span",
-                    n = w ? 2 : 1,
-                    y = nds[nds.length - 4], x = $(y);
-                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${n}00%' class='milenne'>${nn}</${tag}> `;
-                requestAnimationFrame(() => { y.scrollIntoView() });
-                x.parent().addClass('open')
-                let cnl = nds.find("b, span").length,
-                    cu = avrb.html(),
-                    arr = [cu * cnl, n * Number(nn)],
-                    h = tr[0].selectedOptions[0];
-                let nu = Math.round(100 * average(arr, cnl + n)) / 100;
-                avrb.html(nu);
-                h.innerHTML = h.innerHTML.replace(cu, nu);
-                let v = Math.round(100 * (nu - $(nds.slice(-2, -1)).html())) / 100;
-                davr.html(v).removeClass("gr red").addClass(v < 0 ? "red" : "gr");
+                    x = row.find("nd:not(:empty)").eq(-4), y = x[0];
+                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${w ? 2 : 1}00%' class='milenne'>${fa}</${tag}> `;
+                calcAvr(row);
                 inst.close();
-            } else {
-                input[0].focus();
+                x.parent().addClass('open')
+                toView(y);
             }
         })
     }
@@ -181,7 +188,9 @@ function init() {
         $(this).toggleClass('bot', ($(this).offset().top - window.scrollY - window.getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 76) <= 0);
     });
     $(window).on('dblclick', '.milenne', function () {
-        $(this).remove();
+        let t = $(this), p = t.closest("nr");
+        t.remove();
+        calcAvr(p);
     });
     $('a[href*=logout]').on('click', function () {
         deleteCookie('naplo');
