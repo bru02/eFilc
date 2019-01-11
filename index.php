@@ -593,7 +593,7 @@ case "lecke":
            <div id="dp"></div>
        </div>
        <input type="hidden" id="hw" name="txt">
-       <input class="btn" type="submit" value="Mentés">
+       <p><input class="btn" type="submit" value="Mentés"></p>
     </form>
     </div>
     <div class="modal-footer">
@@ -663,7 +663,7 @@ if (count($data['Absences']) > 0) { ?>
 
 }
 if (count($data['Notes']) > 0) { ?>
-<div class="col s12">
+<div id="fj" class="col s12">
     <ul class="collection with-header">
         <li class="collection-header"><b>Legutóbbi feljegyzések</b></li>
     <?php

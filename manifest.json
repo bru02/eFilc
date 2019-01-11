@@ -1,12 +1,12 @@
 {
-  "name": "E-filc",
+  "name": "eFilc",
   "short_name": "eFilc",
   "theme_color": "#2196f3",
   "background_color": "#ffffff",
   "display": "standalone",
   "lang": "hu-HU",
-  "Scope": "/e-filc/",
-  "start_url": "/e-filc/faliujsag",
+  "scope": "/e-filc/",
+  "start_url": "/e-filc/faliujsag?utm_source=a2hs",
   "icons": [
     {
       "src": "images/icons/icon-72x72.png",

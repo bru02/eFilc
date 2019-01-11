@@ -1,7 +1,6 @@
-var cacheName = 'eFilc-v1.0.3';
+var cacheName = 'eFilc-v1.0.4';
 var filesToCache = [
     './assets/main.js',
-    './assets/ui.js',
     './assets/ui.css',
     './assets/base.js',
 ];
@@ -12,6 +11,7 @@ var ignoredRegexes = [
     /week/,
     /ido/
 ];
+var datasRe = new RegExp(datas.join('|'));
 var urlsToLoad = datas.map(u => `${u}?just_html=1`);
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
@@ -111,13 +111,16 @@ function load(request) {
                     var url = networkResponse.url;
                     if (url.indexOf('login') < 0)
                         cache.put(request, networkResponse);
-                    else return clone;
-                    if (url.match(datas)) {
+                    else {
+                        caches.delete(cacheName);
+                        return clone;
+                    }
+                    if (datasRe.test(url)) {
                         if (url.indexOf('just_html') < 0) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
                         } else {
                             clone.clone().text().then(e => {
-                                cache.put(url.replace(/(\?|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/ui.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
+                                cache.put(url.replace(/(\?|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
                                     headers: {
                                         'Content-Type': 'text/html'
                                     }
@@ -128,14 +131,14 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    request.url = request.url.replace(/(?<=&|\?)(fr|just_html|ido)(=[^&]*)?(&|$)/g);
-                    return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
+                    request.url = request.url.replace(/(?<=&|\?)(fr|just_html|ido)(=[^&]*)?(&|$)/g, '');
+                    return cache.match(request) || new Response('<p>Offline : ( <a href="#" onclick="history.back()">Vissza</a></p>', {
                         headers: {
                             'Content-Type': 'text/html'
                         }
                     });
                 })
-                if (request.url.match(/(fr\=)*/) || request.url.indexOf('login') > 0) return fetchPromise;
+                if (/fr\=|login/.test(request.url)) return fetchPromise;
                 return response || fetchPromise;
             })
         })

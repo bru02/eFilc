@@ -422,7 +422,7 @@ window.prefix = function () {
         },
         is: function (selector) {
             if (!selector) {
-                return false;
+                return this.length;
             }
             var match = false, comparator = getCompareFunction(selector);
             this.each(function (el) {

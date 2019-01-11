@@ -468,6 +468,10 @@ function logIn($s, $usr, $psw)
 
 function showHeader($title, $a = false)
 {
+    if (!isset($_SESSION['nonce'])) {
+        $_SESSION['nonce'] = uniqid();
+    }
+    $nonce = $_SESSION['nonce'];
     header("Connection: keep-alive");
     header("Cache-Control: private");
     header("X-Frame-Options: SAMEORIGIN");
@@ -475,7 +479,7 @@ function showHeader($title, $a = false)
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
-    header("Content-Security-Policy: default-src 'none' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://cors-anywhere.herokuapp.com/; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
+    header("Content-Security-Policy: default-src 'none' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://cors-anywhere.herokuapp.com/; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
     if (isset($_REQUEST['just_html'])) {
         echo "<title>$title | eFilc</title><div id=\"rle\"></div>
         ";
@@ -531,13 +535,50 @@ if (!hasCookie('gdpr')) {
             <button class="right modal-close btn">Oké</button>
     </div>
         <?php 
-    } ?>
+    }
+    if (isset($_GET['just_html'])) return; ?>
     </body>
     <script src="<?= ABS_URI; ?>assets/base.js" defer data-no-instant></script>
 <?php
-if (!$a) echo "<script defer data-no-instant src=\"" . ABS_URI . "assets/ui.js\"></script><script async defer data-no-instant src=\"" . ABS_URI . "assets/notification.js\"></script>";
+if (!$a) echo "<script defer data-no-instant src=\"" . ABS_URI . "assets/main.js\"></script>";
+else {
+    ?>
+    <script nonce="<?= $_SESSION['nonce']; ?>">
+    xhr = new XMLHttpRequest();
+    xhr.open('GET', "schools");
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+        if (xhr.status === 200 && xhr.responseText) {
+            var data = JSON.parse(xhr.responseText);
+            let inp = $('#sc');
+            let el = inp[0].list ? $('#slc') : $('#rslc')
+            let s = el.find('option:checked');
+            if (s.length) {
+                s = s.val();
+            }
+            el.html("");
+            $(data).each(function () {
+                el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
+            });
+            inp.on('change', function () {
+                if (!this.value) return;
+                let f = $('option[value=' + this.value + ']');
+                if (f.length) {
+                    this.setCustomValidity('');
+                } else {
+                    this.setCustomValidity('Adjon meg egy érvényes értéket');
+                }
+                M.validate_field($('#sc'))
+            });
+        }
+    };
+    xhr.send();
+
+</script>
+<?php
+
+}
 ?>
-<script data-no-instant defer src="<?= ABS_URI; ?>assets/main.js"></script>
 </html>
 <?php
 
@@ -595,7 +636,6 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
             Belépés
         </button>
     </form>
-
 <?php
 showFooter(true);
 }

@@ -1,53 +1,559 @@
-function s() {
-    if (!location.href.match(/\/orarend/g)) return;
-    window.mh = 0;
-    $('.collection-item').css('height', 'unset');
-    for (let els = $('ul'), i = 0; els.length; els = $('ul.collection li:nth-child(' + (++i) + ')')) {
-        if (i == 0) continue;
-        let m = 0;
-        els.each(e => {
-            m = Math.max($(e).height(), m);
-        })
-        els.css('height', m + 'px')
-    }
-    $('#tt')[0].scrollTo(window.innerWidth * $('b.active').index(), 0);
+function Modal(el, options) {
+    let self = {
+        open: function () {
+            if (self.isOpen) return;
+            self.isOpen = true;
+            Modal._modalsOpen++;
+            self._nthModalOpened = Modal._modalsOpen;
+            // Set Z-Index based on number of currently open modals
+            let zi = 1e3 + Modal._modalsOpen * 2;
+            self.$overlay.css({
+                zIndex: zi
+            });
+            self.$el.css({
+                zIndex: zi + 1
+            });
+            // Set opening trigger, undefined indicates modal was opened by javascript
+            // onOpenStart callback
+            if (self.options.preventScrolling) {
+                $("body").addClass('no-scroll');
+            }
+            self.$overlay.show().css({
+                opacity: self.options.opacity
+            });
+            // Animate overlay
+            self.el.insertAdjacentElement("afterend", self.$overlay[0]);
+            self.$el.addClass("open");
+            if (self.options.dismissible) {
+                var _doc = $(document);
+                _doc.on("keydown", function (e) {
+                    if (e.keyCode === 27 && self.options.dismissible) {
+                        self.close();
+                    }
+                });
+                _doc.on("focus", function (e) {
+                    // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
+                    if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
+                        self.el.focus();
+                    }
+                });
+            }
+            // this._animateIn();
+            // Focus modal
+            self.el.focus();
+        },
+        close: function () {
+            if (!self.isOpen) {
+                return;
+            }
+            self.isOpen = false;
+            Modal._modalsOpen--;
+            self._nthModalOpened = 0;
+            self.$overlay.css({
+                opacity: 0
+            });
+            self.$el.removeClass("open");
+            $("body").removeClass('no-scroll');
 
+            if (self.options.dismissible) {
+                var doc = $(document);
+                doc.off("keydown", self._handleKeydownBound);
+                doc.off("focus", self._handleFocusBound, true);
+            }
+            setTimeout(function () {
+                self.$overlay.remove();
+                // Call onCloseEnd callback
+                if (self.options.onCloseEnd) {
+                    self.options.onCloseEnd();
+                }
+            }, 250);
+        }
+    };
+    self.el = el.is() ? el[0] : el;
+    self.$el = $(el);
+    self.options = $.fn.extend({
+        opacity: .5,
+        onCloseEnd: null,
+        preventScrolling: true,
+        dismissible: true
+    }, options);
+    /**
+     * Describes open/close state of modal
+     * @type {Boolean}
+     */    self.isOpen = false;
+    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`);
+    self._nthModalOpened = 0;
+    Modal._count++;
+    self.$overlay.on("click", function () {
+        if (self.options.dismissible) {
+            self.close();
+        }
+    });
+    self.$el.on("click", function (e) {
+        var $closeTrigger = $(e.target).closest(".modal-close");
+        if ($closeTrigger.is()) {
+            self.close();
+        }
+    });
+    return self;
+}
+Modal._modalsOpen = 0;
+function Collapsible(el) {
+    // Setup tab indices
+    $(el).find(".collapsible-header").on("click", function (e) {
+        $(this).next().toggleClass('open');
+    });
+    $(el).find(":target .collapsible-body").addClass('open')
+
+}
+
+$(window).on('click', 'nr nd:first-child', function (e) {
+    $(this).closest('nr').toggleClass('open')
+})
+/* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */
+// Internal variables
+var $ua = navigator.userAgent, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
+    // Preloading-related variables
+    $history = {}, $xhr, $url = false, $title = false, $mustRedirect = false, $body = false, $timing = {}, $isPreloading = false, $isWaitingForCompletion = false;
+// Variables defined by public functions
+////////// HELPERS //////////
+function removeHash(url) {
+    return url.split("#")[0];
+}
+function getLinkTarget(target) {
+    let l = $(target).closest("a");
+    return l.is() ? l : $(target);
+}
+function isPreloadable(b) {
+    let a = b[0];
+    var domain = location.protocol + "//" + location.host;
+    return !(!b.is("a") || a.target || b.hasAttr("download") || a.href.indexOf(domain + "/") != 0 || removeHash(a.href) == $currentLocationWithoutHash || !!$(b).closest("[data-no-instant]").is());
+}
+function triggerChange() {
+    init();
+}
+function changePage(title, body, newUrl) {
+    document.documentElement.replaceChild(body, document.body);
+    $currentLocationWithoutHash = removeHash(newUrl);
+    url = newUrl.split("#");
+    history.pushState(null, null, newUrl);
+    document.title = title + String.fromCharCode(160);
+    location.hash = url[1] ? `#${url[1]}` : "";
+    instantanize();
+    bar.done();
+    triggerChange();
+}
+////////// EVENT HANDLERS //////////
+function mousedown(e) {
+    if ($lastTouchTimestamp > +new Date() - 500) {
+        return;
+        // Otherwise, click doesn't fire
+    }
+    var a = getLinkTarget(e.target);
+    if (!a.is() || !isPreloadable(a)) {
+        return;
+    }
+    preload(a[0].href);
+}
+function click(e) {
+    var a = getLinkTarget(e.target);
+    if (!a.is() || !isPreloadable(a)) {
+        return;
+    }
+    if (e.which > 1 || e.metaKey || e.ctrlKey) {
+        // Opening in new tab
+        return;
+    }
+    e.preventDefault();
+    display(a[0].href);
+}
+////////// MAIN FUNCTIONS //////////
+function instantanize() {
+    let b = $("body");
+
+    var menuElement = $('#menu');
+    if (menuElement.is()) {
+        let drg = false;
+        let waitin = false;
+        var pStart = { x: 0, y: 0 };
+        var pStop = { x: 0, y: 0 };
+        var scrolling = false;
+        let _currentOffsetX = 0;
+        let _moved = false;
+        var _opening = false;
+        var _opened = false;
+        // Sets options
+        let _tolerance = 70;
+        let _padding = 307;
+        var overlay = menuElement.next();
+        function transformTo(val) {
+            menuElement.css({ transform: `translateX(${val})` });
+        }
+
+        $(document).on('scroll', function () {
+            scrolling = true;
+        });
+
+        function open() {
+            overlay.show().css({ opacity: '' })
+            b.addClass('no-scroll');
+            transformTo(0);
+            menuElement.addClass('open')
+            _opened = true
+        }
+        function close() {
+            overlay.hide()
+            b.removeClass('no-scroll');
+            transformTo('-110%');
+            menuElement.removeClass('open')
+            _opened = false
+        }
+        $('.overlay').on('click', close);
+
+        $('#mo').on('click', () => {
+            open()
+        })
+
+        function closeThat() {
+            if (!waitin) {
+                $("#rle").css({
+                    top: "",
+                });
+                $("body").removeClass("spin");
+            }
+        }
+        b.on('touchstart', function (e) {
+            _moved = false;
+            _opening = false;
+            pStart.x = e.touches[0].pageX;
+            pStart.y = e.touches[0].pageY;
+
+            $lastTouchTimestamp = +new Date();
+            var a = getLinkTarget(e.target);
+            if (!a.is() || !isPreloadable(a)) {
+                return;
+            }
+            a.off("mousedown", mousedown);
+            preload(a[0].href);
+
+        }).on('touchmove', function (eve) {
+            overlay.hide()
+            if (_opening || _opened) overlay.show()
+            if (
+                scrolling ||
+                typeof eve.touches === 'undefined'
+            ) {
+                return;
+            }
+
+            var dif_x = eve.touches[0].clientX - pStart.x;
+            var translateX = _currentOffsetX = dif_x;
+            if (Math.abs(translateX) < _padding || pStart.x < 50) {
+                if (Math.abs(dif_x) > 20) {
+                    _opening = true;
+                    if (!_opened && dif_x > 0 || _opened && dif_x < 0) {
+
+                        if (dif_x <= 0) {
+                            translateX = dif_x + _padding;
+                            _opening = false;
+                        }
+                        let a = translateX - _padding;
+                        overlay.css({
+                            opacity: ((280 + a) / 280) * 0.2
+                        })
+                        transformTo(Math.min(a, 0) + "px");
+                        _moved = true;
+                    }
+                }
+            }
+            drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
+            b.toggleClass('no-scroll', drg)
+            if (drg && !waitin) {
+                const y = eve.touches[0].pageY - pStart.y;
+                $("#rle").css({
+                    top: Math.min(y, 120) + "px"
+                });
+            } else closeThat();
+        }).on('touchcancel', function () {
+            _moved = false;
+            _opening = false;
+            scrolling = false;
+        }).on('touchend', function (e) {
+            if (_moved) {
+                (_opening && Math.abs(_currentOffsetX) > _tolerance) ? open() : close();
+            }
+            _moved = false;
+            pStop.x = e.changedTouches[0].pageX;
+            pStop.y = e.changedTouches[0].pageY;
+            if (drg) {
+                var dY = Math.abs(pStart.y - pStop.y);
+                var dX = Math.abs(pStart.x - pStop.x);
+                if (!waitin && pStart.y < pStop.y && (
+                    (dX <= 100 && dY >= 90)
+                    || (dX / dY <= 0.3 && dY >= 60)
+                )) {
+                    closeThat();
+                    $("body").addClass("spin");
+                    waitin = true;
+                    display(addParam(location.href, "fr"));
+                } else closeThat();
+                drg = false;
+            }
+            scrolling = false;
+        });
+    }
+
+    b.on("mousedown", mousedown);
+    b.on("click", click);
+}
+function preload(url) {
+    if ($preloadTimer) {
+        clearTimeout($preloadTimer);
+        $preloadTimer = false;
+    }
+    if (!url) {
+        url = $urlToPreload;
+    }
+    if ($isPreloading && (url == $url || $isWaitingForCompletion)) {
+        return;
+    }
+    $isPreloading = true;
+    $isWaitingForCompletion = false;
+    $url = url;
+    $body = false;
+    $mustRedirect = false;
+    $timing = {
+        start: Date.now()
+    };
+    url = addParam(url, "just_html");
+    $xhr.open("GET", url);
+    $xhr.send();
+}
+function display(url) {
+    if (!("display" in $timing)) {
+        $timing.display = Date.now() - $timing.start;
+    }
+    if ($preloadTimer || !$isPreloading) {
+        /* $preloadTimer:
+           Happens when there's a delay before preloading and that delay
+           hasn't expired (preloading didn't kick in).
+  
+           !$isPreloading:
+           A link has been clicked, and preloading hasn't been initiated.
+           It happens with touch devices when a user taps *near* the link,
+           Safari/Chrome will trigger mousedown, mouseover, click (and others),
+           but when that happens we ignore mousedown/mouseover (otherwise click
+           doesn't fire). Maybe there's a way to make the click event fire, but
+           that's not worth it as mousedown/over happen just 1ms before click
+           in this situation.
+  
+           It also happens when a user uses his keyboard to navigate (with Tab
+           and Return), and possibly in other non-mainstream ways to navigate
+           a website.
+        */
+        if ($preloadTimer && $url && $url != url) {
+            /* Happens when the user clicks on a link before preloading
+               kicks in while another link is already preloading.
+            */
+            location.href = url;
+            return;
+        }
+        preload(url);
+        bar.start(0, true);
+        $isWaitingForCompletion = true;
+        // Must be set *after* calling `preload`
+        return;
+    }
+    if ($isWaitingForCompletion) {
+        /* The user clicked on a link while a page was preloading. Either on
+           the same link or on another link. If it's the same link something
+           might have gone wrong (or he could have double clicked, we don't
+           handle that case), so we send him to the page without pjax.
+           If it's another link, it hasn't been preloaded, so we redirect the
+           user to it.
+        */
+        location.href = url;
+        return;
+    }
+    if ($mustRedirect) {
+        location.href = $url;
+        return;
+    }
+    if (!$body) {
+        bar.start(0, true);
+        $isWaitingForCompletion = true;
+        return;
+    }
+    $history[$currentLocationWithoutHash].scrollY = pageYOffset;
+    $isPreloading = false;
+    $isWaitingForCompletion = false;
+    changePage($title, $body, $url);
+}
+////////// PROGRESS BAR FUNCTIONS //////////
+var bar = function () {
+    var $barContainer, $barElement, $barProgress, $barTimer;
+    function init() {
+        $barContainer = $('<div id="ic"></div>');
+        $('body').append($barContainer)
+        $barElement = $('<div id="ic-bar" class="ic-bar"></div>');
+        $barContainer.append($barElement);
+
+        var transitionProperty = prefix + "transition";
+        var style = $("<style/>");
+        style.html("#ic{position:" + ($hasTouch ? "absolute" : "fixed") + ";top:0;left:0;width:100%;pointer-events:none;z-index:9999;" + transitionProperty + ":all .25s .1s}" + ".ic-bar{background:red;width:100%;margin-left:-100%;height:2px;" + transitionProperty + ":all .25s}")
+            /* We set the bar's background in `.ic-bar` so that it can be
+               overriden in CSS with `#ic-bar`, as IDs have higher priority.
+            */;
+        $("head").append(style);
+        if ($hasTouch) {
+            updatePositionAndScale();
+            addEventListener("resize", updatePositionAndScale);
+            addEventListener("scroll", updatePositionAndScale);
+        }
+    }
+    function start(at, jump) {
+        $barProgress = at;
+        $barContainer.css({
+            opacity: 1
+        });
+        update();
+        if (jump) {
+            requestAnimationFrame(function () {
+                $barProgress = 10;
+                update();
+            })
+                /* Must be done in a timer, otherwise the CSS animation doesn't happen. */;
+        }
+        clearTimeout($barTimer);
+        $barTimer = setTimeout(inc, 500);
+    }
+    function inc() {
+        if ($barProgress < 98) {
+            $barProgress += 1 + Math.random() * 2;
+            $barTimer = setTimeout(inc, 500);
+        }
+        update();
+    }
+    function update() {
+        $barElement.css({ transform: "translate(" + $barProgress + "%)" });
+        if (!$("#ic").is() && document.body) {
+            $("body").append($barContainer);
+        }
+    }
+    function done() {
+        if ($("#ic").is()) {
+            clearTimeout($barTimer);
+            $barProgress = 100;
+            update();
+            $barContainer.css({
+                opacity: 0
+            })
+            return;
+        }
+            /* The bar container hasn't been appended: It's a new page. */            start($barProgress == 100 ? 0 : $barProgress)
+            /* $barProgress is 100 on popstate, usually. */;
+        requestAnimationFrame(done)
+            /* Must be done in a timer, otherwise the CSS animation doesn't happen. */;
+    }
+    function updatePositionAndScale() {
+        /* Adapted from code by Sam Stephenson and Mislav MarohniÄ
+           http://signalvnoise.com/posts/2407
+        */
+        $barContainer.css({
+            left: pageXOffset + "px",
+            width: innerWidth + "px",
+            top: pageYOffset + "px"
+        });
+        var landscape = "orientation" in window && Math.abs(orientation) == 90, scaleY = innerWidth / screen[landscape ? "height" : "width"] * 2
+            /* We multiply the size by 2 because the progress bar is harder
+               to notice on a mobile device.
+            */;
+        $barContainer.css("transform", "scaleY(" + scaleY + ")");
+    }
+    return {
+        init,
+        start,
+        done
+    };
+}();
+////////// PUBLIC VARIABLE AND FUNCTIONS //////////
+var supported = "pushState" in history && (!$ua.match("Android") || $ua.match("Chrome/"));
+(function () {
+    if ($currentLocationWithoutHash) {
+        /* Already initialized */
+        return;
+    }
+    if (!supported) {
+        triggerChange();
+        return;
+    }
+    $preloadOnMousedown = true;
+    $currentLocationWithoutHash = removeHash(location.href);
+    $history[$currentLocationWithoutHash] = {
+        body: document.body,
+        title: document.title,
+        scrollY: pageYOffset
+    };
+    $xhr = new XMLHttpRequest();
+    $xhr.addEventListener("readystatechange", function () {
+        if ($xhr.readyState < 4 || $xhr.status == 0) {
+            return;
+        }
+        $timing.ready = Date.now() - $timing.start;
+        var doc = document.implementation.createHTMLDocument("");
+        doc.documentElement.innerHTML = $xhr.responseText.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
+        $title = doc.title;
+        $body = doc.body;
+        var urlWithoutHash = removeHash($url);
+        $history[urlWithoutHash] = {
+            body: $body,
+            title: $title,
+            scrollY: urlWithoutHash in $history ? $history[urlWithoutHash].scrollY : 0
+        };
+        if ($isWaitingForCompletion) {
+            $isWaitingForCompletion = false;
+            display($url);
+        }
+    });
+    instantanize(true);
+    bar.init();
+    triggerChange();
+    addEventListener("popstate", function () {
+        var loc = removeHash(location.href);
+        if (loc == $currentLocationWithoutHash) {
+            return;
+        }
+        if (!(loc in $history)) {
+            location.href = location.href
+                /* Reloads the page while using cache for scripts, styles and images,
+                   unlike `location.reload()` */;
+            return;
+        }
+        $history[$currentLocationWithoutHash].scrollY = pageYOffset;
+        $currentLocationWithoutHash = loc;
+        changePage($history[loc].title, $history[loc].body, loc, $history[loc].scrollY);
+    });
+})();
+
+
+
+function s() {
+    if (/\/orarend/.test(location.href)) {
+        window.mh = 0;
+        $('.collection-item').css('height', 'unset');
+        for (let els = $('ul'), i = 0; els.is(); els = $('ul.collection li:nth-child(' + (++i) + ')')) {
+            if (i == 0) continue;
+            let m = 0;
+            els.each(e => {
+                m = Math.max($(e).height(), m);
+            })
+            els.css('height', m + 'px')
+        }
+        $('#tt')[0].scrollTo(window.innerWidth * $('b.active').index(), 0);
+    }
 }
 
 $(window).on('resize', s);
-if (location.href.match(/login/g)) {
-    xhr = new XMLHttpRequest();
-    xhr.open('GET', "datas.json");
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function () {
-        if (xhr.status === 200 && xhr.responseText) {
-            var data = JSON.parse(xhr.responseText);
-            let inp = $('#sc');
-            let el = inp[0].list ? $('#slc') : $('#rslc')
-            let s = el.find('option:checked');
-            if (s.length) {
-                s = s.val();
-            }
-            el.html("");
-            $(data).each(function () {
-                el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
-            });
-            inp.on('change', function () {
-                if (!this.value) return;
-                let f = $('option[value=' + this.value + ']');
-                if (f.length) {
-                    this.setCustomValidity('');
-                } else {
-                    this.setCustomValidity('Adjon meg egy érvényes értéket');
-                }
-                M.validate_field($('#sc'))
-            });
-        }
-    };
-    xhr.send();
-
-}
-
 const szazasra = n => Math.round(100 * n) / 100;
 function calcAvr(row) {
     let toAvr = [];
@@ -62,7 +568,7 @@ function calcAvr(row) {
             toAvr.push(...val.split('/').map(e => (e * (weight / 2))));
         len += weight;
     });
-    let avr = szazasra(toArr.reduce((prev, curr) => Number(prev) + Number(curr)) / len);
+    let avr = szazasra(toAvr.reduce((prev, curr) => Number(prev) + Number(curr)) / len);
     let nds = row.find('nd');
     let diff = szazasra(avr - nds.eq(-2).html());
     nds.eq(-1).html(diff).removeClass("red gr").addClass(diff < 0 ? 'red' : 'gr');
@@ -72,11 +578,11 @@ function calcAvr(row) {
 }
 function init() {
     let he = $(location.hash);
-    if (he.length) {
+    if (he.is()) {
         toView(he[0]);
     }
     let loc = location.href;
-    if (loc.match(/\/orarend/g)) {
+    if (/\/orarend/.test(loc)) {
         s();
         var elems = $('#modal');
         var inst = Modal(elems);
@@ -111,14 +617,28 @@ function init() {
             }, 25)
         })
     }
-    if (loc.match(/\/faliujsag/g)) {
-        $('.s12:not(.m6) .collection-item').on('click', function (e) {
+    if (/\/faliujsag/.test(loc)) {
+        $('#fj li').on('click', function (e) {
             if (!$(e.target).is('a')) {
                 $(this).find('.secondary-content')[0].click()
             }
         });
     }
-    if (loc.match(/\/lecke/g)) {
+    if (/\/lecke/.test(loc)) {
+        let isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        if (!isMobile) { // Load only on desktop cuz mobile devices have already a picker & less stuff stored on there devices -> speed increase
+            if (('DatePicker' in window)) {
+                new DatePicker();
+            } else {
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.src = 'assets/picker.js';
+                script.onload = function () {
+                    new DatePicker();
+                };
+                $("body").append(script);
+            }
+        }
         s();
         var elems = $('#modal')
         var inst = Modal(elems);
@@ -139,14 +659,13 @@ function init() {
             }
             inst.open();
         });
-        var dp = new DatePicker();
-        dp.renderCalendar()
+
         $('.fab').on('click', function () {
             inst2.open();
         });
     }
     Collapsible($('.collapsible'))
-    if (loc.match(/\/hianyzasok/g)) {
+    if (/\/hianyzasok/.test(loc)) {
         s();
         var elems = $('#modal')
         var inst = Modal(elems);
@@ -164,7 +683,7 @@ function init() {
             inst.open();
         });
     }
-    if (loc.match(/\/jegyek/g)) {
+    if (/\/jegyek/.test(loc)) {
         he.closest('nr').addClass('open');
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);
@@ -197,11 +716,9 @@ function init() {
         deleteCookie('rme');
     });
 }
-if ('ic' in window) $(() => {
-    ic.on(init);
-    ic.init("mousedown");
+$(() => {
     let g = $('#gdpr');
-    if (g.length) {
+    if (g.is()) {
         Modal(g, {
             opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
                 addCookie('gdpr');
@@ -209,9 +726,9 @@ if ('ic' in window) $(() => {
         }).open();
     }
     let p = $('.pwa');
-    if (p.length) {
+    if (p.is()) {
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
+        addEventListener('beforeinstallprompt', (e) => {
             // Prevent Chrome 67 and earlier from automatically showing the prompt
             e.preventDefault();
             // Stash the event so it can be triggered later.
@@ -237,7 +754,9 @@ if ('ic' in window) $(() => {
         });
     }
 });
-
+addEventListener('appinstalled', () => {
+    addCookie('pwa');
+});
 function addCookie(n, v = 1) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + 365);

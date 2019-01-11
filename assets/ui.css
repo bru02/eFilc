@@ -1282,11 +1282,11 @@ nbody {
 }
 
 .calendar-wrap {
-	float: left;
+  width: 190px;
 }
 
 .calendar {
-	border: 1px solid #000;
+  border: 1px solid #000;
 }
 
 .calendar-head th {
