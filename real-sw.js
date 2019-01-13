@@ -1,15 +1,18 @@
-var cacheName = 'eFilc-v1.0.4';
+var cacheName = 'eFilc-v1.0.5';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.css',
     './assets/base.js',
 ];
 var datas = ['faliujsag', 'orarend', 'jegyek', 'hianyzasok', 'feljegyzesek', 'lecke', 'profil'];
+var paramsThatCanBeIgnored = [
+    'just_html',
+    'fr',
+    'ido'
+];
 var ignoredRegexes = [
-    /just_html/,
-    /fr/,
-    /week/,
-    /ido/
+    ...paramsThatCanBeIgnored.map(e => new RegExp(e)),
+    /week/
 ];
 var datasRe = new RegExp(datas.join('|'));
 var urlsToLoad = datas.map(u => `${u}?just_html=1`);
@@ -131,8 +134,8 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    request.url = request.url.replace(/(?<=&|\?)(fr|just_html|ido)(=[^&]*)?(&|$)/g, '');
-                    return cache.match(request) || new Response('<p>Offline : ( <a href="#" onclick="history.back()">Vissza</a></p>', {
+                    request.url = request.url.replace(new RegExp("(?<=&|\\\?)(" + paramsThatCanBeIgnored.join('|') + ")(=[^&]*)?(&|$)", 'g'), '');
+                    return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
                         headers: {
                             'Content-Type': 'text/html'
                         }

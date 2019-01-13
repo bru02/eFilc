@@ -74,12 +74,13 @@ function loginViaRME()
     $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
     $cookie = explode(',', $cookie);
     if (count($cookie) == 2) {
-        if (!getToken($cookie[0], $cookie[1])) {
+        if (getToken($cookie[0], $cookie[1]) == false) {
             setcookie('rme');
             return false;
         }
         return true;
     }
+    setcookie('rme');
     return false;
 }
 function reval()
@@ -178,7 +179,31 @@ function getEvents($s, $tok)
     ));
     return $out['content'];
 }
-
+function week($week)
+{
+    if ($week < 0) {
+        $week = abs($week);
+        $week = "-$week";
+    } else {
+        $week = "+$week";
+    }
+    return [
+        strtotime('monday this week', strtotime("$week weeks")),
+        strtotime('sunday this week', strtotime("$week weeks"))
+    ];
+}
+function flatten($tt)
+{
+    $tw = [];
+    foreach ($tt as $w) {
+        foreach ($w as $day) {
+            foreach ($day as $lesson) {
+                $tw[] = $lesson;
+            }
+        }
+    }
+    return $tw;
+}
 function getStudent($s, $tok)
 {
     $out = request("https://$s.e-kreta.hu/mapi/api/v1/Student", "GET", '', array(
@@ -257,14 +282,17 @@ function getStudent($s, $tok)
         $j = $v['JustificationStateName'];
         $date = $v['LessonStartTime'];
         if (!isset($absences[$date])) {
+            $t = strtotime($date);
             $absences[$date] = array(
                 'd' => substr($date, 0, 10),
                 't' => $v['TypeName'],
                 'h' => [],
                 'j' => false,
-                'id' => $v['AbsenceId']
+                'id' => $v['AbsenceId'],
+                'w' => round((strtotime("this week monday") - strtotime("this week monday", $t)) / 604800),
+                'day' => date('w', $t),
+                'sd' => date("m. d.", $t)
             );
-
         }
         $ij = $v['JustificationState'] == 'Justified';
         $absences[$date]['j'] = $ij;

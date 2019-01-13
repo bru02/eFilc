@@ -98,14 +98,7 @@ function Modal(el, options) {
     return self;
 }
 Modal._modalsOpen = 0;
-function Collapsible(el) {
-    // Setup tab indices
-    $(el).find(".collapsible-header").on("click", function (e) {
-        $(this).next().toggleClass('open');
-    });
-    $(el).find(":target .collapsible-body").addClass('open')
 
-}
 
 $(window).on('click', 'nr nd:first-child', function (e) {
     $(this).closest('nr').toggleClass('open')
@@ -136,7 +129,7 @@ function changePage(title, body, newUrl) {
     document.documentElement.replaceChild(body, document.body);
     $currentLocationWithoutHash = removeHash(newUrl);
     url = newUrl.split("#");
-    history.pushState(null, null, newUrl);
+    history.pushState(null, null, url[0]);
     document.title = title + String.fromCharCode(160);
     location.hash = url[1] ? `#${url[1]}` : "";
     instantanize();
@@ -191,7 +184,7 @@ function instantanize() {
         }
 
         $(document).on('scroll', function () {
-            scrolling = true;
+            if (!_moved) scrolling = true;
         });
 
         function open() {
@@ -580,6 +573,7 @@ function init() {
     let he = $(location.hash);
     if (he.is()) {
         toView(he[0]);
+        $(he).find(".collapsible-body").addClass('open')
     }
     let loc = location.href;
     if (/\/orarend/.test(loc)) {
@@ -615,7 +609,11 @@ function init() {
             st = setTimeout(function () {
                 $('.btns b').removeClass('active').eq(Math.round($('#tt')[0].scrollLeft / window.innerWidth)).addClass('active');
             }, 25)
+        });
+        $('#printBtn').on('click', function () {
+            window.print();
         })
+        if (he.is('.lesson')) he[0].click();
     }
     if (/\/faliujsag/.test(loc)) {
         $('#fj li').on('click', function (e) {
@@ -626,7 +624,7 @@ function init() {
     }
     if (/\/lecke/.test(loc)) {
         let isMobile = /Mobi|Android/i.test(navigator.userAgent);
-        if (!isMobile) { // Load only on desktop cuz mobile devices have already a picker & less stuff stored on there devices -> speed increase
+        if (!isMobile) {
             if (('DatePicker' in window)) {
                 new DatePicker();
             } else {
@@ -639,7 +637,15 @@ function init() {
                 $("body").append(script);
             }
         }
-        s();
+        $('[name=t]').on('change', function () {
+            if (this.value == 'date') {
+                $('#hi').show();
+                $('#date').attr('required', true)
+            } else {
+                $('#hi').hide();
+                $('#date')[0].removeAttribute('required')
+            }
+        })
         var elems = $('#modal')
         var inst = Modal(elems);
         var inst2 = Modal($('#addModal'));
@@ -663,10 +669,21 @@ function init() {
         $('.fab').on('click', function () {
             inst2.open();
         });
+        $('form').on('submit', function () {
+            let t = $('#txt')[0],
+                v = t.innerText.trim();
+            if (v) {
+                $('#hw').val(v);
+                return true
+            }
+            t.focus();
+            return false
+        })
     }
-    Collapsible($('.collapsible'))
+    $(".collapsible .collapsible-header").on("click", function (e) {
+        $(this).next().toggleClass('open');
+    });
     if (/\/hianyzasok/.test(loc)) {
-        s();
         var elems = $('#modal')
         var inst = Modal(elems);
         $('li p').on('click', function (t) {
@@ -680,6 +697,7 @@ function init() {
             });
             elems.find(`[data-d]`).html(b.find('span').html());
             elems.find(`[data-ty]`).html(b.attr('data-ty'));
+            elems.find(`a`).eq(-1)[0].href = "orarend?week=-" + a.attr('data-l');
             inst.open();
         });
     }
@@ -773,15 +791,4 @@ if ('serviceWorker' in navigator) {
             console.log('Service Worker Registered');
             if (location.href.indexOf('login') < 0) swRegistration.sync.register('bg');
         });
-}
-
-function os() {
-    let t = $('#txt')[0],
-        v = t.innerText;
-    if (v) {
-        $('#hw').val(v);
-        return true
-    }
-    t.focus();
-    return false
 }
