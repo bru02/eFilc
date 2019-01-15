@@ -21,7 +21,9 @@ if (!isset($_SESSION['tyid'])) $_SESSION['tyid'] = false;
 if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
 if (!isset($_SESSION['authed'])) $_SESSION['authed'] = (hasCookie('rme') ? loginViaRME() : false);
 
-
+if (empty($routes)) {
+    redirect("faliujsag");
+}
 if ($routes[0] == "schools") {
     echo file_get_contents("datas.json");
     exit();
@@ -32,9 +34,7 @@ if ($routes[0] == "sw.js") {
     echo file_get_contents('real-sw.js');
     exit();
 }
-if (empty($routes)) {
-    redirect("faliujsag");
-}
+
 $is_api = false;
 if (count($routes) > 1 && $routes[0] == "api") {
     $is_api = true;
@@ -104,7 +104,7 @@ switch ($routes[0]) {
                 <?php 
                 endforeach; ?>
             </select>
-            <p class="center">
+            <p class="center j">
     <input type="radio" id="j1" name="j" value=1>
     <label for="j1">1</label>
     <input type="radio" id="j2" name="j" value=2>
@@ -116,9 +116,27 @@ switch ($routes[0]) {
     <input type="radio" id="j5" name="j" value=5>
     <label for="j5">5</label>
             </p>
+            <p class="center j" style="display:none">
+    <input type="radio" id="j6" name="j" value=1/2>
+    <label for="j6">1/2</label>
+    <input type="radio" id="j7" name="j" value=2/3>
+    <label for="j7">2/3</label>
+    <input type="radio" id="j8" name="j" value=3/4>
+    <label for="j8">3/4</label>
+    <input type="radio" id="j9" name="j" value=4/5>
+    <label for="j9">4/5</label>
+            </p>
+            <p class="center w">
+    <input type="radio" id="w1" name="w" value=200>
+    <label for="w1">TZ (200%)</label>
+    <input type="radio" id="w2" name="w" value=100>
+    <label for="w2">Sima (100%)</label>
+    <input type="radio" id="w3" name="w" value=50>
+    <label for="w3">Röpi (50%)</label>
+            </p>
                 <label>
-        <input type="checkbox" id="tz">
-        <span>TZ</span>
+        <input type="checkbox" id="tort">
+        <span>Tört jegy</span>
         </label><br>
                 <button id="cnn" class="btn">Hozzáadás</button>
                </div>
@@ -165,7 +183,7 @@ foreach ($out as $key => $day) {
     });
     echo "<nr><nd data-v=\"$key\">$key</nd>"; // class='collapsible-header'
     foreach ($months as $h) {
-        if ($h != 'Különbség') echo "<nd>";
+        if (!in_array($h, ['Különbség', 'Félév', 'Évvége'])) echo "<nd>";
         switch ($h) {
             case 'Átlag':
                 $val = $aout[$key]['Value'];
@@ -180,20 +198,27 @@ foreach ($out as $key => $day) {
                 echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
             case 'Félév':
+                $b = false;
                 foreach ($day as $d) {
                     if ($d['Type'] == 'HalfYear') {
-                        echo $v['NumberValue'];
+                        echo "<nd class='in' tooltip='Félévi jegy'>" . $v['NumberValue'];
+                        $b = true;
                         break;
                     }
                 }
+                if (!$b) echo "<nd>";
+
                 break;
             case 'Évvége':
+                $b = false;
                 foreach ($day as $d) {
                     if ($d['Type'] == 'EndYear') {
-                        echo $v['NumberValue'];
+                        echo "<nd class='in' tooltip='Évvégi jegy'>" . $v['NumberValue'];
+                        $b = true;
                         break;
                     }
                 }
+                if (!$b) echo "<nd>";
                 break;
             default:
                 // $day = array_reverse($day);
@@ -446,15 +471,10 @@ if ($db !== 0) {
     ?>
 <div class="btns">
     <?php
-    $was = false;
     foreach ($btn as $h) {
         $b = mb_substr($weeknames[$h], 0, 2);
-        if ($week == 0 && $h == date('w') || $week != 0 && !$was) {
-            echo "<b style=\"width: $w%\" class=\"active\">$b</b>";
-        } else {
-            echo "<b style=\"width: $w%\">$b</b>";
-        }
-        $was = true;
+
+        echo "<b style=\"width: $w%\" data-day=\"" . $h . "\">$b</b>";
     }
     ?>
 </div>
@@ -672,7 +692,7 @@ case "lecke":
             ob_flush();
             usort($data['Evaluations'], "date_sort");
             foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"]; ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
+            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
         <?php endforeach; ?>
         </div>
     </div>

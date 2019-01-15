@@ -553,6 +553,7 @@ function calcAvr(row) {
     let len = 0;
     row.find('b,span').each(e => {
         e = $(e);
+        if (e.is('.in')) return;
         let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5;
         let val = e.html();
         if (val.indexOf('/') < 0)
@@ -578,6 +579,9 @@ function init() {
     let loc = location.href;
     if (/\/orarend/.test(loc)) {
         s();
+        if (/(\?|&)week=0/.test(loc) || !/(\?|&)week=/.test(loc)) {
+            $('#tt')[0].scrollTo($(`[data-day="${(new Date()).getDay()}"]`).index() * innerWidth, 0)
+        }
         var elems = $('#modal');
         var inst = Modal(elems);
         $('.lesson').on('click', function () {
@@ -706,14 +710,18 @@ function init() {
         let inst = Modal($('#addModal'));
         $(".fab").on('click', inst.open);
         let tr = $('#tr');
+        $('#tort').on('change', function () {
+            $('.j').hide().eq(this.checked ? 1 : 0).show();
+            $('.j').find('input').each(e => { e.checked = false })
+        })
         $("#cnn").on('click', function () {
-            let fa = $('p>:checked').val();
+            let fa = $('p.j>:checked').val();
             if (fa !== null) {
                 let row = $(`[data-v="${tr.val()}"]`).parent(),
-                    w = $("#tz")[0].checked,
-                    tag = w ? "b" : "span",
+                    w = $('.w>:checked').val(),
+                    tag = w == 200 ? "b" : "span",
                     x = row.find("nd:not(:empty)").eq(-4), y = x[0];
-                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${w ? 2 : 1}00%' class='milenne'>${fa}</${tag}> `;
+                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${w}%' class='milenne'>${fa}</${tag}> `;
                 calcAvr(row);
                 inst.close();
                 x.parent().addClass('open')

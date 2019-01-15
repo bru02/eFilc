@@ -1080,6 +1080,9 @@ header ul a:hover, li.active {
   font-weight: 500;
   color: #fff;
 }
+.in {
+  text-align: center;
+}
 [id^=i]:target {
   background-color: orange!important;
   padding: 5px;
@@ -1228,8 +1231,14 @@ nbody {
   nr>nd:nth-last-child(2)::before {
     content: "Osztály átlag: ";
   }
+  .in::before {
+    content: "Félévi jegy: ";
+  }
   nr>nd:nth-last-child(3)::before {
     content: "Átlag: ";
+  }
+  nr>nd:nth-last-child(4)::before {
+    content: "Évvégi jegy: ";
   }
   nr [tooltip]::before {
     content: '';
