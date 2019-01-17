@@ -74,7 +74,8 @@ function loginViaRME()
     $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
     $cookie = explode(',', $cookie);
     if (count($cookie) == 2) {
-        if (getToken($cookie[0], $cookie[1]) == false) {
+        $res = getToken($cookie[0], $cookie[1]);
+        if ($res == false) {
             setcookie('rme');
             return false;
         }
@@ -87,14 +88,15 @@ function reval()
 {
     if (!$_SESSION['authed']) {
         logout();
-    } elseif (isset($_SESSION['refresh_token'])) {
-        if ($_SESSION['revalidate'] < time())
+    } elseif ($_SESSION['revalidate'] < time()) {
+        if (isset($_SESSION['refresh_token'])) {
             getToken($_SESSION['school'], $_SESSION['refresh_token']);
-    } else {
-        if (hasCookie('rme')) {
-            if (!loginViaRME()) logout();
-        } else if (ROUTES[0] != "login") {
-            logout();
+        } else {
+            if (hasCookie('rme')) {
+                if (!loginViaRME()) logout();
+            } else if (ROUTES[0] != "login") {
+                logout();
+            }
         }
     }
 }
@@ -469,7 +471,7 @@ function getToken($s, $rt)
         $_SESSION["revalidate"] = time() + (intval($res["expires_in"]));
         $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
         if (hasCookie('rme')) setcookie('rme', encrypt_decrypt('encrypt', $_SESSION['school'] . "," . $res["refresh_token"]), strtotime('+1 month'));
-        return $res;
+        return true;
     } else return false;
 }
 function getPushRegId($s, $uid, $h)
@@ -765,7 +767,7 @@ function prettyMins($min)
     $ret = "";
     if ($h != 0) $ret .= "$h óra";
     if ($m != 0) {
-        if ($h != 0) $ret .= ' , ';
+        if ($h != 0) $ret .= ', ';
         $ret .= "$m perc";
     }
     return empty($ret) ? '-' : $ret;

@@ -391,6 +391,9 @@ b.active {
   .btns {
     display: none
   }
+  .activeDay {
+    border: 2px solid orange;
+  }
   .m6 {
     width: 50%;
     margin-left: auto;
@@ -1079,9 +1082,6 @@ header ul a:hover, li.active {
   top: 100px;
   font-weight: 500;
   color: #fff;
-}
-.in {
-  text-align: center;
 }
 [id^=i]:target {
   background-color: orange!important;

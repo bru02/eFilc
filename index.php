@@ -128,11 +128,11 @@ switch ($routes[0]) {
             </p>
             <p class="center w">
     <input type="radio" id="w1" name="w" value=200>
-    <label for="w1">TZ (200%)</label>
-    <input type="radio" id="w2" name="w" value=100>
-    <label for="w2">Sima (100%)</label>
+    <label for="w1">200%</label>
+    <input type="radio" id="w2" name="w" value=100 selected>
+    <label for="w2">100%</label>
     <input type="radio" id="w3" name="w" value=50>
-    <label for="w3">Röpi (50%)</label>
+    <label for="w3">50%</label>
             </p>
                 <label>
         <input type="checkbox" id="tort">
@@ -198,27 +198,19 @@ foreach ($out as $key => $day) {
                 echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 break;
             case 'Félév':
+            case 'Évvége':
                 $b = false;
+                $type = ($h == 'Félév' ? 'Half' : 'End') . 'Year';
+                $tooltip = $h == 'Félév' ? 'Félévi' : 'Évvégi';
                 foreach ($day as $d) {
-                    if ($d['Type'] == 'HalfYear') {
-                        echo "<nd class='in' tooltip='Félévi jegy'>" . $v['NumberValue'];
+                    if ($d['Type'] == $type) {
+                        echo "<nd><b id=\"i" . $d['EvaluationId'] . "\" class='in' tooltip='$tooltip jegy'>" . $d['NumberValue'] . "</b>";
                         $b = true;
                         break;
                     }
                 }
                 if (!$b) echo "<nd>";
 
-                break;
-            case 'Évvége':
-                $b = false;
-                foreach ($day as $d) {
-                    if ($d['Type'] == 'EndYear') {
-                        echo "<nd class='in' tooltip='Évvégi jegy'>" . $v['NumberValue'];
-                        $b = true;
-                        break;
-                    }
-                }
-                if (!$b) echo "<nd>";
                 break;
             default:
                 // $day = array_reverse($day);
@@ -423,8 +415,13 @@ if ($db !== 0) {
     foreach (range(1, 6) as $h) {
         $n = $weeknames[$h];
         if (isset($data[$h])) {
-            echo "<ul class=\"collection col s12\" style=\"width: $w%\">";
-            $btn[] = $h;
+            $day = [
+                'sun', 'mon', 'tues', 'wednes', 'thurs', 'fri', 'satur'
+            ][$h];
+            $day = date('Y-m-d', strtotime($day . "day this week", strtotime("$week weeks")));
+            echo "<ul class=\"collection col s12\" style=\"width: $w%\"
+             data-day=\"$day\">";
+            $btn[] = $n;
             $th = $data[$h];
             echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
         } else {
@@ -472,9 +469,8 @@ if ($db !== 0) {
 <div class="btns">
     <?php
     foreach ($btn as $h) {
-        $b = mb_substr($weeknames[$h], 0, 2);
-
-        echo "<b style=\"width: $w%\" data-day=\"" . $h . "\">$b</b>";
+        $b = mb_substr($h, 0, 2);
+        echo "<b style=\"width: $w%\">$b</b>";
     }
     ?>
 </div>

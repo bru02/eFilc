@@ -1,4 +1,4 @@
-var cacheName = 'eFilc-v1.0.6';
+var cacheName = 'eFilc-v1.0.7';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.css',
@@ -98,7 +98,7 @@ function load(request) {
             })
             .filter(function (kv) {
                 return ignoredRegexes.every(function (ignoredRegex) {
-                    return !ignoredRegex.test(kv[0]);
+                    return ignoredRegex.test(kv[0]);
                 });
             })
             .map(function (kv) {

@@ -579,8 +579,10 @@ function init() {
     let loc = location.href;
     if (/\/orarend/.test(loc)) {
         s();
-        if (/(\?|&)week=0/.test(loc) || !/(\?|&)week=/.test(loc)) {
-            $('#tt')[0].scrollTo($(`[data-day="${(new Date()).getDay()}"]`).index() * innerWidth, 0)
+        let z = $(`[data-day="${new Date().toISOString().split('T')[0]}"]`);
+        if (z.is()) {
+            z.addClass('activeDay');
+            $('#tt')[0].scrollTo(z.index() * innerWidth, 0);
         }
         var elems = $('#modal');
         var inst = Modal(elems);
