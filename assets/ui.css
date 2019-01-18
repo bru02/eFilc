@@ -328,10 +328,7 @@ thead, nhead {
   }
 }
 
-main {
-  margin-left: auto;
-  margin-right: auto;
-}
+
 
 main:after, .row::after {
   content: "";
@@ -1162,7 +1159,29 @@ header ul a:hover, li.active {
   display: block;
   position: relative;
   padding-bottom: 50px; /* height of your footer */
- }
+  z-index: 2;
+  width: 100%;
+}
+ body {
+  /* Break the flow */
+  position: absolute;
+  top: 0;
+
+  /* Give them all the available space */
+  width: 100%;
+  height: 100%;
+
+  /* Remove the margins if any */
+  margin: 0;
+}
+html,
+body {
+    overscroll-behavior-y: contain;
+}
+body {
+  /* Sending body at the bottom of the stack */
+  z-index: 1;
+}
  footer {
   position: absolute;
   bottom: 0;

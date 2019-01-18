@@ -160,6 +160,9 @@ function click(e) {
     e.preventDefault();
     display(a[0].href);
 }
+function scrollCb() {
+    if (!_opened || !_opening) window.scrolling = true;
+}
 ////////// MAIN FUNCTIONS //////////
 function instantanize() {
     let b = $("body");
@@ -170,11 +173,11 @@ function instantanize() {
         let waitin = false;
         var pStart = { x: 0, y: 0 };
         var pStop = { x: 0, y: 0 };
-        var scrolling = false;
+        window.scrolling = false;
         let _currentOffsetX = 0;
         let _moved = false;
-        var _opening = false;
-        var _opened = false;
+        window._opening = false;
+        window._opened = false;
         // Sets options
         let _tolerance = 70;
         let _padding = 307;
@@ -183,9 +186,7 @@ function instantanize() {
             menuElement.css({ transform: `translateX(${val})` });
         }
 
-        $(document).on('scroll', function () {
-            if (!_moved) scrolling = true;
-        });
+        $(window).on('scroll', scrollCb);
 
         function open() {
             overlay.show().css({ opacity: '' })
@@ -216,25 +217,26 @@ function instantanize() {
             }
         }
         b.on('touchstart', function (e) {
-            _moved = false;
-            _opening = false;
-            pStart.x = e.touches[0].pageX;
-            pStart.y = e.touches[0].pageY;
+            if (e.touches.length == 1) {
+                _moved = false;
+                _opening = false;
+                pStart.x = e.touches[0].pageX;
+                pStart.y = e.touches[0].pageY;
 
-            $lastTouchTimestamp = +new Date();
-            var a = getLinkTarget(e.target);
-            if (!a.is() || !isPreloadable(a)) {
-                return;
+                $lastTouchTimestamp = +new Date();
+                var a = getLinkTarget(e.target);
+                if (a.is() && isPreloadable(a)) {
+                    a.off("mousedown", mousedown);
+                    preload(a[0].href);
+                }
             }
-            a.off("mousedown", mousedown);
-            preload(a[0].href);
-
         }).on('touchmove', function (eve) {
             overlay.hide()
             if (_opening || _opened) overlay.show()
             if (
                 scrolling ||
                 typeof eve.touches === 'undefined'
+                || !!Modal._modalsOpen
             ) {
                 return;
             }
@@ -551,7 +553,7 @@ const szazasra = n => Math.round(100 * n) / 100;
 function calcAvr(row) {
     let toAvr = [];
     let len = 0;
-    row.find('b,span').each(e => {
+    row.find('.jegy').each(e => {
         e = $(e);
         if (e.is('.in')) return;
         let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5;
@@ -606,7 +608,7 @@ function init() {
         });
         $('.btns b').on('click', function () {
             let t = $(this);
-            $('#tt')[0].scrollTo(window.innerWidth * t.addClass('active').index(), 0);
+            $('#tt')[0].scrollTo(window.innerWidth * t.index(), 0);
             t.siblings().removeClass('active');
         });
         let st = null;
@@ -614,7 +616,8 @@ function init() {
             clearTimeout(st);
             st = setTimeout(function () {
                 $('.btns b').removeClass('active').eq(Math.round($('#tt')[0].scrollLeft / window.innerWidth)).addClass('active');
-            }, 25)
+            }, 250);
+            scrollCb();
         });
         $('#printBtn').on('click', function () {
             window.print();
@@ -722,8 +725,8 @@ function init() {
                 let row = $(`[data-v="${tr.val()}"]`).parent(),
                     w = $('.w>:checked').val(),
                     tag = w == 200 ? "b" : "span",
-                    x = row.find("nd:not(:empty)").eq(-4), y = x[0];
-                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${w}%' class='milenne'>${fa}</${tag}> `;
+                    x = row.find(".jegy").eq(-1).parent(), y = x[0];
+                y.innerHTML += ` <${tag} tooltip='Milenne ha-val hozzáadott jegy&#xa;Súly: ${w}%' class='milenne jegy'>${fa}</${tag}> `;
                 calcAvr(row);
                 inst.close();
                 x.parent().addClass('open')

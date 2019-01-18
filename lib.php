@@ -669,7 +669,7 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 <?php
 showFooter(true);
 }
-function showNavbar($key, $container = false)
+function showNavbar($key)
 {
     $data = array(
         'faliujsag' => 'Faliújság',
@@ -681,6 +681,7 @@ function showNavbar($key, $container = false)
         'profil' => $_SESSION['name'],
     )
     ?>
+    <main>
         <header class="np">
             <a id="mo" class="header__icon hide-on-large-only">
             <svg class="menu__icon no--select" width="24px" height="24px" viewBox="0 0 48 48" fill="#fff">
@@ -735,7 +736,6 @@ function showNavbar($key, $container = false)
         </ul>
       </div>
       <div class="overlay"></div>
-      <main <?= $container ? 'class="container"' : "" ?>>
 <?php
 
 }

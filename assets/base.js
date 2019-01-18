@@ -346,7 +346,7 @@ window.prefix = function () {
                 };
             }
             return this.each(function (v) {
-                v.addEventListener(eventName, callback);
+                v.addEventListener(eventName, callback, { passive: false });
             });
         },
         val: function (value) {

@@ -129,7 +129,7 @@ switch ($routes[0]) {
             <p class="center w">
     <input type="radio" id="w1" name="w" value=200>
     <label for="w1">200%</label>
-    <input type="radio" id="w2" name="w" value=100 selected>
+    <input type="radio" id="w2" name="w" value=100 checked>
     <label for="w2">100%</label>
     <input type="radio" id="w3" name="w" value=50>
     <label for="w3">50%</label>
@@ -218,7 +218,7 @@ foreach ($out as $key => $day) {
                     if (intval(date('n', strtotime($v['Date']))) == $h && $v['Type'] == 'MidYear') {
                         $w = $v['Weight'];
                         $tag = $w == "200%" ? 'b' : 'span';
-                        echo "<$tag id=\"i" . $v['EvaluationId'] . '"  tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . '">' . $v['NumberValue'] . "</$tag> ";
+                        echo "<$tag id=\"i" . $v['EvaluationId'] . '" class="jegy" tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . '">' . $v['NumberValue'] . "</$tag> ";
                     }
                 }
                 break;
@@ -330,26 +330,28 @@ case "profil":
     showNavbar('profil', true);
     $data = $_SESSION['data'];
     ?>
-    <p>Név: <?= $data['Name'] ?></p>
-    <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
-    <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
-    <p>Iskola neve: <?= $data['InstituteName'] ?></p>
-    <ul class="collection with-header s12">
-        <li class="collection-header"><h4>Lakcímek</h4></li>
-            <?php
-            foreach ($data['AddressDataList'] as $l) :
-            ?>
-        <li class="collection-item"><?= $l ?></li>
-            <?php endforeach; ?>
-    </ul>
-    <ul class="collection with-header s12">
-        <li class="collection-header"><h4>Gondviselők</h4></li>
-            <?php
-            foreach ($data['Tutelaries'] as $t) :
-            ?>
-        <li class="collection-item"><?= $t['Name'] ?></li>
-            <?php endforeach; ?>
-    </ul>
+    <div class="container">
+        <p>Név: <?= $data['Name'] ?></p>
+        <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
+        <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
+        <p>Iskola neve: <?= $data['InstituteName'] ?></p>
+        <ul class="collection with-header s12">
+            <li class="collection-header"><h4>Lakcímek</h4></li>
+                <?php
+                foreach ($data['AddressDataList'] as $l) :
+                ?>
+            <li class="collection-item"><?= $l ?></li>
+                <?php endforeach; ?>
+        </ul>
+        <ul class="collection with-header s12">
+            <li class="collection-header"><h4>Gondviselők</h4></li>
+                <?php
+                foreach ($data['Tutelaries'] as $t) :
+                ?>
+            <li class="collection-item"><?= $t['Name'] ?></li>
+                <?php endforeach; ?>
+        </ul>
+    </div>
 <?php
 showFooter();
 break;
@@ -538,7 +540,7 @@ case "lecke":
     }
     reval();
     showHeader('Lecke');
-    showNavbar('lecke', true);
+    showNavbar('lecke');
     $i = isset($_GET['ido']) ? strtolower($_GET['ido']) : 'nap';
     $arr = [
         'het' => '-1 week',
@@ -645,65 +647,70 @@ case "lecke":
         <button class="modal-close btn">Bezárás</button>
     </div>
     </div>
-    <p class="btn-group">
-    Szűrés: 
+    <div class="container">
+        <p class="btn-group">
+        Szűrés: 
 
-<?php foreach ([
-    'nap' => 'Nap',
-    'het' => 'Hét',
-    'honap' => 'Hónap',
-    '3honap' => '3 hónap'
-] as $key => $val) { ?>
-<a href="?ido=<?= $key ?>" <?= $key == $i ? 'class="active"' : '' ?>><?= $val ?></a>
-<?php 
-} ?>
-</p>  
-    <?php if (count($_SESSION['Homework'][$i]) > 0) {
-        ?>
-        <ul class="collection">
-        <?php
-        foreach ($_SESSION['Homework'][$i] as $h) {
-            echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
-        }
-        ?>
-        </ul>
+    <?php foreach ([
+        'nap' => 'Nap',
+        'het' => 'Hét',
+        'honap' => 'Hónap',
+        '3honap' => '3 hónap'
+    ] as $key => $val) { ?>
+    <a href="?ido=<?= $key ?>" <?= $key == $i ? 'class="active"' : '' ?>><?= $val ?></a>
     <?php 
-} else echo "Nincs leckéd!";
-?>
-        <div class="fab">+</div>
-        <?php
-        showFooter();
-        break;
-    case "faliujsag":
-        reval();
-        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-        showHeader('Faliújság');
-        $data = $_SESSION['data'];
-        showNavbar('faliujsag', true);
-        if (count($data['Evaluations']) > 0) { ?>
-        <div class="col s12 m6">
-            <div class="collection with-header">
-            <div class="collection-header"><b>Legutóbbi jegyek</b></div>
-            <?php 
-            ob_flush();
-            usort($data['Evaluations'], "date_sort");
-            foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-            <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
-        <?php endforeach; ?>
+} ?>
+    </p>  
+        <?php if (count($_SESSION['Homework'][$i]) > 0) {
+            ?>
+            <ul class="collection">
+            <?php
+            foreach ($_SESSION['Homework'][$i] as $h) {
+                echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
+            }
+            ?>
+            </ul>
+        <?php 
+    } else echo "Nincs leckéd!";
+    ?>
+</div>
+<div class="fab">+</div>
+<?php
+showFooter();
+break;
+case "faliujsag":
+    reval();
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    showHeader('Faliújság');
+    $data = $_SESSION['data'];
+    showNavbar('faliujsag');
+    ?>
+<div class="container">
+    <?php
+    if (count($data['Evaluations']) > 0) { ?>
+            <div class="col s12 m6">
+                <div class="collection with-header">
+                <div class="collection-header"><b>Legutóbbi jegyek</b></div>
+                <?php 
+                ob_flush();
+                usort($data['Evaluations'], "date_sort");
+                foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
+                <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
+            <?php endforeach; ?>
+            </div>
+        </div>
+        <?php 
+    }
+    if (count($data['Absences']) > 0) { ?>
+    <div class="col s12 m6">
+        <div class="collection with-header">
+            <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
+            <?php
+            foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
+            <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['sd']; ?></span></a>
+    <?php endforeach; ?>
         </div>
     </div>
-    <?php 
-}
-if (count($data['Absences']) > 0) { ?>
-<div class="col s12 m6">
-    <div class="collection with-header">
-        <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
-        <?php
-        foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-        <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['sd']; ?></span></a>
-<?php endforeach; ?>
-    </div>
-</div>
 <?php
 
 }
@@ -747,6 +754,7 @@ if (count($_SESSION['events']) > 0) {
 <?php 
 } ?>
     </ul>
+</div>
 </div>
 <?php
 

@@ -1,14 +1,15 @@
-var cacheName = 'eFilc-v1.0.7';
+var cacheName = 'eFilc-v1.0.8';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.css',
     './assets/base.js',
+    './assets/picker.js',
 ];
 var datas = ['faliujsag', 'orarend', 'jegyek', 'hianyzasok', 'feljegyzesek', 'lecke', 'profil'];
 var paramsThatCanBeIgnored = [
     'just_html',
     'fr',
-    'ido'
+    'ido',
 ];
 var ignoredRegexes = [
     ...paramsThatCanBeIgnored.map(e => new RegExp(e)),
@@ -44,7 +45,7 @@ self.addEventListener('activate', function (e) {
 
 
 self.addEventListener('fetch', function (event) {
-    if (event.request.url.indexOf('notify') > 0 || event.request.url.indexOf('login') > 0 || event.request.method !== 'GET') return;
+    if (/login|notify/.test(event.request.url) || event.request.method !== 'GET') return;
     event.respondWith(
         load(event.request)
     );
@@ -134,7 +135,7 @@ function load(request) {
                     }
                     return clone;
                 }, function () {
-                    request.url = request.url.replace(new RegExp("(?<=&|\\\?)(" + paramsThatCanBeIgnored.join('|') + ")(=[^&]*)?(&|$)", 'g'), '');
+                    request.url = request.url.replace(new RegExp(`(?<=&|\\\?)(${paramsThatCanBeIgnored.join('|')})(=[^&]*)?(&|$)`, 'g'), '');
                     return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
                         headers: {
                             'Content-Type': 'text/html'
