@@ -1,5 +1,5 @@
 window.requestAnimationFrame || (window.requestAnimationFrame = function (f) { setTimeout(f, 0) })
-function toView(e) {
+function intoView(e) {
     requestAnimationFrame(() => { e.scrollIntoView() });
 }
 function addParam(uri, key) {

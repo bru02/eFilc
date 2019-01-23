@@ -919,9 +919,7 @@ header {
   line-height: 56px;
   top: 0;
   background: #2196F3;
-  overflow: hidden;
   z-index: 3;
-  color: #fff;
   transition: all 250ms ease;
 }
 
@@ -1004,7 +1002,7 @@ header ul li {
   float: left;
   padding: 0;
 }
-header ul a, header li.active {
+ ul a,  li.active {
   transition: all .3s;
   font-size: 1rem;
   display: block;
@@ -1070,16 +1068,23 @@ header ul a:hover, li.active {
   transform: scaleY(1);
   height: unset;
 }
-.menu__header a {
+.menu__header>*  {
   position: relative;
   padding: 32px 10px 0;
   margin-bottom: 8px;
+  top: 75px;
+  margin:0;
+}
+.menu__header>ul>li>a {
+  color: #fff;
   font-size: 19px;
   line-height: 24px;
-  top: 100px;
-  font-weight: 500;
+}
+.dropdown>li>a {
+  line-height: 56px;
   color: #fff;
 }
+
 [id^=i]:target {
   background-color: orange!important;
   padding: 5px;
@@ -1415,3 +1420,32 @@ padding: 10px;
     opacity: 1;
     transform: scale(1);
 }
+.dropdown {
+  background: #2196F3;
+  visibility: hidden;
+  opacity: 0;
+  min-width: 5rem;
+  position: absolute;
+  transition: all 0.5s ease;
+  left: 0;
+  display: none;
+  z-index: 99;
+  width: 100%;
+}
+
+ul li:hover > ul,
+ul li:focus-within > ul,
+ul li ul:hover,
+ul li ul:focus {
+  visibility: visible;
+  opacity: 1;
+  display: block
+}
+li {
+  position: relative;
+}
+ul li ul li {
+  clear: both;
+  width: 100%;
+}
+

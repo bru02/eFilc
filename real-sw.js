@@ -1,4 +1,4 @@
-var cacheName = 'eFilc-v1.0.8';
+var cacheName = 'eFilc-v1.0.9';
 var filesToCache = [
     './assets/main.js',
     './assets/ui.css',
@@ -10,6 +10,9 @@ var paramsThatCanBeIgnored = [
     'just_html',
     'fr',
     'ido',
+    'logout',
+    'addUser',
+    'u'
 ];
 var ignoredRegexes = [
     ...paramsThatCanBeIgnored.map(e => new RegExp(e)),
@@ -92,7 +95,7 @@ function load(request) {
     if (request instanceof Request) {
         var url = new URL(request.url);
 
-        url.search = url.search.slice(1)
+        url.search = url.search.slice(1).replace(/(|\&)u=0/, '')
             .split('&')
             .map(function (kv) {
                 return kv.split('=');
@@ -124,7 +127,7 @@ function load(request) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
                         } else {
                             clone.clone().text().then(e => {
-                                cache.put(url.replace(/(\?|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
+                                cache.put(url.replace(/(|\&)just_html=1/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="images/icons/icon-96x96.png" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes">	<meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
                                     headers: {
                                         'Content-Type': 'text/html'
                                     }

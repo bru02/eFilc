@@ -558,10 +558,13 @@ function calcAvr(row) {
         if (e.is('.in')) return;
         let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5;
         let val = e.html();
-        if (val.indexOf('/') < 0)
+        if (val.indexOf('/') < 0) {
+            weight = Number(weight);
+            if (weight !== weight) return;
             toAvr.push(weight * val);
-        else
+        } else {
             toAvr.push(...val.split('/').map(e => (e * (weight / 2))));
+        }
         len += weight;
     });
     let avr = szazasra(toAvr.reduce((prev, curr) => Number(prev) + Number(curr)) / len);
@@ -575,7 +578,7 @@ function calcAvr(row) {
 function init() {
     let he = $(location.hash);
     if (he.is()) {
-        toView(he[0]);
+        intoView(he[0]);
         $(he).find(".collapsible-body").addClass('open')
     }
     let loc = location.href;
@@ -730,7 +733,7 @@ function init() {
                 calcAvr(row);
                 inst.close();
                 x.parent().addClass('open')
-                toView(y);
+                intoView(y);
             }
         })
     }

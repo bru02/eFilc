@@ -16,10 +16,18 @@ if (isset($_GET['logout'])) {
     logout();
 }
 
+if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = (isset($_GET['u']) ? $_GET['u'] : 0);
+$APS = ("u=" . $_SESSION['cuid']);
+
+if (!isset($_SESSION['users'])) $_SESSION['users'] = [];
 if (!isset($_SESSION['tries'])) $_SESSION['tries'] = 0;
 if (!isset($_SESSION['tyid'])) $_SESSION['tyid'] = false;
 if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
-if (!isset($_SESSION['authed'])) $_SESSION['authed'] = (hasCookie('rme') ? loginViaRME() : false);
+if (!isset($_SESSION['authed'])) {
+    if (hasCookie('rme')) parseRME();
+}
+$_SESSION['authed'] = !empty($_SESSION['users']);
+$_SESSION['users'] = unique_multidim_array($_SESSION['users'], 'name');
 
 if (empty($routes)) {
     redirect("faliujsag");
@@ -45,39 +53,46 @@ switch ($routes[0]) {
     case "notify":
         reval();
         if (isset($_REQUEST['id'])) {
-            echo getPushRegId($_SESSION['school'], $_SESSION['id'], $_REQUEST['id']);
+            echo getPushRegId($_SESSION['id'], $_REQUEST['id']);
             exit();
         } else {
-            http_response_code(400);
-            die("Bad request!");
+            raise400();
         }
         break;
     case "login":
-        if (!$_SESSION['authed']) {
-            if (hasCookie('rme')) {
-                loginViaRME();
-            }
+        $au = isset($_GET['addUser']);
+        if (!$_SESSION['authed'] || $au) {
             if (isset($_POST['school']) && isset($_POST['usr']) && isset($_POST['psw']) && isset($_SESSION['_token']) && isset($_POST['_token'])) {
                 if ($_POST['_token'] == $_SESSION['_token']) {
-                    $out = $_POST['school'];
-                    $res = logIn($out, $_POST['usr'], $_POST['psw']);
+                    $out = urlencode($_POST['school']);
+                    $usr = urlencode($_POST['usr']);
+                    $psw = urlencode($_POST['psw']);
+                    $res = request("https://$out.e-kreta.hu/idp/api/v1/Token", "POST", "institute_code=$out&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
+                    $res = json_decode($res['content'], true);
                     if (isset($res['error'])) {
                         $_SESSION['tries']++;
                         sleep(($_SESSION['tries'] - 1) ^ 2);
-                        promptLogin(htmlentities($_POST['usr']), "", htmlentities($out), "Rossz felhasználónév/jelszó!");
+                        promptLogin(htmlentities($_POST['usr']), '', htmlentities($out), "Rossz felhasználónév/jelszó!");
                         exit();
                     }
+                    $_SESSION['cuid'] = $id = isset($_GET['addUser']) ? count($_SESSION['users']) : 0;
+                    $_SESSION['users'][$id] = [
+                        'rtok' => $res["refresh_token"],
+                        'revalidate' => time() + (intval($res["expires_in"])),
+                        'sch' => $out,
+                        'tok' => $res['access_token']
+                    ];
                     $_SESSION['authed'] = true;
-                    $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
-                    if (isset($_POST['rme']) && $_POST['rme'] == "1") {
-                        setcookie('rme', encrypt_decrypt('encrypt', $_SESSION['school'] . "," . $_SESSION['refresh_token']), strtotime('+1 year'));
-                    }
+                    $_SESSION['data'] = getStudent();
+                    $_SESSION['users'][$id]['name'] = $_SESSION['name'];
+                    $_SESSION['users'][$id]['persistant'] = (isset($_POST['rme']) && $_POST['rme'] == "1");
+                    updateRME();
                     redirect("faliujsag");
                 } else {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
                     unset($_SESSION['_token']);
-                    promptLogin("", '', '', "Token mismatch!");
+                    promptLogin('', '', '', 'Token mismatch!');
                     exit();
                 }
             } else {
@@ -90,7 +105,7 @@ switch ($routes[0]) {
         break;
     case "jegyek":
         reval();
-        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
@@ -174,6 +189,9 @@ $aout = [];
 
 foreach ($avrg as $d) {
     $key = $d["Subject"];
+    if ($key == "Hit- és erkölcstan") {
+        $key = "Erkölcstan";
+    }
     $aout[$key] = $d;
 }
 
@@ -186,16 +204,31 @@ foreach ($out as $key => $day) {
         if (!in_array($h, ['Különbség', 'Félév', 'Évvége'])) echo "<nd>";
         switch ($h) {
             case 'Átlag':
-                $val = $aout[$key]['Value'];
-                echo "$val";
+                if (isset($aout[$key])) {
+
+                    $val = $aout[$key]['Value'];
+                    echo "$val";
+                } else {
+                    echo "-";
+                }
                 break;
             case 'Osztály átlag':
-                $val = $aout[$key]['ClassValue'];
-                echo "$val";
+                if (isset($aout[$key])) {
+
+                    $val = $aout[$key]['ClassValue'];
+                    echo "$val";
+                } else {
+                    echo "-";
+                }
                 break;
             case 'Különbség':
-                $val = floatval($aout[$key]['Difference']);
-                echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
+                if (isset($aout[$key])) {
+                    $val = floatval($aout[$key]['Difference']);
+                    echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
+                } else {
+                    echo "-";
+                }
+
                 break;
             case 'Félév':
             case 'Évvége':
@@ -204,7 +237,7 @@ foreach ($out as $key => $day) {
                 $tooltip = $h == 'Félév' ? 'Félévi' : 'Évvégi';
                 foreach ($day as $d) {
                     if ($d['Type'] == $type) {
-                        echo "<nd><b id=\"i" . $d['EvaluationId'] . "\" class='in' tooltip='$tooltip jegy'>" . $d['NumberValue'] . "</b>";
+                        echo "<nd><b id=\"i" . $d['EvaluationId'] . "\" class='in' tooltip='$tooltip jegy&#xa;" . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Teacher'] . "'>" . $d['NumberValue'] . "</b>";
                         $b = true;
                         break;
                     }
@@ -238,7 +271,7 @@ showFooter();
 break;
 case "feljegyzesek":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
     showHeader('Feljegyzések');
     showNavbar('feljegyzesek');
     ?>
@@ -275,7 +308,7 @@ showFooter();
 break;
 case "hianyzasok":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
@@ -311,7 +344,7 @@ foreach ($_SESSION['data']['Absences'] as $val) : ?>
         }
         foreach ($val['h'] as $g) {
             ?>
-            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?= $g['s']; ?>" data-l="<?= $val['w'] . '#d' . $val['day'] . 'h' . $g['i'] ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
+            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?= $g['s']; ?>" data-l="<?= $val['w'] . '&' . $APS . '#d' . $val['day'] . 'h' . $g['i'] ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
         <?php 
     } ?>
         </div>
@@ -325,7 +358,7 @@ showFooter();
 break;
 case "profil":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
     showHeader('Profil');
     showNavbar('profil', true);
     $data = $_SESSION['data'];
@@ -361,7 +394,7 @@ case "orarend":
 
     $week = isset($_GET['week']) ? intval($_GET['week']) : 0;
     list($monday, $friday) = week($week);
-    $data = timetable($_SESSION['school'], $_SESSION["token"], $monday, $friday);
+    $data = timetable($monday, $friday);
     $monday = date('Y-m-d', $monday);
     $friday = date('Y-m-d', $friday);
     $data = array_shift($data);
@@ -484,19 +517,17 @@ break;
 case "lecke":
     reval();
     if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['t']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
-        $date = time();
-        $name = $_SESSION['name'];
-        $txt = str_replace(["|", ","], ["&#124;", "&#44;"], $_POST['txt']);
-        $tr = str_replace(["|", ","], ["&#124;", "&#44;"], htmlspecialchars($_POST['tr']));
+        $tr = $_POST['tr'];
         if ($_POST['t'] == 'date' && isset($_POST['date'])) {
             $deadline = strtotime($_POST['date']);
+            if ($deadline == false) raise400();
         } elseif ($_POST['t'] == 'nxtLesson') {
             $i = 0;
             $t = time();
             while (true) {
                 $i++;
                 $nxt = strtotime('+1 week', $t);
-                $tt = timetable($_SESSION['school'], $_SESSION['token'], $t, $nxt);
+                $tt = timetable($t, $nxt);
                 foreach ($tt as $w) {
                     foreach ($w as $day) {
                         foreach ($day as $lesson) {
@@ -518,25 +549,41 @@ case "lecke":
                 }
             }
         } else {
-            http_response_code(400);
-            die('Bad request!');
+            raise400();
         }
 
-        $nw = "$date|$name|$deadline|$txt|$tr";
+        $conn = connect();
+        $date = time();
+        $name = $conn->real_escape_string(htmlspecialchars($_SESSION['name']));
+        $txt = $conn->real_escape_string(htmlspecialchars($_POST['txt']));
+        $tr = $conn->real_escape_string(htmlspecialchars($tr));
+        $uid = $_SESSION['data']['StudentId'];
+        $sql = "INSERT INTO `homework` (`id`, `uid`, `subject`, `text`, `deadline`, `name`, `date`) VALUES (NULL, '$uid', '$tr', '$txt', $deadline, '$name', $date)";
 
-        if (hasCookie('lecke')) {
-            setcookie('lecke', encrypt_decrypt('encrypt', encrypt_decrypt('decrypt', $_COOKIE['lecke']) . ',' . $nw), strtotime('1 year'));
+        if ($conn->query($sql) === true) {
+            $conn->close();
+            unset($_POST, $_SESSION['Homework']);
+            redirect('../lecke', 303);
         } else {
-            setcookie('lecke', encrypt_decrypt('encrypt', $nw), strtotime('1 year'));
+            echo "Error: " . $conn->error;
+            $conn->close();
         }
-        unset($_POST, $_SESSION['Homework']);
-        redirect('../lecke', 303);
     }
-    if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles" && hasCookie('lecke')) {
-        $d = urldecode($_GET['did']);
-        setcookie('lecke', encrypt_decrypt('encrypt', str_replace(',,', ',', str_replace($d, '', encrypt_decrypt('decrypt', $_COOKIE['lecke'])))), strtotime('1 year'));
-        unset($_SESSION['Homework']);
-        redirect('../lecke', 303);
+    if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles") {
+        $id = intval($_GET['did']);
+        $conn = connect();
+        // sql to delete a record
+        $sql = "DELETE FROM homework WHERE id=$id";
+
+        if ($conn->query($sql) === true) {
+            $conn->close();
+            unset($_SESSION['Homework']);
+            redirect('../lecke', 303);
+        } else {
+            echo "Error deleting record: " . $conn->error;
+            $conn->close();
+        }
+
     }
     reval();
     showHeader('Lecke');
@@ -554,16 +601,16 @@ case "lecke":
     if (!isset($_SESSION['Homework'][$i]) || isset($_GET['fr'])) {
         $_SESSION['Homework'] = [];
         $_SESSION['Homework'][$i] = [];
-        $data = timetable($_SESSION['school'], $_SESSION["token"], $start, time());
+        $data = timetable($start, time());
         $tw = flatten($data);
         foreach ($tw as $lesson) {
             if (isset($lesson['teacherHW'])) {
                 $hw = "[]";
                 if ($lesson['studentHW']) {
-                    $hw = getHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['teacherHW']);
+                    $hw = getHomeWork($lesson['teacherHW']);
                 }
                 if ($hw == "[]") {
-                    $hw = getTeacherHomeWork($_SESSION['school'], $_SESSION['token'], $lesson['teacherHW']);
+                    $hw = getTeacherHomeWork($lesson['teacherHW']);
                 }
                 $hw = json_decode($hw, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
@@ -575,26 +622,25 @@ case "lecke":
                 }
             }
         }
-        if (hasCookie('lecke')) {
-            $v = explode(',', encrypt_decrypt('decrypt', $_COOKIE['lecke']));
-            $c = [];
-            foreach ($v as $h) {
-                $s = explode('|', $h);
-                if (count($s) !== 5 || $s[2] < time()) continue;
+        $conn = connect();
+        $uid = $_SESSION['data']['StudentId'];
+        $sql = "SELECT * FROM homework WHERE uid=$uid";
+        $result = $conn->query($sql);
+
+        if ($result->num_rows > 0) {
+    // output data of each row
+            while ($row = $result->fetch_assoc()) {
                 $n = [];
-                $n['FeladasDatuma'] = date('Y-m-d', $s[0]);
-                $n['TanuloNev'] = $s[1];
-                $n['Hatarido'] = date('Y-m-d', $s[2]);
-                $n['Szoveg'] = $s[3];
-                $n['Tantargy'] = $s[4];
-                $n['DID'] = $h;
-                $c[] = $h;
-                if ($s[0] > $start) $_SESSION['Homework'][$i][] = $n;
-            }
-            if ($c !== $v) {
-                setcookie('lecke', encrypt_decrypt('encrypt', implode(',', $c)), strtotime('1 year'));
+                $n['FeladasDatuma'] = date('Y-m-d', $row['date']);
+                $n['TanuloNev'] = $row['name'];
+                $n['Hatarido'] = date('Y-m-d', $row['deadline']);
+                $n['Szoveg'] = $row['text'];
+                $n['Tantargy'] = $row['subject'];
+                $n['DID'] = $row['id'];
+                if ($row['date'] > $start) $_SESSION['Homework'][$i][] = $n;
             }
         }
+        $conn->close();
         usort($_SESSION['Homework'][$i], function ($a, $b) {
             return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
         });
@@ -616,7 +662,7 @@ case "lecke":
     </div>
     <div id="addModal" class="modal n">
     <div class="modal-content">
-        <form action="<?= ABS_URI; ?>lecke/ujLecke" method="post">
+        <form action="<?= ABS_URI; ?>lecke/ujLecke?<?= $APS; ?>" method="post">
         <h3>Új lecke</h3>
         <p>Ezek csak a te gépeden lesznek el mentve!</p>
     <select name="tr">
@@ -680,7 +726,7 @@ showFooter();
 break;
 case "faliujsag":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent($_SESSION['school'], $_SESSION['token']);
+    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
     showHeader('Faliújság');
     $data = $_SESSION['data'];
     showNavbar('faliujsag');
@@ -695,7 +741,7 @@ case "faliujsag":
                 ob_flush();
                 usort($data['Evaluations'], "date_sort");
                 foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-                <a href="<?= ABS_URI; ?>jegyek#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= $val['Value'] . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
+                <a href="<?= ABS_URI; ?>jegyek?<?= $APS; ?>#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= ucfirst($val['Value']) . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
             <?php endforeach; ?>
             </div>
         </div>
@@ -707,7 +753,7 @@ case "faliujsag":
             <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
             <?php
             foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-            <a href="<?= ABS_URI; ?>hianyzasok#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['sd']; ?></span></a>
+            <a href="<?= ABS_URI; ?>hianyzasok?<?= $APS; ?>#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['sd']; ?></span></a>
     <?php endforeach; ?>
         </div>
     </div>
@@ -727,7 +773,7 @@ if (count($data['Notes']) > 0) { ?>
             <p><?= $note['Content'] ?><br>
                 <?= tLink($note['Teacher']) ?>
             </p>
-            <a href="<?= ABS_URI; ?>feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
+            <a href="<?= ABS_URI; ?>feljegyzesek?<?= $APS; ?>#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
         </li>
 <?php 
 } ?>
@@ -737,7 +783,7 @@ if (count($data['Notes']) > 0) { ?>
 
 }
 ob_flush();
-if (!isset($_SESSION['events']) || isset($_GET['fr'])) $_SESSION['events'] = json_decode(getEvents($_SESSION['school'], $_SESSION['token']));
+if (!isset($_SESSION['events']) || isset($_GET['fr'])) $_SESSION['events'] = json_decode(getEvents());
 if (count($_SESSION['events']) > 0) {
     ?>
 <div class="col s12">
@@ -815,7 +861,7 @@ default:
     <body class="e404">
         <div class="container">
             <div class="big">Hoppá! Nem kénne itt lenned</div>
-            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="<?= ABS_URI; ?>faliujsag">vissza</a> térni.</div>
+            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="<?= ABS_URI; ?>faliujsag?<?= $APS; ?>">vissza</a> térni.</div>
         </div>
     </body>
 </html>
