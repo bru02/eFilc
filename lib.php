@@ -86,7 +86,13 @@ function parseRME()
     foreach ($cookie as $c) {
         $c = explode(',', $c);
         if (count($c) == 3) {
-            $u[] = $c;
+            $u[] = [
+                'sch' => $c[0],
+                'rtok' => $c[1],
+                'name' => base64_decode($c[2]),
+                'revalidate' => 0,
+                'persistant' => true,
+            ];
         }
     }
 
@@ -95,14 +101,14 @@ function parseRME()
     }
 
     if (isset($u[$id])) {
-        $res = getToken($u[$id][0], $u[$id][1]);
+        $res = getToken($u[$id]['sch'], $u[$id]['rtok']);
         if (!$res) {
             unset($_SESSION['users'][$id]);
             updateRME();
         }
         return $res;
     } else {
-        redirect('faliujsag');
+        if (ROUTES[0] != 'faliujsag') redirect('faliujsag');
         return false;
     }
 }
@@ -523,16 +529,17 @@ function getToken($s, $rt)
     if ($res['code'] != 200) return false;
     $res = json_decode($res['content'], true);
     if (isset($res) && is_array($res)) {
-        $_SESSION['data'] = getStudent();
         $id = $_SESSION['cuid'];
         $_SESSION['users'][$id] = [
             'rtok' => $res["refresh_token"],
             'revalidate' => time() + (intval($res["expires_in"])),
             'sch' => $s,
-            'name' => $_SESSION['name'],
             'tok' => $res['access_token'],
             'persistant' => $_SESSION['users'][$id]['persistant']
         ];
+        $_SESSION['data'] = getStudent();
+        $_SESSION['users'][$id]['name'] = $_SESSION['name'];
+
         updateRME();
 
         return true;
