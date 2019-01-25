@@ -1,14 +1,22 @@
 <?php
 require_once("lib.php");
-$base_url = getCurrentUri();
-$routes = array();
-$routess = explode('/', $base_url);
-foreach ($routess as $route) {
-    if (trim($route) != '' && !empty($route))
-        array_push($routes, $route);
-}
-define('ROUTES', $routes);
 
+$base_url = getCurrentUri();
+$routes = [];
+$routess = explode('/', $base_url);
+
+foreach ($routess as $route) {
+    if (trim($route) != '' && !empty($route)) $routes[] = $route;
+}
+$is_api = false;
+
+if (count($routes) > 1 && $routes[0] == "api") {
+    $is_api = true;
+    array_shift($routes);
+    if (isset($_REQUEST['token'])) $_SESSION['token'] = urlencode($_REQUEST['token']);
+}
+
+define('ROUTES', $routes);
 $uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
 define('ABS_URI', 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://" . $_SERVER['SERVER_NAME'] . str_replace('//', '/', "/" . "$uri/"));
 
@@ -20,45 +28,51 @@ if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = (isset($_GET['u']) ? $_GET['u
 $APS = ("u=" . $_SESSION['cuid']);
 
 if (!isset($_SESSION['users'])) $_SESSION['users'] = [];
+
 if (!isset($_SESSION['tries'])) $_SESSION['tries'] = 0;
+
 if (!isset($_SESSION['tyid'])) $_SESSION['tyid'] = false;
+
 if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
+
 if (!isset($_SESSION['authed'])) {
     if (hasCookie('rme')) parseRME();
 }
+
 $_SESSION['authed'] = !empty($_SESSION['users']);
 $_SESSION['users'] = unique_multidim_array($_SESSION['users'], 'name');
 
-if (empty($routes)) {
+if (empty(ROUTES)) {
     redirect("faliujsag");
 }
-if ($routes[0] == "schools") {
-    echo file_get_contents("datas.json");
-    exit();
-}
-if ($routes[0] == "sw.js") {
-    header('Content-Type: application/javascript');
-    header('Service-Worker-Allowed: /');
-    echo file_get_contents('real-sw.js');
-    exit();
-}
-
-$is_api = false;
-if (count($routes) > 1 && $routes[0] == "api") {
-    $is_api = true;
-    array_shift($routes);
-    if (isset($_REQUEST['token'])) $_SESSION['token'] = urlencode($_REQUEST['token']);
-}
-switch ($routes[0]) {
+switch (ROUTES[0]) {
+    case "schools":
+        header('Content-Type: application/json');
+        die(file_get_contents("datas.json"));
+        break;
+    case "sw.js":
+        header('Content-Type: application/javascript');
+        header('Service-Worker-Allowed: /');
+        die(file_get_contents("real-sw.js"));
+        break;
     case "notify":
         reval();
         if (isset($_REQUEST['id'])) {
-            echo getPushRegId($_SESSION['id'], $_REQUEST['id']);
+            if (strpos($id, 'gcm') > -1) {
+                $id = split('gcm/send/', $_REQUEST['id'])[1];
+                $platform = 'Gcm';
+            } elseif (strpos($id, 'push.apple.com') > -1) {
+                $id = split('/3/device/', $_REQUEST['id'])[1];
+                $platform = 'Apn';
+            }
+            echo getPushRegId($_SESSION['id'], $_REQUEST['id'], $platform);
             exit();
         } else {
             raise400();
         }
+
         break;
+
     case "login":
         $au = isset($_GET['addUser']);
         if (!$_SESSION['authed'] || $au) {
@@ -75,13 +89,9 @@ switch ($routes[0]) {
                         promptLogin(htmlentities($_POST['usr']), '', htmlentities($out), "Rossz felhasználónév/jelszó!");
                         exit();
                     }
+
                     $_SESSION['cuid'] = $id = isset($_GET['addUser']) ? count($_SESSION['users']) : 0;
-                    $_SESSION['users'][$id] = [
-                        'rtok' => $res["refresh_token"],
-                        'revalidate' => time() + (intval($res["expires_in"])),
-                        'sch' => $out,
-                        'tok' => $res['access_token']
-                    ];
+                    $_SESSION['users'][$id] = ['rtok' => $res["refresh_token"], 'revalidate' => time() + (intval($res["expires_in"])), 'sch' => $out, 'tok' => $res['access_token']];
                     $_SESSION['authed'] = true;
                     $_SESSION['data'] = getStudent();
                     $_SESSION['users'][$id]['name'] = $_SESSION['name'];
@@ -102,7 +112,9 @@ switch ($routes[0]) {
         } else {
             redirect('faliujsag');
         }
+
         break;
+
     case "jegyek":
         reval();
         if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
@@ -114,9 +126,10 @@ switch ($routes[0]) {
         <h3>Milenne ha...</h3>
         <p>Tantárgy: </p>
             <select id="tr">
-                <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
-                    <option value="<?= $avr['Subject']; ?>"><?= $avr['Subject']; ?> - <?= $avr['Value']; ?></option>
-                <?php 
+                <?php
+                foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
+                    <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?> - <?php echo $avr['Value']; ?></option>
+                <?php
                 endforeach; ?>
             </select>
             <p class="center j">
@@ -152,7 +165,7 @@ switch ($routes[0]) {
                 <label>
         <input type="checkbox" id="tort">
         <span>Tört jegy</span>
-        </label><br>
+        </label><br />
                 <button id="cnn" class="btn">Hozzáadás</button>
                </div>
     <div class="modal-footer">
@@ -170,6 +183,7 @@ switch ($routes[0]) {
         foreach ($months as $a) {
             echo "<nd>$a</nd>\n\r";
         }
+
         $data = $_SESSION['data'];
         $avrg = $data['SubjectAverages'];
         $data = $data['Evaluations'];
@@ -184,43 +198,49 @@ foreach ($data as $d) {
     if (!isset($out[$key])) $out[$key] = [];
     $out[$key][] = $d;
 }
+
 ksort($out);
 $aout = [];
-
 foreach ($avrg as $d) {
     $key = $d["Subject"];
     if ($key == "Hit- és erkölcstan") {
         $key = "Erkölcstan";
     }
+
     $aout[$key] = $d;
 }
 
 foreach ($out as $key => $day) {
-    usort($day, function ($b, $a) {
-        return strtotime($b['Date']) - strtotime($a['Date']);
-    });
+    usort(
+        $day,
+        function ($b, $a) {
+            return strtotime($b['Date']) - strtotime($a['Date']);
+        }
+    );
     echo "<nr><nd data-v=\"$key\">$key</nd>"; // class='collapsible-header'
     foreach ($months as $h) {
         if (!in_array($h, ['Különbség', 'Félév', 'Évvége'])) echo "<nd>";
         switch ($h) {
             case 'Átlag':
                 if (isset($aout[$key])) {
-
                     $val = $aout[$key]['Value'];
                     echo "$val";
                 } else {
                     echo "-";
                 }
+
                 break;
+
             case 'Osztály átlag':
                 if (isset($aout[$key])) {
-
                     $val = $aout[$key]['ClassValue'];
                     echo "$val";
                 } else {
                     echo "-";
                 }
+
                 break;
+
             case 'Különbség':
                 if (isset($aout[$key])) {
                     $val = floatval($aout[$key]['Difference']);
@@ -230,6 +250,7 @@ foreach ($out as $key => $day) {
                 }
 
                 break;
+
             case 'Félév':
             case 'Évvége':
                 $b = false;
@@ -242,11 +263,14 @@ foreach ($out as $key => $day) {
                         break;
                     }
                 }
-                if (!$b) echo "<nd>";
 
+                if (!$b) echo "<nd>";
                 break;
+
             default:
-                // $day = array_reverse($day);
+
+				// $day = array_reverse($day);
+
                 foreach ($day as $v) {
                     if (intval(date('n', strtotime($v['Date']))) == $h && $v['Type'] == 'MidYear') {
                         $w = $v['Weight'];
@@ -254,14 +278,18 @@ foreach ($out as $key => $day) {
                         echo "<$tag id=\"i" . $v['EvaluationId'] . '" class="jegy" tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . '">' . $v['NumberValue'] . "</$tag> ";
                     }
                 }
+
                 break;
         }
+
         ob_flush();
         echo "</nd>";
     }
+
     echo "</nr>";
     ob_flush();
 }
+
 ?>
         </nbody>
 </notes>
@@ -269,6 +297,7 @@ foreach ($out as $key => $day) {
 <?php
 showFooter();
 break;
+
 case "feljegyzesek":
     reval();
     if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
@@ -291,21 +320,23 @@ case "feljegyzesek":
     usort($data['Notes'], 'date_sort');
     foreach ($data['Notes'] as $h) {
         ?>
-    <tr id="i<?= $h['NoteId']; ?>">
-    <td><?= explode('T', $h['Date'])[0]; ?></td>
-    <td tooltip="<?= $h['Type']; ?>"><?= $h["Title"]; ?></td>
-    <td><?= tLink($h['Teacher']); ?></td>
-    <td><?= $h['Content']; ?></td>
+    <tr id="i<?php echo $h['NoteId']; ?>">
+    <td><?php echo explode('T', $h['Date'])[0]; ?></td>
+    <td tooltip="<?php echo $h['Type']; ?>"><?php echo $h["Title"]; ?></td>
+    <td><?php echo tLink($h['Teacher']); ?></td>
+    <td><?php echo $h['Content']; ?></td>
     </tr>
     <?php
     ob_flush();
 }
+
 ?>
     </tbody>
 </table>
 <?php
 showFooter();
 break;
+
 case "hianyzasok":
     reval();
     if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
@@ -330,32 +361,41 @@ case "hianyzasok":
 <?php
 ob_flush();
 foreach ($_SESSION['data']['Absences'] as $val) : ?>
-    <li id="i<?= $val['id']; ?>" class="collection-item">
-        <div <?= isset($val['h']) ? 'class="collapsible-header"' : ''; ?> data-ty="<?= $val['t']; ?>">
-        <?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?= $val['d']; ?></span>
+    <li id="i<?php echo $val['id']; ?>" class="collection-item">
+        <div <?php echo isset($val['h']) ? 'class="collapsible-header"' : ''; ?> data-ty="<?php echo $val['t']; ?>">
+        <?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span>
         </div>
-        <?php if (isset($val['h'])) : ?>
+        <?php
+        if (isset($val['h'])) : ?>
         <div class="collapsible-body">
-        <?php 
+        <?php
         if (count($val['h']) > 1) {
-            usort($val['h'], function ($a, $b) {
-                return $a['i'] - $b['i'];
-            });
+            usort(
+                $val['h'],
+                function ($a, $b) {
+                    return $a['i'] - $b['i'];
+                }
+            );
         }
+
         foreach ($val['h'] as $g) {
             ?>
-            <p class="collection-item" data-ct="<?= $g['ct']; ?>" data-jst="<?= $g['jst']; ?>" data-t="<?= htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?= $g['s']; ?>" data-l="<?= $val['w'] . '&' . $APS . '#d' . $val['day'] . 'h' . $g['i'] ?>"><?= $g['sub']; ?><span class="secondary-content"><?= $g['stat']; ?></span></p>
-        <?php 
+            <p class="collection-item" data-ct="<?php echo $g['ct']; ?>" data-jst="<?php echo $g['jst']; ?>" data-t="<?php echo htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?php echo $g['s']; ?>" data-l="<?php echo $val['w'] . '&' . $APS . '#d' . $val['day'] . 'h' . $g['i'] ?>"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
+        <?php
+
     } ?>
         </div>
-<?php endif; ?>
+<?php
+endif; ?>
     </li>
-<?php endforeach; ?>
+<?php
+endforeach; ?>
 </ul>
-<p class="center">Igazolt hiányzás: <?= prettyMins($_SESSION['data']['igazolt']) ?>; Igazolatlan hiányzás: <?= prettyMins($_SESSION['data']['igazolatlan']) ?>; Összes hiányzás: <?= prettyMins($_SESSION['data']['osszes']) ?></p>
+<p class="center">Igazolt hiányzás: <?php echo prettyMins($_SESSION['data']['igazolt']) ?>; Igazolatlan hiányzás: <?php echo prettyMins($_SESSION['data']['igazolatlan']) ?>; Összes hiányzás: <?php echo prettyMins($_SESSION['data']['osszes']) ?></p>
 <?php
 showFooter();
 break;
+
 case "profil":
     reval();
     if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
@@ -364,34 +404,37 @@ case "profil":
     $data = $_SESSION['data'];
     ?>
     <div class="container">
-        <p>Név: <?= $data['Name'] ?></p>
-        <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
-        <p>Osztályfönők: <?= $data['FormTeacher']['Name'] ?></p>
-        <p>Iskola neve: <?= $data['InstituteName'] ?></p>
+        <p>Név: <?php echo $data['Name'] ?></p>
+        <p>Születtél <?php echo date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?php echo $data['PlaceOfBirth'] ?></p>
+        <p>Osztályfönők: <?php echo $data['FormTeacher']['Name'] ?></p>
+        <p>Iskola neve: <?php echo $data['InstituteName'] ?></p>
         <ul class="collection with-header s12">
             <li class="collection-header"><h4>Lakcímek</h4></li>
                 <?php
                 foreach ($data['AddressDataList'] as $l) :
                 ?>
-            <li class="collection-item"><?= $l ?></li>
-                <?php endforeach; ?>
+            <li class="collection-item"><?php echo $l
+                                        ?></li>
+                <?php
+                endforeach; ?>
         </ul>
         <ul class="collection with-header s12">
             <li class="collection-header"><h4>Gondviselők</h4></li>
                 <?php
                 foreach ($data['Tutelaries'] as $t) :
                 ?>
-            <li class="collection-item"><?= $t['Name'] ?></li>
-                <?php endforeach; ?>
+            <li class="collection-item"><?php echo $t['Name'] ?></li>
+                <?php
+                endforeach; ?>
         </ul>
     </div>
 <?php
 showFooter();
 break;
+
 case "orarend":
     reval();
     if (isset($_GET['fr'])) $_SESSION['tt'] = [];
-
     $week = isset($_GET['week']) ? intval($_GET['week']) : 0;
     list($monday, $friday) = week($week);
     $data = timetable($monday, $friday);
@@ -403,13 +446,14 @@ case "orarend":
         header("Content-Type: application/json");
         break;
     }
+
     showHeader('Órarend');
     showNavbar('orarend');
     ?>
 <div class="container center np">
-    <a href="<?= getWeekURL($week - 1); ?>" class="left">&#10094;</a>
-    <a href="<?= getWeekURL($week + 1); ?>" class="right">&#10095;</a>
-    <span class="center"><?= $monday . ' - ' . $friday; ?></span>
+    <a href="<?php echo getWeekURL($week - 1); ?>" class="left">&#10094;</a>
+    <a href="<?php echo getWeekURL($week + 1); ?>" class="right">&#10095;</a>
+    <span class="center"><?php echo $monday . ' - ' . $friday; ?></span>
 </div>
     <div id="modal" class="modal n">
     <div class="modal-content">
@@ -429,19 +473,20 @@ case "orarend":
     <div id="tt">
 <?php
 ob_flush();
-
 $hs = [];
 foreach ($data as $day) {
     foreach ($day as $lesson) {
         $hs[] = $lesson['count'];
     }
 }
+
 if (empty($hs)) {
     $sh = $lh = 0;
 } else {
     $sh = min($hs);
     $lh = max($hs);
 }
+
 $db = count($data);
 $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"];
 $btn = [];
@@ -450,9 +495,7 @@ if ($db !== 0) {
     foreach (range(1, 6) as $h) {
         $n = $weeknames[$h];
         if (isset($data[$h])) {
-            $day = [
-                'sun', 'mon', 'tues', 'wednes', 'thurs', 'fri', 'satur'
-            ][$h];
+            $day = ['sun', 'mon', 'tues', 'wednes', 'thurs', 'fri', 'satur'][$h];
             $day = date('Y-m-d', strtotime($day . "day this week", strtotime("$week weeks")));
             echo "<ul class=\"collection col s12\" style=\"width: $w%\"
              data-day=\"$day\">";
@@ -471,6 +514,7 @@ if ($db !== 0) {
             if (!isset($lout[$key])) $lout[$key] = [];
             $lout[$key][] = $d;
         }
+
         foreach (range($sh, $lh) as $hour) {
             $was = false;
             if (isset($lout[$hour])) {
@@ -482,19 +526,23 @@ if ($db !== 0) {
                     $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
                     file_put_contents('sch.json', json_encode($c));
                 }
+
                 echo '<li class="collection-item" data-nth="' . $hour . '">';
                 foreach ($lout[$hour] as $lesson) {
                     echo '<div  id="' . "d$h" . "h$hour" . '" class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/><i data-time="' . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">' . $lesson['room'] . '</span></div>';
                     $wl++;
                 }
+
                 echo '</li>';
             } else {
                 echo "<li class=\"collection-item\"></li>";
             }
+
             if ($wl >= count($th)) break;
 
             $i++;
         }
+
         echo "</ul>";
     }
 } else echo "<p class=\"center\">Ezen a héten nincsenek óráid!</p>";
@@ -507,46 +555,62 @@ if ($db !== 0) {
         $b = mb_substr($h, 0, 2);
         echo "<b style=\"width: $w%\">$b</b>";
     }
+
     ?>
 </div>
 <?php
 
 }
+
 showFooter();
 break;
+
 case "lecke":
     reval();
-    if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['t']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke") {
-        $tr = $_POST['tr'];
-        if ($_POST['t'] == 'date' && isset($_POST['date'])) {
-            $deadline = strtotime($_POST['date']);
-            if ($deadline == false) raise400();
-        } elseif ($_POST['t'] == 'nxtLesson') {
-            $i = 0;
-            $t = time();
-            while (true) {
-                $i++;
-                $nxt = strtotime('+1 week', $t);
-                $tt = timetable($t, $nxt);
-                foreach ($tt as $w) {
-                    foreach ($w as $day) {
-                        foreach ($day as $lesson) {
-                            if ($lesson['subject'] == $tr) {
-                                $s = $lesson['start'];
-                                if ($s > time()) {
-                                    $deadline = $s;
+    if (!isset($_SESSION['_token'])) {
+        $_SESSION['_token'] = sha1(uniqid());
+    }
+
+    if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['t']) && isset(ROUTES[1]) && ROUTES[1] == "ke" && isset($_POST['_token'])) {
+        if ($_POST['_token'] == $_SESSION['_token']) {
+            $tr = $_POST['tr'];
+            if ($_POST['t'] == 'date' && isset($_POST['date'])) {
+                $deadline = strtotime($_POST['date']);
+                if ($deadline == false) raise400();
+            } elseif ($_POST['t'] == 'nxtLesson') {
+                $i = 0;
+                $t = time();
+                while (true) {
+                    $i++;
+                    $nxt = strtotime('+1 week', $t);
+                    $tt = timetable($t, $nxt);
+                    foreach ($tt as $w) {
+                        foreach ($w as $day) {
+                            foreach ($day as $lesson) {
+                                if ($lesson['subject'] == $tr) {
+                                    $s = $lesson['start'];
+                                    if ($s > time()) {
+                                        $deadline = $s;
+                                    }
                                 }
                             }
+
+                            if (isset($deadline)) break;
                         }
+
                         if (isset($deadline)) break;
                     }
+
+                    $t = $nxt;
                     if (isset($deadline)) break;
+
+                    if ($i > 5) {
+                        $deadline = 'Nincs következő óra a következő 5 héten';
+                    }
                 }
-                $t = $nxt;
-                if (isset($deadline)) break;
-                if ($i > 5) {
-                    $deadline = 'Nincs következő óra a következő 5 héten';
-                }
+            } else {
+                unset($_SESSION['_token']);
+                raise400();
             }
         } else {
             raise400();
@@ -559,7 +623,6 @@ case "lecke":
         $tr = $conn->real_escape_string(htmlspecialchars($tr));
         $uid = $_SESSION['data']['StudentId'];
         $sql = "INSERT INTO `homework` (`id`, `uid`, `subject`, `text`, `deadline`, `name`, `date`) VALUES (NULL, '$uid', '$tr', '$txt', $deadline, '$name', $date)";
-
         if ($conn->query($sql) === true) {
             $conn->close();
             unset($_POST, $_SESSION['Homework']);
@@ -569,12 +632,15 @@ case "lecke":
             $conn->close();
         }
     }
+
     if (isset($_GET['did']) && isset(ROUTES[1]) && ROUTES[1] == "torles") {
         $id = intval($_GET['did']);
         $conn = connect();
-        // sql to delete a record
-        $sql = "DELETE FROM homework WHERE id=$id";
 
+		// sql to delete a record
+
+        $uid = $_SESSION['data']['StudentId'];
+        $sql = "DELETE FROM homework WHERE id=$id AND `uid`=$uid";
         if ($conn->query($sql) === true) {
             $conn->close();
             unset($_SESSION['Homework']);
@@ -583,18 +649,13 @@ case "lecke":
             echo "Error deleting record: " . $conn->error;
             $conn->close();
         }
-
     }
+
     reval();
     showHeader('Lecke');
     showNavbar('lecke');
     $i = isset($_GET['ido']) ? strtolower($_GET['ido']) : 'nap';
-    $arr = [
-        'het' => '-1 week',
-        'honap' => '-1 months',
-        '3honap' => '-3 months',
-        'nap' => 'yesterday'
-    ];
+    $arr = ['het' => '-1 week', 'honap' => '-1 months', '3honap' => '-3 months', 'nap' => 'yesterday'];
     $i = isset($arr[$i]) ? $i : 'nap';
     $rt = $arr[$i];
     $start = strtotime($rt);
@@ -609,26 +670,31 @@ case "lecke":
                 if ($lesson['studentHW']) {
                     $hw = getHomeWork($lesson['teacherHW']);
                 }
+
                 if ($hw == "[]") {
                     $hw = getTeacherHomeWork($lesson['teacherHW']);
                 }
+
                 $hw = json_decode($hw, true);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     continue;
                 }
+
                 foreach ($hw as $homework) {
                     $hw['Tantargy'] = $lesson['subject'];
                     $_SESSION['Homework'][$i][] = $hw;
                 }
             }
         }
+
         $conn = connect();
         $uid = $_SESSION['data']['StudentId'];
         $sql = "SELECT * FROM homework WHERE uid=$uid";
         $result = $conn->query($sql);
-
         if ($result->num_rows > 0) {
-    // output data of each row
+
+			// output data of each row
+
             while ($row = $result->fetch_assoc()) {
                 $n = [];
                 $n['FeladasDatuma'] = date('Y-m-d', $row['date']);
@@ -640,10 +706,14 @@ case "lecke":
                 if ($row['date'] > $start) $_SESSION['Homework'][$i][] = $n;
             }
         }
+
         $conn->close();
-        usort($_SESSION['Homework'][$i], function ($a, $b) {
-            return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
-        });
+        usort(
+            $_SESSION['Homework'][$i],
+            function ($a, $b) {
+                return strtotime($a['Hatarido']) - strtotime($b['Hatarido']);
+            }
+        );
     }
 
     ?>
@@ -662,13 +732,13 @@ case "lecke":
     </div>
     <div id="addModal" class="modal n">
     <div class="modal-content">
-        <form action="<?= ABS_URI; ?>lecke/ujLecke?<?= $APS; ?>" method="post">
+        <form action="<?php echo ABS_URI; ?>lecke/ke?<?php echo $APS; ?>" method="post">
         <h3>Új lecke</h3>
-        <p>Ezek csak a te gépeden lesznek el mentve!</p>
     <select name="tr">
-        <?php foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
-            <option value="<?= $avr['Subject']; ?>"><?= $avr['Subject']; ?></option>
-        <?php 
+        <?php
+        foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
+            <option value="<?php echo $avr['Subject']; ?>"><?php echo $avr['Subject']; ?></option>
+        <?php
         endforeach; ?>
     </select>
        <p>Feladat:</p>
@@ -681,11 +751,12 @@ case "lecke":
            <label for="cs">Más</label>
        </p>
        <div id="hi" class="input-field" style="display:none">
-            <input type="date" id="date" min="<?= date('Y-m-d'); ?>" class="validate" name="date" placeholder>
+            <input type="date" id="date" min="<?php echo date('Y-m-d'); ?>" class="validate" name="date" placeholder>
             <label for="date">Határ idő</label>
            <div id="dp"></div>
        </div>
        <input type="hidden" id="hw" name="txt">
+       <input type="hidden" name="_token" value="<?php echo $_SESSION['_token'] ?>">
        <p><input class="btn" type="submit" value="Mentés"></p>
     </form>
     </div>
@@ -697,26 +768,28 @@ case "lecke":
         <p class="btn-group">
         Szűrés: 
 
-    <?php foreach ([
-        'nap' => 'Nap',
-        'het' => 'Hét',
-        'honap' => 'Hónap',
-        '3honap' => '3 hónap'
-    ] as $key => $val) { ?>
-    <a href="?ido=<?= $key ?>" <?= $key == $i ? 'class="active"' : '' ?>><?= $val ?></a>
-    <?php 
+    <?php
+    foreach (['nap' => 'Nap', 'het' => 'Hét', 'honap' => 'Hónap', '3honap' => '3 hónap'] as $key => $val) { ?>
+    <a href="?ido=<?php echo $key
+                    ?>&<?php echo $APS
+                        ?>" <?php echo $key == $i ? 'class="active"' : '' ?>><?php echo $val ?></a>
+    <?php
+
 } ?>
     </p>  
-        <?php if (count($_SESSION['Homework'][$i]) > 0) {
+        <?php
+        if (count($_SESSION['Homework'][$i]) > 0) {
             ?>
             <ul class="collection">
             <?php
             foreach ($_SESSION['Homework'][$i] as $h) {
                 echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
             }
+
             ?>
             </ul>
-        <?php 
+        <?php
+
     } else echo "Nincs leckéd!";
     ?>
 </div>
@@ -724,6 +797,7 @@ case "lecke":
 <?php
 showFooter();
 break;
+
 case "faliujsag":
     reval();
     if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
@@ -737,29 +811,34 @@ case "faliujsag":
             <div class="col s12 m6">
                 <div class="collection with-header">
                 <div class="collection-header"><b>Legutóbbi jegyek</b></div>
-                <?php 
+                <?php
                 ob_flush();
                 usort($data['Evaluations'], "date_sort");
                 foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-                <a href="<?= ABS_URI; ?>jegyek?<?= $APS; ?>#i<?= $val['EvaluationId'] ?>" class="collection-item"><?= ucfirst($val['Value']) . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($val['Date'])); ?></span></a>
-            <?php endforeach; ?>
+                <a href="<?php echo ABS_URI; ?>jegyek?<?php echo $APS; ?>#i<?php echo $val['EvaluationId'] ?>" class="collection-item"><?php echo ucfirst($val['Value']) . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
+            <?php
+            endforeach; ?>
             </div>
         </div>
-        <?php 
+        <?php
+
     }
+
     if (count($data['Absences']) > 0) { ?>
     <div class="col s12 m6">
         <div class="collection with-header">
             <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
             <?php
             foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-            <a href="<?= ABS_URI; ?>hianyzasok?<?= $APS; ?>#i<?= $val['id']; ?>" class="collection-item"><?= ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?= $val['sd']; ?></span></a>
-    <?php endforeach; ?>
+            <a href="<?php echo ABS_URI; ?>hianyzasok?<?php echo $APS; ?>#i<?php echo $val['id']; ?>" class="collection-item"><?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?php echo $val['sd']; ?></span></a>
+    <?php
+    endforeach; ?>
         </div>
     </div>
 <?php
 
 }
+
 if (count($data['Notes']) > 0) { ?>
 <div id="fj" class="col s12">
     <ul class="collection with-header">
@@ -769,19 +848,21 @@ if (count($data['Notes']) > 0) { ?>
     foreach (array_slice($data['Notes'], 0, 6) as $note) {
         ?>
         <li class="collection-item">
-            <span class="title"><?= $note['Title'] ?></span>
-            <p><?= $note['Content'] ?><br>
-                <?= tLink($note['Teacher']) ?>
+            <span class="title"><?php echo $note['Title'] ?></span>
+            <p><?php echo $note['Content'] ?><br />
+                <?php echo tLink($note['Teacher']) ?>
             </p>
-            <a href="<?= ABS_URI; ?>feljegyzesek?<?= $APS; ?>#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
+            <a href="<?php echo ABS_URI; ?>feljegyzesek?<?php echo $APS; ?>#i<?php echo $note['NoteId']; ?>" class="secondary-content"><?php echo date('m. d.', strtotime($note['Date'])); ?></a>
         </li>
-<?php 
+<?php
+
 } ?>
     </ul>
 </div>
 <?php
 
 }
+
 ob_flush();
 if (!isset($_SESSION['events']) || isset($_GET['fr'])) $_SESSION['events'] = json_decode(getEvents());
 if (count($_SESSION['events']) > 0) {
@@ -793,11 +874,12 @@ if (count($_SESSION['events']) > 0) {
     foreach (array_slice($_SESSION['events'], 0, 6) as $event) {
         ?>
         <li class="collection-item">
-            <p><?= $event['Content'] ?>
+            <p><?php echo $event['Content'] ?>
             </p>
-            <a href="#i<?= $event['EventId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($event['Date'])); ?></a>
+            <a href="#i<?php echo $event['EventId']; ?>" class="secondary-content"><?php echo date('m. d.', strtotime($event['Date'])); ?></a>
         </li>
-<?php 
+<?php
+
 } ?>
     </ul>
 </div>
@@ -805,8 +887,10 @@ if (count($_SESSION['events']) > 0) {
 <?php
 
 }
+
 showFooter();
 break;
+
 default:
     header("Connection: keep-alive");
     header("Cache-Control: private");
@@ -825,7 +909,7 @@ default:
         <title>404 | eFilc</title>
         <style>
             body {
-                background-image: url(<?= ABS_URI; ?>assets/astronauta.jpg), url(<?= ABS_URI; ?>assets/Stars404.png);
+                background-image: url(<?php echo ABS_URI; ?>assets/astronauta.jpg), url(<?php echo ABS_URI; ?>assets/Stars404.png);
                 background-color: #000;
                 background-position: right top, center center;
                 background-repeat: no-repeat, repeat;
@@ -861,7 +945,7 @@ default:
     <body class="e404">
         <div class="container">
             <div class="big">Hoppá! Nem kénne itt lenned</div>
-            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="<?= ABS_URI; ?>faliujsag?<?= $APS; ?>">vissza</a> térni.</div>
+            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="<?php echo ABS_URI; ?>faliujsag?<?php echo $APS; ?>">vissza</a> térni.</div>
         </div>
     </body>
 </html>

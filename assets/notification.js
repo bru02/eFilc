@@ -50,11 +50,7 @@
           .then(function (subscription) {
             console.info('Push notification subscribed.');
             console.log(subscription);
-            var subscription_id = subscription.endpoint.split('gcm/send/')[1];
-
-            console.log("Subscription ID", subscription_id);
-
-            fetch('notify?id=' + subscription_id);
+            fetch('notify?id=' + encodeURIComponent(subscription));
             changePushStatus(true);
           })
           .catch(function (error) {

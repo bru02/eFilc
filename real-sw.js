@@ -90,7 +90,14 @@ self.addEventListener('notificationclick', function (event) {
     );
 
 });
-
+function fallback(request) {
+    request.url = request.url.replace(new RegExp(`(?<=&|\\\?)(${paramsThatCanBeIgnored.join('|')})(=[^&]*)?(&|$)`, 'g'), '');
+    return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
+        headers: {
+            'Content-Type': 'text/html'
+        }
+    });
+}
 function load(request) {
     if (request instanceof Request) {
         var url = new URL(request.url);
@@ -111,6 +118,15 @@ function load(request) {
             .join('&');
 
         request.url = url.toString();
+        if (/\/lecke/.test(request.url)) {
+            return async function () {
+                try {
+                    return await fetch(request);
+                } catch (err) {
+                    return fallback(request);
+                }
+            }();
+        }
         return caches.open(cacheName).then(function (cache) {
             return cache.match(request).then(function (response) {
                 var fetchPromise = fetch(request).then(function (networkResponse) {
@@ -137,13 +153,8 @@ function load(request) {
                         }
                     }
                     return clone;
-                }, function () {
-                    request.url = request.url.replace(new RegExp(`(?<=&|\\\?)(${paramsThatCanBeIgnored.join('|')})(=[^&]*)?(&|$)`, 'g'), '');
-                    return cache.match(request) || new Response('<p>Offline : ( <a href="faliujsag">Vissza</a></p>', {
-                        headers: {
-                            'Content-Type': 'text/html'
-                        }
-                    });
+                }, () => {
+                    return fallback(request);
                 })
                 if (/fr\=|login/.test(request.url)) return fetchPromise;
                 return response || fetchPromise;

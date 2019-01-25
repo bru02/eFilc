@@ -29,8 +29,8 @@ function tLink($t)
         }
 
         $n = $t;
-        $s = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna'];
-        $r = ['', 'attila', 'csilla', 'tamas', 'erika'];
+        $s = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
+        $r = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa'];
         $t = explode(' ', str_replace($s, $r, $t));
         if (count($t) > 3) {
             array_pop($t);
@@ -546,10 +546,10 @@ function getToken($s, $rt)
     } else return false;
 }
 
-function getPushRegId($uid, $h)
+function getPushRegId($uid, $h, $platform)
 {
     $s = $_SESSION['users'][$_SESSION['cuid']]['sch'];
-    $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$s&instituteUserId=$uid&platform=Gcm&notificationType=1&handle=$h", array(
+    $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$s&instituteUserId=$uid&platform=$platform&notificationType=1&handle=$h", array(
         "apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0"
     ));
 
@@ -595,7 +595,7 @@ function showHeader($title, $a = false)
 	<meta name="msapplication-navbutton-color" content="#2196F3">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="msapplication-starturl" content="/">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
 	<meta name="Description" content="eFilc, gyors eKréta kliens a webre">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
@@ -953,7 +953,7 @@ function updateRME()
             $us[] = $u['sch'] . ',' . $u['rtok'] . ',' . base64_encode($u['name']);
         }
     }
-    setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us), strtotime('+1 month')));
+    setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us)), strtotime('+1 month'));
 }
 
 function activateUser($id)
