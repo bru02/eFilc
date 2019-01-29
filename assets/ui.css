@@ -1255,14 +1255,14 @@ nbody {
   nr>nd:nth-last-child(2)::before {
     content: "Osztály átlag: ";
   }
-  .in::before {
+  nr>nd:nth-child(7)::before {
     content: "Félévi jegy: ";
   }
   nr>nd:nth-last-child(3)::before {
     content: "Átlag: ";
   }
   nr>nd:nth-last-child(4)::before {
-    content: "Évvégi jegy: ";
+    content: "Év végi jegy: ";
   }
   nr [tooltip]::before {
     content: '';

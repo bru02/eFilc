@@ -20,11 +20,9 @@ define('ROUTES', $routes);
 $uri = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
 define('ABS_URI', 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://" . $_SERVER['SERVER_NAME'] . str_replace('//', '/', "/" . "$uri/"));
 
-if (isset($_GET['logout'])) {
-    logout();
-}
-
 if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = (isset($_GET['u']) ? $_GET['u'] : 0);
+
+
 $APS = ("u=" . $_SESSION['cuid']);
 
 if (!isset($_SESSION['users'])) $_SESSION['users'] = [];
@@ -38,9 +36,22 @@ if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
 if (!isset($_SESSION['authed'])) {
     if (hasCookie('rme')) parseRME();
 }
-
 $_SESSION['authed'] = !empty($_SESSION['users']);
 $_SESSION['users'] = unique_multidim_array($_SESSION['users'], 'name');
+if($_SESSION['authed'] && isset($_GET['debug'])) {
+    echo "<pre>Token:\n\r";
+
+    $parts =explode('.', $_SESSION['users'][$_SESSION['cuid']]['tok']);
+    $parts[0] =json_decode(base64_decode($parts[0]),true);
+    $parts[1] =json_decode( base64_decode($parts[1]),true);
+
+    print_r($parts);
+    print_r(explode('##',base64_decode( $_SESSION['users'][$_SESSION['cuid']]['rtok'])));
+    echo "</pre>";
+}
+if (isset($_GET['logout'])) {
+    logout();
+}
 
 if (empty(ROUTES)) {
     redirect("faliujsag");
@@ -74,30 +85,31 @@ switch (ROUTES[0]) {
         break;
 
     case "login":
-        $au = isset($_GET['addUser']);
+    case "addUser":
+        $au = ROUTES[0] == 'addUser';
         if (!$_SESSION['authed'] || $au) {
             if (isset($_POST['school']) && isset($_POST['usr']) && isset($_POST['psw']) && isset($_SESSION['_token']) && isset($_POST['_token'])) {
                 if ($_POST['_token'] == $_SESSION['_token']) {
-                    $out = urlencode($_POST['school']);
+                    $sch = urlencode($_POST['school']);
                     $usr = urlencode($_POST['usr']);
                     $psw = urlencode($_POST['psw']);
-                    $res = request("https://$out.e-kreta.hu/idp/api/v1/Token", "POST", "institute_code=$out&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
+                    $res = request("https://$sch.e-kreta.hu/idp/api/v1/Token", "POST", "institute_code=$sch&userName=$usr&password=$psw&grant_type=password&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
                     $res = json_decode($res['content'], true);
                     if (isset($res['error'])) {
                         $_SESSION['tries']++;
                         sleep(($_SESSION['tries'] - 1) ^ 2);
-                        promptLogin(htmlentities($_POST['usr']), '', htmlentities($out), "Rossz felhasználónév/jelszó!");
+                        promptLogin(htmlentities($_POST['usr']), '', htmlentities($sch), "Rossz felhasználónév/jelszó!");
                         exit();
                     }
 
-                    $_SESSION['cuid'] = $id = isset($_GET['addUser']) ? count($_SESSION['users']) : 0;
-                    $_SESSION['users'][$id] = ['rtok' => $res["refresh_token"], 'revalidate' => time() + (intval($res["expires_in"])), 'sch' => $out, 'tok' => $res['access_token']];
+                    $_SESSION['cuid'] = $id = isset($au) ? count($_SESSION['users']) : 0;
+                    $_SESSION['users'][$id] = ['rtok' => $res["refresh_token"], 'revalidate' => time() + (intval($res["expires_in"])), 'sch' => $sch, 'tok' => $res['access_token']];
                     $_SESSION['authed'] = true;
                     $_SESSION['data'] = getStudent();
                     $_SESSION['users'][$id]['name'] = $_SESSION['name'];
                     $_SESSION['users'][$id]['persistant'] = (isset($_POST['rme']) && $_POST['rme'] == "1");
                     updateRME();
-                    redirect("faliujsag");
+                    redirect("faliujsag?u=$id");
                 } else {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
@@ -180,50 +192,46 @@ switch (ROUTES[0]) {
             </nd>
         <?php
         $months = array_merge(range(9, 12), [1, 'Félév'], range(2, 6), ['Évvége', 'Átlag', 'Osztály átlag', 'Különbség']);
-        foreach ($months as $a) {
-            echo "<nd>$a</nd>\n\r";
+        foreach ($months as $month) {
+            echo "<nd>$month</nd>\n\r";
         }
 
         $data = $_SESSION['data'];
-        $avrg = $data['SubjectAverages'];
-        $data = $data['Evaluations'];
+        $evals = $data['Evaluations'];
         ?>
         </tr>
     </nhead>
     <nbody>
 <?php
-$out = [];
-foreach ($data as $d) {
-    $key = $d["Subject"];
-    if (!isset($out[$key])) $out[$key] = [];
-    $out[$key][] = $d;
+ob_flush();
+$sch = [];
+foreach ($evals as $d) {
+    $tantargy = $d["Subject"];
+    if (!isset($sch[$tantargy])) $sch[$tantargy] = [];
+    $sch[$tantargy][] = $d;
 }
 
-ksort($out);
-$aout = [];
-foreach ($avrg as $d) {
-    $key = $d["Subject"];
-    if ($key == "Hit- és erkölcstan") {
-        $key = "Erkölcstan";
-    }
-
-    $aout[$key] = $d;
+ksort($sch);
+$averages = [];
+foreach ($data['SubjectAverages'] as $avrg) {
+    $tantargy = $avrg["Subject"];
+    $averages[$tantargy] = $avrg;
 }
 
-foreach ($out as $key => $day) {
+foreach ($sch as $tantargy => $lessons) {
     usort(
-        $day,
+        $lessons,
         function ($b, $a) {
             return strtotime($b['Date']) - strtotime($a['Date']);
         }
     );
-    echo "<nr><nd data-v=\"$key\">$key</nd>"; // class='collapsible-header'
-    foreach ($months as $h) {
-        if (!in_array($h, ['Különbség', 'Félév', 'Évvége'])) echo "<nd>";
-        switch ($h) {
+    echo "<nr><nd data-v=\"$tantargy\">$tantargy</nd>";
+    foreach ($months as $note) {
+        if (!in_array($note, ['Különbség', 'Félév', 'Évvége'])) echo "<nd>";
+        switch ($note) {
             case 'Átlag':
-                if (isset($aout[$key])) {
-                    $val = $aout[$key]['Value'];
+                if (isset($averages[$tantargy])) {
+                    $val = $averages[$tantargy]['Value'];
                     echo "$val";
                 } else {
                     echo "-";
@@ -232,8 +240,8 @@ foreach ($out as $key => $day) {
                 break;
 
             case 'Osztály átlag':
-                if (isset($aout[$key])) {
-                    $val = $aout[$key]['ClassValue'];
+                if (isset($averages[$tantargy])) {
+                    $val = $averages[$tantargy]['ClassValue'];
                     echo "$val";
                 } else {
                     echo "-";
@@ -242,8 +250,8 @@ foreach ($out as $key => $day) {
                 break;
 
             case 'Különbség':
-                if (isset($aout[$key])) {
-                    $val = floatval($aout[$key]['Difference']);
+                if (isset($averages[$tantargy])) {
+                    $val = floatval($averages[$tantargy]['Difference']);
                     echo "<nd" . ($val != 0 ? (' class="' . ($val < 0 ? 'red' : 'gr') . '"') : '') . ">$val";
                 } else {
                     echo "-";
@@ -254,11 +262,11 @@ foreach ($out as $key => $day) {
             case 'Félév':
             case 'Évvége':
                 $b = false;
-                $type = ($h == 'Félév' ? 'Half' : 'End') . 'Year';
-                $tooltip = $h == 'Félév' ? 'Félévi' : 'Évvégi';
-                foreach ($day as $d) {
+                $type = ($note == 'Félév' ? 'Half' : 'End') . 'Year';
+                foreach ($lessons as $d) {
                     if ($d['Type'] == $type) {
-                        echo "<nd><b id=\"i" . $d['EvaluationId'] . "\" class='in' tooltip='$tooltip jegy&#xa;" . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Teacher'] . "'>" . $d['NumberValue'] . "</b>";
+                        $tooltip = $d['TypeName'];
+                        echo "<nd><b id=\"i" . $d['EvaluationId'] . "\" class='in' tooltip='$tooltip&#xa;Feljegyzés: " . (empty($d['Theme']) ? '-' : $d['Theme']) . "&#xa;" . date('Y. m. d.', strtotime($d['Date'])) . '&#xa;' . $d['Teacher'] . "'>" . $d['NumberValue'] . "</b>";
                         $b = true;
                         break;
                     }
@@ -268,14 +276,11 @@ foreach ($out as $key => $day) {
                 break;
 
             default:
-
-				// $day = array_reverse($day);
-
-                foreach ($day as $v) {
-                    if (intval(date('n', strtotime($v['Date']))) == $h && $v['Type'] == 'MidYear') {
-                        $w = $v['Weight'];
+                foreach ($lessons as $lesson) {
+                    if (intval(date('n', strtotime($lesson['Date']))) == $note && $lesson['Type'] == 'MidYear') {
+                        $w = $lesson['Weight'];
                         $tag = $w == "200%" ? 'b' : 'span';
-                        echo "<$tag id=\"i" . $v['EvaluationId'] . '" class="jegy" tooltip="' . date('Y. m. d.', strtotime($v['Date'])) . '&#xa;' . $v['Mode'] . '&#xa;Téma: ' . $v['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $v['Teacher'] . '">' . $v['NumberValue'] . "</$tag> ";
+                        echo "<$tag id=\"i" . $lesson['EvaluationId'] . '" class="jegy" tooltip="' . date('Y. m. d.', strtotime($lesson['Date'])) . '&#xa;' . $lesson['Mode'] . '&#xa;Téma: ' . $lesson['Theme'] . '&#xa;Súly: ' . $w . '&#xa;' . $lesson['Teacher'] . '">' . $lesson['NumberValue'] . "</$tag> ";
                     }
                 }
 
@@ -318,13 +323,13 @@ case "feljegyzesek":
     $data = $_SESSION['data'];
     ob_flush();
     usort($data['Notes'], 'date_sort');
-    foreach ($data['Notes'] as $h) {
+    foreach ($data['Notes'] as $note) {
         ?>
-    <tr id="i<?php echo $h['NoteId']; ?>">
-    <td><?php echo explode('T', $h['Date'])[0]; ?></td>
-    <td tooltip="<?php echo $h['Type']; ?>"><?php echo $h["Title"]; ?></td>
-    <td><?php echo tLink($h['Teacher']); ?></td>
-    <td><?php echo $h['Content']; ?></td>
+    <tr id="i<?php echo $note['NoteId']; ?>">
+    <td><?php echo explode('T', $note['Date'])[0]; ?></td>
+    <td tooltip="<?php echo $note['Type']; ?>"><?php echo $note["Title"]; ?></td>
+    <td><?php echo tLink($note['Teacher']); ?></td>
+    <td><?php echo $note['Content']; ?></td>
     </tr>
     <?php
     ob_flush();
@@ -360,27 +365,27 @@ case "hianyzasok":
 <ul class="collapsible collection">
 <?php
 ob_flush();
-foreach ($_SESSION['data']['Absences'] as $val) : ?>
-    <li id="i<?php echo $val['id']; ?>" class="collection-item">
-        <div <?php echo isset($val['h']) ? 'class="collapsible-header"' : ''; ?> data-ty="<?php echo $val['t']; ?>">
-        <?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]); ?> db tanítási óra<span class="secondary-content"><?php echo $val['d']; ?></span>
+foreach ($_SESSION['data']['Absences'] as $absence) : ?>
+    <li id="i<?php echo $absence['id']; ?>" class="collection-item">
+        <div <?php echo isset($absence['h']) ? 'class="collapsible-header"' : ''; ?> data-ty="<?php echo $absence['type']; ?>">
+        <?php echo ($absence['justified'] ? '✔️ ' : '❌ ') . $absence['type'] . " - " . count($absence["h"]); ?> db tanítási óra<span class="secondary-content"><?php echo $absence['date']; ?></span>
         </div>
         <?php
-        if (isset($val['h'])) : ?>
+        if (isset($absence['h'])) : ?>
         <div class="collapsible-body">
         <?php
-        if (count($val['h']) > 1) {
+        if (count($absence['h']) > 1) {
             usort(
-                $val['h'],
+                $absence['h'],
                 function ($a, $b) {
-                    return $a['i'] - $b['i'];
+                    return $a['count'] - $b['count'];
                 }
             );
         }
 
-        foreach ($val['h'] as $g) {
+        foreach ($absence['h'] as $abs) {
             ?>
-            <p class="collection-item" data-ct="<?php echo $g['ct']; ?>" data-jst="<?php echo $g['jst']; ?>" data-t="<?php echo htmlspecialchars(tLink($g['t'])); ?>"  data-s="<?php echo $g['s']; ?>" data-l="<?php echo $val['w'] . '&' . $APS . '#d' . $val['day'] . 'h' . $g['i'] ?>"><?php echo $g['sub']; ?><span class="secondary-content"><?php echo $g['stat']; ?></span></p>
+            <p class="collection-item" data-ct="<?php echo $abs['creatingTime']; ?>" data-jst="<?php echo $abs['jtn']; ?>" data-t="<?php echo htmlspecialchars(tLink($abs['teacher'])); ?>"  data-s="<?php echo $abs['subject']; ?>" data-l="<?php echo $absence['week'] . '&' . $APS . '#d' . $absence['day'] . 'h' . $abs['count'] ?>"><?php echo $abs['sub']; ?><span class="secondary-content"><?php echo $abs['status']; ?></span></p>
         <?php
 
     } ?>
@@ -411,9 +416,9 @@ case "profil":
         <ul class="collection with-header s12">
             <li class="collection-header"><h4>Lakcímek</h4></li>
                 <?php
-                foreach ($data['AddressDataList'] as $l) :
+                foreach ($data['AddressDataList'] as $addres) :
                 ?>
-            <li class="collection-item"><?php echo $l
+            <li class="collection-item"><?php echo $addres
                                         ?></li>
                 <?php
                 endforeach; ?>
@@ -421,9 +426,9 @@ case "profil":
         <ul class="collection with-header s12">
             <li class="collection-header"><h4>Gondviselők</h4></li>
                 <?php
-                foreach ($data['Tutelaries'] as $t) :
+                foreach ($data['Tutelaries'] as $tutelary) :
                 ?>
-            <li class="collection-item"><?php echo $t['Name'] ?></li>
+            <li class="collection-item"><?php echo $tutelary['Name'] ?></li>
                 <?php
                 endforeach; ?>
         </ul>
@@ -473,18 +478,18 @@ case "orarend":
     <div id="tt">
 <?php
 ob_flush();
-$hs = [];
-foreach ($data as $day) {
-    foreach ($day as $lesson) {
-        $hs[] = $lesson['count'];
+$counts = [];
+foreach ($data as $lessons) {
+    foreach ($lessons as $lesson) {
+        $counts[] = $lesson['count'];
     }
 }
 
-if (empty($hs)) {
-    $sh = $lh = 0;
+if (empty($counts)) {
+    $min = $max = 0;
 } else {
-    $sh = min($hs);
-    $lh = max($hs);
+    $min = min($counts);
+    $max = max($counts);
 }
 
 $db = count($data);
@@ -492,15 +497,15 @@ $weeknames = ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek
 $btn = [];
 if ($db !== 0) {
     $w = 100 / $db;
-    foreach (range(1, 6) as $h) {
-        $n = $weeknames[$h];
-        if (isset($data[$h])) {
-            $day = ['sun', 'mon', 'tues', 'wednes', 'thurs', 'fri', 'satur'][$h];
-            $day = date('Y-m-d', strtotime($day . "day this week", strtotime("$week weeks")));
+    foreach (range(1, 6) as $day) {
+        $n = $weeknames[$day];
+        if (isset($data[$day])) {
+            $days = ['sun', 'mon', 'tues', 'wednes', 'thurs', 'fri', 'satur'][$day];
+            $date = date('Y-m-d', strtotime($days . "day this week", strtotime("$week weeks")));
             echo "<ul class=\"collection col s12\" style=\"width: $w%\"
-             data-day=\"$day\">";
+             data-day=\"$date\">";
             $btn[] = $n;
-            $th = $data[$h];
+            $th = $data[$day];
             echo "<li class='collection-header'><h6 class='title'>$n</h6></li>";
         } else {
             continue;
@@ -510,26 +515,25 @@ if ($db !== 0) {
         $wl = 0;
         $lout = [];
         foreach ($th as $d) {
-            $key = $d['count'];
-            if (!isset($lout[$key])) $lout[$key] = [];
-            $lout[$key][] = $d;
+            $tantargy = $d['count'];
+            if (!isset($lout[$tantargy])) $lout[$tantargy] = [];
+            $lout[$tantargy][] = $d;
         }
 
-        foreach (range($sh, $lh) as $hour) {
+        foreach (range($min, $max) as $hid) {
             $was = false;
-            if (isset($lout[$hour])) {
-                $was = true;
-                if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
-                    $c = json_decode(file_get_contents('sch.json'), true);
-                    $e = explode('.', substr($lesson['group'], 0, 3));
-                    $b = intval(date('Y')) - ($e[0] - 7);
-                    $c[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $e[1];
-                    file_put_contents('sch.json', json_encode($c));
-                }
-
-                echo '<li class="collection-item" data-nth="' . $hour . '">';
-                foreach ($lout[$hour] as $lesson) {
-                    echo '<div  id="' . "d$h" . "h$hour" . '" class="lesson' . (count($lout[$hour]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/><i data-time="' . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">' . $lesson['room'] . '</span></div>';
+            if (isset($lout[$hid])) {
+                echo '<li class="collection-item" data-nth="' . $hid . '">';
+                foreach ($lout[$hid] as $lesson) {
+                    $was = true;
+                    if (!$_SESSION['tyid'] && $_SESSION['isToldy']) {
+                        $shc = json_decode(file_get_contents('sch.json'), true);
+                        $osztaly = explode('.', substr($lesson['group'], 0, 3));
+                        $b = intval(date('Y')) - ($osztaly[0] - 7);
+                        $sch[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = $b . $osztaly[1];
+                        file_put_contents('sch.json', json_encode($sch));
+                    }
+                    echo '<div  id="' . "d$day" . "h$hid" . '" class="lesson' . (count($lout[$hid]) == 2 ? ' h2' : '') . '"><b class="lesson-head title' . ($lesson['state'] == 'Missed' ? ' em' : '') . '">' . $lesson['subject'] . '</b><br/><i data-time="' . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . '"  data-theme="' . $lesson['theme'] . '" data-lecke="' . $lesson["homework"] . '">' . tLink($lesson['teacher']) . '</i><span class="secondary-content">' . $lesson['room'] . '</span></div>';
                     $wl++;
                 }
 
@@ -551,8 +555,8 @@ if ($db !== 0) {
     ?>
 <div class="btns">
     <?php
-    foreach ($btn as $h) {
-        $b = mb_substr($h, 0, 2);
+    foreach ($btn as $day) {
+        $b = mb_substr($day, 0, 2);
         echo "<b style=\"width: $w%\">$b</b>";
     }
 
@@ -571,7 +575,7 @@ case "lecke":
         $_SESSION['_token'] = sha1(uniqid());
     }
 
-    if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['t']) && isset(ROUTES[1]) && ROUTES[1] == "ke" && isset($_POST['_token'])) {
+    if (isset($_POST['txt']) && isset($_POST['tr']) && isset($_POST['t']) && isset(ROUTES[1]) && ROUTES[1] == "ujLecke" && isset($_POST['_token'])) {
         if ($_POST['_token'] == $_SESSION['_token']) {
             $tr = $_POST['tr'];
             if ($_POST['t'] == 'date' && isset($_POST['date'])) {
@@ -579,14 +583,14 @@ case "lecke":
                 if ($deadline == false) raise400();
             } elseif ($_POST['t'] == 'nxtLesson') {
                 $i = 0;
-                $t = time();
+                $time = time();
                 while (true) {
                     $i++;
-                    $nxt = strtotime('+1 week', $t);
-                    $tt = timetable($t, $nxt);
+                    $nxt = strtotime('+1 week', $time);
+                    $tt = timetable($time, $nxt);
                     foreach ($tt as $w) {
-                        foreach ($w as $day) {
-                            foreach ($day as $lesson) {
+                        foreach ($w as $lessons) {
+                            foreach ($lessons as $lesson) {
                                 if ($lesson['subject'] == $tr) {
                                     $s = $lesson['start'];
                                     if ($s > time()) {
@@ -601,7 +605,7 @@ case "lecke":
                         if (isset($deadline)) break;
                     }
 
-                    $t = $nxt;
+                    $tutelary = $nxt;
                     if (isset($deadline)) break;
 
                     if ($i > 5) {
@@ -638,7 +642,6 @@ case "lecke":
         $conn = connect();
 
 		// sql to delete a record
-
         $uid = $_SESSION['data']['StudentId'];
         $sql = "DELETE FROM homework WHERE id=$id AND `uid`=$uid";
         if ($conn->query($sql) === true) {
@@ -696,6 +699,13 @@ case "lecke":
 			// output data of each row
 
             while ($row = $result->fetch_assoc()) {
+                if ($row['deadline'] < time()) {
+                    // sql to delete a record
+                    $id = $row['id'];
+                    $sql = "DELETE FROM homework WHERE id=$id AND `uid`=$uid";
+                    if ($conn->query($sql) === false) {                             echo "Error deleting record: " . $conn->error;
+                    }
+                }
                 $n = [];
                 $n['FeladasDatuma'] = date('Y-m-d', $row['date']);
                 $n['TanuloNev'] = $row['name'];
@@ -706,7 +716,6 @@ case "lecke":
                 if ($row['date'] > $start) $_SESSION['Homework'][$i][] = $n;
             }
         }
-
         $conn->close();
         usort(
             $_SESSION['Homework'][$i],
@@ -732,7 +741,7 @@ case "lecke":
     </div>
     <div id="addModal" class="modal n">
     <div class="modal-content">
-        <form action="<?php echo ABS_URI; ?>lecke/ke?<?php echo $APS; ?>" method="post">
+        <form action="<?php echo ABS_URI; ?>lecke/ujLecke?<?php echo $APS; ?>" method="post">
         <h3>Új lecke</h3>
     <select name="tr">
         <?php
@@ -769,10 +778,10 @@ case "lecke":
         Szűrés: 
 
     <?php
-    foreach (['nap' => 'Nap', 'het' => 'Hét', 'honap' => 'Hónap', '3honap' => '3 hónap'] as $key => $val) { ?>
-    <a href="?ido=<?php echo $key
+    foreach (['nap' => 'Nap', 'het' => 'Hét', 'honap' => 'Hónap', '3honap' => '3 hónap'] as $tantargy => $absence) { ?>
+    <a href="?ido=<?php echo $tantargy
                     ?>&<?php echo $APS
-                        ?>" <?php echo $key == $i ? 'class="active"' : '' ?>><?php echo $val ?></a>
+                        ?>" <?php echo $tantargy == $i ? 'class="active"' : '' ?>><?php echo $absence ?></a>
     <?php
 
 } ?>
@@ -782,8 +791,8 @@ case "lecke":
             ?>
             <ul class="collection">
             <?php
-            foreach ($_SESSION['Homework'][$i] as $h) {
-                echo '<li class="collection-item" ' . (isset($h['DID']) ? ('data-del="' . urlencode($h['DID']) . '" ') : '') . 'data-sender="' . (isset($h['Rogzito']) ? ($h['Rogzito'] . ' (Tanár)') : ($h['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($h['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($h['Szoveg']) ? $h['Szoveg'] : $h['FeladatSzovege'])) . '">' . $h['Tantargy'] . '<a class="secondary-content">' . substr($h['Hatarido'], 0, 10) . '</a></li>';
+            foreach ($_SESSION['Homework'][$i] as $note) {
+                echo '<li class="collection-item" ' . (isset($note['DID']) ? ('data-del="' . urlencode($note['DID']) . '" ') : '') . 'data-sender="' . (isset($note['Rogzito']) ? ($note['Rogzito'] . ' (Tanár)') : ($note['TanuloNev'] . ' (Diák)')) . '"  data-cdate="' . substr($note['FeladasDatuma'], 0, 10) . '" data-lecke="' . htmlentities((isset($note['Szoveg']) ? $note['Szoveg'] : $note['FeladatSzovege'])) . '">' . $note['Tantargy'] . '<a class="secondary-content">' . substr($note['Hatarido'], 0, 10) . '</a></li>';
             }
 
             ?>
@@ -813,9 +822,8 @@ case "faliujsag":
                 <div class="collection-header"><b>Legutóbbi jegyek</b></div>
                 <?php
                 ob_flush();
-                usort($data['Evaluations'], "date_sort");
-                foreach (array_slice($data['Evaluations'], 0, 6) as $val) : ?>
-                <a href="<?php echo ABS_URI; ?>jegyek?<?php echo $APS; ?>#i<?php echo $val['EvaluationId'] ?>" class="collection-item"><?php echo ucfirst($val['Value']) . " - " . $val["Subject"] . ($val['Type'] !== 'MidYear' ? (' (' . explode(' ', $val['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?php echo date('m. d.', strtotime($val['Date'])); ?></span></a>
+                foreach (array_slice($data['Evaluations'], 0, 6) as $eval) : ?>
+                    <a href="<?php echo ABS_URI; ?>jegyek?<?php echo $APS; ?>#i<?php echo $eval['EvaluationId'] ?>" class="collection-item"><?php echo ucfirst($eval['Value']) . " - " . $eval["Subject"] . ($eval['Type'] !== 'MidYear' ? (' (' . explode(' ', $eval['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?php echo date('m. d.', strtotime($eval['Date'])); ?></span></a>
             <?php
             endforeach; ?>
             </div>
@@ -829,8 +837,8 @@ case "faliujsag":
         <div class="collection with-header">
             <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
             <?php
-            foreach (array_slice($data['Absences'], 0, 6) as $val) : ?>
-            <a href="<?php echo ABS_URI; ?>hianyzasok?<?php echo $APS; ?>#i<?php echo $val['id']; ?>" class="collection-item"><?php echo ($val['j'] ? '✔️ ' : '❌ ') . $val['t'] . " - " . count($val["h"]) ?> db tanítási óra<span class="secondary-content"><?php echo $val['sd']; ?></span></a>
+            foreach (array_slice($data['Absences'], 0, 6) as $absence) : ?>
+            <a href="<?php echo ABS_URI; ?>hianyzasok?<?php echo $APS; ?>#i<?php echo $absence['id']; ?>" class="collection-item"><?php echo ($absence['justified'] ? '✔️ ' : '❌ ') . $absence['type'] . " - " . count($absence["h"]) ?> db tanítási óra<span class="secondary-content"><?php echo $absence['shortDate']; ?></span></a>
     <?php
     endforeach; ?>
         </div>

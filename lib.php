@@ -6,7 +6,6 @@ ini_set('log_errors_max_len', 1024); // Logging file size
 session_name("naplo");
 session_start();
 mb_internal_encoding("UTF-8");
-
 function date_sort($a, $b)
 {
     return strtotime($b['Date']) - strtotime($a['Date']);
@@ -29,9 +28,9 @@ function tLink($t)
         }
 
         $n = $t;
-        $s = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
+        $school = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
         $r = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa'];
-        $t = explode(' ', str_replace($s, $r, $t));
+        $t = explode(' ', str_replace($school, $r, $t));
         if (count($t) > 3) {
             array_pop($t);
         }
@@ -72,9 +71,9 @@ function logout()
     }
 }
 
-function hasCookie($c)
+function hasCookie($sch)
 {
-    return isset($_COOKIE[$c]) && !empty($_COOKIE[$c]);
+    return isset($_COOKIE[$sch]) && !empty($_COOKIE[$sch]);
 }
 
 function parseRME()
@@ -83,13 +82,13 @@ function parseRME()
     $id = $_SESSION['cuid'];
     $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
     $cookie = explode('|', $cookie);
-    foreach ($cookie as $c) {
-        $c = explode(',', $c);
-        if (count($c) == 3) {
+    foreach ($cookie as $sch) {
+        $sch = explode(',', $sch);
+        if (count($sch) == 3) {
             $u[] = [
-                'sch' => $c[0],
-                'rtok' => $c[1],
-                'name' => base64_decode($c[2]),
+                'sch' => $sch[0],
+                'rtok' => $sch[1],
+                'name' => base64_decode($sch[2]),
                 'revalidate' => 0,
                 'persistant' => true,
             ];
@@ -104,8 +103,8 @@ function parseRME()
         $res = getToken($u[$id]['sch'], $u[$id]['rtok']);
         if (!$res) {
             unset($_SESSION['users'][$id]);
-            updateRME();
         }
+        updateRME();
         return $res;
     } else {
         if (ROUTES[0] != 'faliujsag') redirect('faliujsag');
@@ -166,8 +165,8 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
 	// add headers
 
     $h = [];
-    foreach ($curl_headers as $k => $v) {
-        $h[] = "$k: $v";
+    foreach ($curl_headers as $k => $absence) {
+        $h[] = "$k: $absence";
     }
 
     curl_setopt($curl, CURLOPT_HTTPHEADER, $h);
@@ -199,34 +198,34 @@ function redirect($url, $code = 302)
 
 function schools()
 {
-	/* $d = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Institute", 'GET', [], array(
+	/* $eval = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Institute", 'GET', [], array(
 	"Accept" => "application/json",
 	"HOST" => "kretaglobalmobileapi.ekreta.hu",
 	"apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0",
 	"Connection" => "keep-alive"
 	));*/
-    $d = file_get_contents("data.json");
-    $d = json_decode($d, true);
-    $d = array_map(
+    $eval = file_get_contents("data.json");
+    $eval = json_decode($eval, true);
+    $eval = array_map(
         function ($a) {
             return array(
                 'n' => $a["Name"],
                 'v' => $a["InstituteCode"]
             );
         },
-        $d
+        $eval
     );
     touch("datas.json");
-    file_put_contents("datas.json", json_encode($d));
-    return ($d);
+    file_put_contents("datas.json", json_encode($eval));
+    return ($eval);
 }
 
 function getEvents()
 {
     $id = $_SESSION['cuid'];
-    $s = $_SESSION['users'][$id]['sch'];
+    $school = $_SESSION['users'][$id]['sch'];
     $tok = $_SESSION['users'][$id]['tok'];
-    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Event", "GET", [], array(
+    $out = request("https://$school.e-kreta.hu/mapi/api/v1/Event", "GET", [], array(
         "Authorization" => "Bearer $tok"
     ));
     return $out['content'];
@@ -241,7 +240,10 @@ function week($week)
         $week = "+$week";
     }
 
-    return [strtotime('monday this week', strtotime("$week weeks")), strtotime('sunday this week', strtotime("$week weeks"))];
+    return [
+        strtotime('monday this week', strtotime("$week weeks")),
+        strtotime('sunday this week', strtotime("$week weeks"))
+    ];
 }
 
 function flatten($tt)
@@ -261,148 +263,147 @@ function flatten($tt)
 function getStudent()
 {
     $id = $_SESSION['cuid'];
-    $s = $_SESSION['users'][$id]['sch'];
+    $school = $_SESSION['users'][$id]['sch'];
     $tok = $_SESSION['users'][$id]['tok'];
 
-    $out = request("https://$s.e-kreta.hu/mapi/api/v1/Student", "GET", '', array(
+    $out = request("https://$school.e-kreta.hu/mapi/api/v1/Student", "GET", '', array(
         "Authorization" => "Bearer $tok"
     ));
     $out = json_decode($out['content'], true);
     $_SESSION['name'] = $out['Name'];
-    $as = [];
-    $j = [];
-    foreach ($out['Evaluations'] as $d) {
-        if ($d['Form'] == 'Deportment') {
-            $d['Subject'] = "Magatartás";
+    $groupedEvals = [];
+    $evals = [];
+    foreach ($out['Evaluations'] as $eval) {
+        if ($eval['Form'] == 'Deportment') {
+            $eval['Subject'] = "Magatartás";
         }
 
-        if ($d['Form'] == 'Diligence') {
-            $d['Subject'] = "Szorgalom";
+        if ($eval['Form'] == 'Diligence') {
+            $eval['Subject'] = "Szorgalom";
         }
 
-        if ($d['Form'] !== 'Mark') {
-            switch (ucfirst($d['Value'])) {
+        if ($eval['Form'] !== 'Mark') {
+            switch (ucfirst($eval['Value'])) {
                 case "Példás":
-
                 case "Megfelelt":
-                    $nv = 5;
+                    $newVal = 5;
                     break;
 
                 case "Jó":
-                    $nv = 4;
+                    $newVal = 4;
                     break;
 
                 case "Változó":
                 case "Közepes":
-                    $nv = 3;
+                    $newVal = 3;
                     break;
 
                 case "Hanyag":
                 case "Elégséges":
-                    $nv = 2;
+                    $newVal = 2;
                     break;
 
                 case "Elégtelen":
-                    $nv = 1;
+                    $newVal = 1;
                     break;
 
                 default:
-                    $nv = ucfirst($d['Value']);
+                    $newVal = ucfirst($eval['Value']);
                     break;
             }
 
-            $d['NumberValue'] = $nv;
+            $eval['NumberValue'] = $newVal;
         }
 
-        $g = $d["Theme"];
-        if (empty($g)) {
-            $j[] = $d;
+        $theme = $eval["Theme"];
+        if (empty($theme)) {
+            $evals[] = $eval;
             continue;
         }
 
-        if (!isset($as[$g])) $as[$g] = [];
-        $as[$g][] = $d;
+        if (!isset($groupedEvals[$theme])) $groupedEvals[$theme] = [];
+        $groupedEvals[$theme][] = $eval;
     }
 
-    $c = json_decode(file_get_contents('sch.json'), true);
-    if (!$_SESSION['tyid'] && $c[$out['SchoolYearId']]) {
-        $_SESSION['tyid'] = $c[$out['SchoolYearId']];
+    $sch = json_decode(file_get_contents('sch.json'), true);
+    if (!$_SESSION['tyid'] && $sch[$out['SchoolYearId']]) {
+        $_SESSION['tyid'] = $sch[$out['SchoolYearId']];
     }
 
-    foreach ($as as $d) {
-        if (count($d) > 1) {
-            for ($i = 0; $i < count($d); $i++) {
-                if (isset($d[$i + 1]) && $d[$i]['Date'] == $d[$i + 1]['Date'] && $d[$i]['Type'] == $d[$i + 1]['Type'] && $d[$i]['Weight'] == $d[$i + 1]['Weight'] && $d[$i]['Subject'] == $d[$i + 1]['Subject']) {
-                    $a = $d[$i];
-                    $b = $d[$i + 1];
+    foreach ($groupedEvals as $group) {
+        if (count($group) > 1) {
+            for ($i = 0; $i < count($group); $i++) {
+                if (isset($group[$i + 1]) && $group[$i]['Date'] == $group[$i + 1]['Date'] && $group[$i]['Type'] == $group[$i + 1]['Type'] && $group[$i]['Weight'] == $group[$i + 1]['Weight'] && $group[$i]['Subject'] == $group[$i + 1]['Subject']) {
+                    $a = $group[$i];
+                    $b = $group[$i + 1];
                     if (abs($a['NumberValue'] - $b['NumberValue']) == 1) {
                         $w = (str_replace('%', '', $a['Weight']) + str_replace('%', '', $b['Weight']));
                         if ($w <= 200) {
                             $a['Weight'] = "$w%";
                             $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? $b['NumberValue'] . '/' . $a['NumberValue'] : $a['NumberValue'] . '/' . $b['NumberValue'];
-                            $d[$i + 1]['Was'] = 1;
-                            $j[] = $a;
+                            $group[$i + 1]['Was'] = 1;
+                            $evals[] = $a;
                             continue;
                         }
                     }
                 }
 
-                if (!isset($d[$i]['Was'])) {
-                    $j[] = $d[$i];
+                if (!isset($group[$i]['Was'])) {
+                    $evals[] = $group[$i];
                 }
             }
         } else {
-            $j = array_merge($j, $d);
+            $evals = array_merge($evals, $group);
         }
     }
-    usort($j, function ($a, $b) {
+    usort($evals, function ($a, $b) {
         return strtotime($b['CreatingTime']) - strtotime($a['CreatingTime']);
     });
-    $out['Evaluations'] = $j;
+    $out['Evaluations'] = $evals;
     $absences = [];
     $igazolt = 0;
     $igazolatlan = 0;
-    foreach ($out['Absences'] as $v) {
-        $li = $v['NumberOfLessons'];
-        $j = $v['JustificationStateName'];
-        $date = $v['LessonStartTime'];
+    foreach ($out['Absences'] as $absence) {
+        $li = $absence['NumberOfLessons'];
+        $evals = $absence['JustificationStateName'];
+        $date = $absence['LessonStartTime'];
         if (!isset($absences[$date])) {
             $t = strtotime($date);
             $absences[$date] = array(
-                'd' => substr($date, 0, 10),
-                't' => $v['TypeName'],
+                'date' => substr($date, 0, 10),
+                'type' => $absence['TypeName'],
                 'h' => [],
-                'j' => false,
-                'id' => $v['AbsenceId'],
-                'w' => round((strtotime("this week monday") - strtotime("this week monday", $t)) / 604800),
+                'justified' => false,
+                'id' => $absence['AbsenceId'],
+                'week' => round((strtotime("this week monday") - strtotime("this week monday", $t)) / 604800),
                 'day' => date('w', $t),
-                'sd' => date("m. d.", $t)
+                'shortDate' => date("m. d.", $t)
             );
         }
 
-        $ij = $v['JustificationState'] == 'Justified';
-        $absences[$date]['j'] = $ij;
+        $isJustfied = $absence['JustificationState'] == 'Justified';
+        $absences[$date]['justified'] = $isJustfied;
         $absences[$date]['h'][] = array(
-            'sub' => $v['Type'] == 'Delay' ? ($v['TypeName'] . " (" . $v['DelayTimeMinutes'] . " perc) - " . $v['Subject'] . ' (' . $li . '. óra)') : ($v['Subject'] . ' (' . $li . '. óra)'),
-            'stat' => '<span class="' . ($ij ? 'gr' : 'red') . '">' . $j . '</span>',
-            'i' => $li,
-            't' => $v['Teacher'],
-            's' => $v['Subject'],
-            'ct' => substr($v['CreatingTime'], 0, 10),
-            'jst' => $v['JustificationTypeName']
+            'sub' => $absence['Type'] == 'Delay' ? ($absence['TypeName'] . " (" . $absence['DelayTimeMinutes'] . " perc) - " . $absence['Subject'] . ' (' . $li . '. óra)') : ($absence['Subject'] . ' (' . $li . '. óra)'),
+            'status' => '<span class="' . ($isJustfied ? 'gr' : 'red') . '">' . $evals . '</span>',
+            'count' => $li,
+            'teacher' => $absence['Teacher'],
+            'subject' => $absence['Subject'],
+            'creatingTime' => substr($absence['CreatingTime'], 0, 10),
+            'jtn' => $absence['JustificationTypeName']
         );
-        $am = $v['Type'] == 'Delay' ? intval($v['DelayTimeMinutes']) : 45;
-        if ($ij) {
-            $igazolt += $am;
+        $amount = $absence['Type'] == 'Delay' ? intval($absence['DelayTimeMinutes']) : 45;
+        if ($isJustfied) {
+            $igazolt += $amount;
         } else {
-            $igazolatlan += $am;
+            $igazolatlan += $amount;
         }
     }
 
     usort(
         $absences,
         function ($a, $b) {
-            return strtotime($b['d']) - strtotime($a['d']);
+            return strtotime($b['date']) - strtotime($a['date']);
         }
     );
     $out['igazolt'] = $igazolt;
@@ -414,10 +415,21 @@ function getStudent()
         $doc = new DOMDocument();
         @$doc->loadHTML($htmlinput);
         $xpath = new DOMXpath($doc);
-        $articles = $xpath->query("//article[contains(@class, 'cleara')]");
-        $months = ['szeptember' => 9, 'október' => 10, 'november' => 11, 'december' => 12, 'január' => 01, 'február' => 02, 'március' => 03, 'aprilis' => 04, 'május' => 05, 'június' => 06];
-        $links = [];
-        foreach ($articles as $container) {
+        $conts = $xpath->query("//article[contains(@class, 'cleara')]");
+        $months = [
+            'szeptember' => 9,
+            'október' => 10,
+            'november' => 11,
+            'december' => 12,
+            'január' => 01,
+            'február' => 02,
+            'március' => 03,
+            'aprilis' => 04,
+            'május' => 05,
+            'június' => 06
+        ];
+        $hirdetmenyek = [];
+        foreach ($conts as $container) {
             $arr = $container->getElementsByTagName("a");
             foreach ($arr as $item) {
                 if ($item->parentNode->tagName == "h3") {
@@ -435,35 +447,44 @@ function getStudent()
                     $date = str_replace('.', '', $item->textContent);
                     $date = explode(' ', $date);
                     $day = array_pop($date);
-                    $m = $months[array_pop($date)];
+                    $month = $months[array_pop($date)];
                     if (isset($date[0])) {
-                        $y = $date[0];
+                        $year = $date[0];
                     } else {
-                        $y = date('Y');
+                        $year = date('Y');
                     }
 
-                    $date = "$y-$m-$day";
+                    $date = "$year-$month-$day";
                     $nxt = $xpath->query("following-sibling::*[1]", $item)->item(0);
-                    $tit = substr(join(', ', explode('▼', trim(preg_replace("/\s+/", " ", $nxt->textContent)))), 0, -4);
+                    $title = substr(join(', ', explode('▼', trim(preg_replace("/\s+/", " ", $nxt->textContent)))), 0, -4);
                 }
             }
 
-            $links[] = ['Type' => 'Hirdetmény', 'Title' => ucwords($tit), 'Date' => $date, 'Content' => $con, 'Teacher' => $author, 'NoteId' => uniqid()];
+            $hirdetmenyek[] = [
+                'Type' => 'Hirdetmény',
+                'Title' => ucwords($title),
+                'Date' => $date,
+                'Content' => $con,
+                'Teacher' => $author,
+                'NoteId' => uniqid()
+            ];
         }
 
-        $out['Notes'] = array_merge($out['Notes'], $links);
+        $out['Notes'] = array_merge($out['Notes'], $hirdetmenyek);
         usort($out['Notes'], 'date_sort');
     }
-
-    $it = $_SESSION['isToldy'] = $s == 'klik035220001';
+    $_SESSION['isToldy'] = $school == 'klik035220001';
     $_SESSION['id'] = $out['StudentId'];
+    $out['SubjectAverages'] = array_filter($out['SubjectAverages'], function($a) {
+        return $a['Value'] != 0;
+    });
     return $out;
 }
 
 function timetable($from, $to)
 {
     $id = $_SESSION['cuid'];
-    $s = $_SESSION['users'][$id]['sch'];
+    $school = $_SESSION['users'][$id]['sch'];
     $tok = $_SESSION['users'][$id]['tok'];
     $t1 = $from;
     $t2 = $to;
@@ -478,7 +499,7 @@ function timetable($from, $to)
         $i = "$start-$end";
         if (isset($_SESSION['tt'][$i])) $res[$i] = $_SESSION['tt'][$i];
         else {
-            $out = request("https://$s.e-kreta.hu/mapi/api/v1/Lesson", "GET", array(
+            $out = request("https://$school.e-kreta.hu/mapi/api/v1/Lesson", "GET", array(
                 "fromDate" => $start,
                 "toDate" => $end
             ), array(
@@ -490,12 +511,27 @@ function timetable($from, $to)
             }
 
             foreach ($out as $lesson) {
-                $d = date('w', strtotime($lesson['Date']));
-                if (!isset($res[$i][$d])) {
-                    $_SESSION['tt'][$i][$d] = $res[$i][$d] = [];
+                $eval = date('w', strtotime($lesson['Date']));
+                if (!isset($res[$i][$eval])) {
+                    $_SESSION['tt'][$i][$eval] = $res[$i][$eval] = [];
                 }
 
-                $_SESSION['tt'][$i][$d][] = $res[$i][$d][] = ['id' => $lesson['LessonId'], 'subject' => $lesson['Subject'], 'start' => strtotime($lesson['StartTime']), 'end' => strtotime($lesson['EndTime']), 'teacher' => $lesson['Teacher'], 'room' => $lesson['ClassRoom'], 'theme' => $lesson['Theme'], 'homework' => $lesson["Homework"], 'teacherHW' => $lesson['TeacherHomeworkId'], 'state' => $lesson['State'], 'group' => $lesson['ClassGroup'], 'studentHW' => $lesson['IsTanuloHaziFeladatEnabled'], 'date' => $lesson['Date'], 'count' => $lesson['Count'], ];
+                $_SESSION['tt'][$i][$eval][] = $res[$i][$eval][] = [
+                    'id' => $lesson['LessonId'],
+                    'subject' => $lesson['Subject'],
+                    'start' => strtotime($lesson['StartTime']),
+                    'end' => strtotime($lesson['EndTime']),
+                    'teacher' => $lesson['Teacher'],
+                    'room' => $lesson['ClassRoom'],
+                    'theme' => $lesson['Theme'],
+                    'homework' => $lesson["Homework"],
+                    'teacherHW' => $lesson['TeacherHomeworkId'],
+                    'state' => $lesson['State'],
+                    'group' => $lesson['ClassGroup'],
+                    'studentHW' => $lesson['IsTanuloHaziFeladatEnabled'],
+                    'date' => $lesson['Date'],
+                    'count' => $lesson['Count'],
+                ];
             }
         }
     }
@@ -506,9 +542,9 @@ function timetable($from, $to)
 function getHomeWork($id)
 {
     $id = $_SESSION['cuid'];
-    $s = $_SESSION['users'][$id]['sch'];
+    $school = $_SESSION['users'][$id]['sch'];
     $tok = $_SESSION['users'][$id]['tok'];
-    $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
+    $ret = request("https://$school.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
 }
@@ -516,16 +552,16 @@ function getHomeWork($id)
 function getTeacherHomeWork($id)
 {
     $id = $_SESSION['cuid'];
-    $s = $_SESSION['users'][$id]['sch'];
+    $school = $_SESSION['users'][$id]['sch'];
     $tok = $_SESSION['users'][$id]['tok'];
-    $ret = request("https://$sch.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
+    $ret = request("https://$school.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
 }
 
-function getToken($s, $rt)
+function getToken($school, $rt)
 {
-    $res = request("https://$s.e-kreta.hu/idp/api/v1/Token", "POST", "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
+    $res = request("https://$school.e-kreta.hu/idp/api/v1/Token", "POST", "refresh_token=$rt&grant_type=refresh_token&client_id=919e0c1c-76a2-4646-a2fb-7085bbbf3c56");
     if ($res['code'] != 200) return false;
     $res = json_decode($res['content'], true);
     if (isset($res) && is_array($res)) {
@@ -533,14 +569,12 @@ function getToken($s, $rt)
         $_SESSION['users'][$id] = [
             'rtok' => $res["refresh_token"],
             'revalidate' => time() + (intval($res["expires_in"])),
-            'sch' => $s,
+            'sch' => $school,
             'tok' => $res['access_token'],
             'persistant' => $_SESSION['users'][$id]['persistant']
         ];
         $_SESSION['data'] = getStudent();
         $_SESSION['users'][$id]['name'] = $_SESSION['name'];
-
-        updateRME();
 
         return true;
     } else return false;
@@ -548,8 +582,8 @@ function getToken($s, $rt)
 
 function getPushRegId($uid, $h, $platform)
 {
-    $s = $_SESSION['users'][$_SESSION['cuid']]['sch'];
-    $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$s&instituteUserId=$uid&platform=$platform&notificationType=1&handle=$h", array(
+    $school = $_SESSION['users'][$_SESSION['cuid']]['sch'];
+    $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$school&instituteUserId=$uid&platform=$platform&notificationType=1&handle=$h", array(
         "apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0"
     ));
 
@@ -573,7 +607,7 @@ function showHeader($title, $a = false)
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
-    header("Content-Security-Policy: default-src 'none' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce' https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://cors-anywhere.herokuapp.com/; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
+    header("Content-Security-Policy: default-src 'self' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce' https://cdnjs.cloudflare.com; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
     if (isset($_REQUEST['just_html'])) {
         echo "<title>$title | eFilc</title><div id=\"rle\"></div>
         ";
@@ -586,7 +620,7 @@ function showHeader($title, $a = false)
 <head>
 	<meta charset="UTF-8">
 	<link rel="manifest" href="<?= ABS_URI; ?>manifest.json">
-	<link rel="shortcut icon" href="<?= ABS_URI; ?>images/icons/icon-96x96.png" type="image/x-icon">
+	<link rel="shortcut icon" href="<?= ABS_URI; ?>favicon.ico" type="image/x-icon">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="application-name" content="eFilc">
@@ -596,7 +630,8 @@ function showHeader($title, $a = false)
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 	<meta name="msapplication-starturl" content="/">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
-	<meta name="Description" content="eFilc, gyors eKréta kliens a webre">
+	<meta name="Description" content="Nem hivatalos, webes KRÉTA kliens, Toldys extrákkal">
+    <meta name="keywords" content="eFilc, KRÉTA, eNapló, Toldy">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
     <title><?php
@@ -620,11 +655,11 @@ function showFooter($a = false)
 {
     ?>
         <footer>
-            eFilc - <a href="https://github.com/bru02/eFilc">Github</a>           <?php
-                                                                                    if (!hasCookie('pwa')) { ?>
-            <b class="pwa">- Letöltés</b><?php
-
-                                    } ?>
+            eFilc - <a href="https://github.com/bru02/eFilc">Github</a>  
+            <?php if (!hasCookie('pwa')) { ?>
+                <b class="pwa">- Letöltés</b>
+                <?php 
+            } ?>
         </footer>
     </main>
 <?php
@@ -691,7 +726,7 @@ if (!$a) {
 
 function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
 {
-    $au = isset($_GET['addUser']);
+    $au = ROUTES[0] == 'addUser';
     if (!isset($_SESSION['_token'])) {
         $_SESSION['_token'] = sha1(uniqid());
     }
@@ -707,12 +742,12 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     showHeader('Belépés', true);
     ?>
     <main>
-    <form action="login<?= $au ? '?addUser=1' : '' ?>" method="post" class="container">
+    <form action="<?= $au ? 'addUser' : 'login' ?>" method="post" class="container">
     <h1><?= $au ? 'Új felhasználó hozzáadása' : 'Bejelentkezés' ?></h1>
     <?php
     if (!$au) : ?>
     <p>
-        Ez egy nem hivatalos eKréta kliens, Toldys extrákkal 
+        Ez egy nem hivatalos eKréta kliens, Toldys extrákkal
     </p>
 <?php
 endif; ?>
@@ -804,7 +839,7 @@ function showNavbar($key)
     <?php
 
 } ?>
-                    <li><a href="login?addUser=1" data-no-instant>+</a></li>
+                    <li><a href="addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
                 <li><a href="<?= ABS_URI; ?>login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
@@ -825,7 +860,7 @@ function showNavbar($key)
     <?php
 
 } ?>
-                    <li><a href="login?addUser=1" data-no-instant>+</a></li>
+                    <li><a href="addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
                 </ul>
@@ -953,7 +988,11 @@ function updateRME()
             $us[] = $u['sch'] . ',' . $u['rtok'] . ',' . base64_encode($u['name']);
         }
     }
-    setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us)), strtotime('+1 month'));
+    if(empty($us)) {
+        setcookie('rme');
+    } else {
+        setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us)), strtotime('+1 month'));
+    }
 }
 
 function activateUser($id)
@@ -962,11 +1001,15 @@ function activateUser($id)
     $oid = $_SESSION['cuid'];
     $_SESSION['cuid'] = $id;
     $APS = ("u=" . $_SESSION['cuid']);
-    if ($oid != $id) $_SESSION['tt'] = [];
     $u = $_SESSION['users'][$id];
     if ($u['revalidate'] < time()) {
-        return getToken($u['sch'], $u['rtok']);
+        $res =  getToken($u['sch'], $u['rtok']);
+        updateRME();
+        return $res;
     }
-    if ($oid != $id) $_SESSION['data'] = getStudent();
+    if ($oid != $id) {
+        $_SESSION['tt'] = [];
+        $_SESSION['data'] = getStudent();
+    }
     return true;
 }
