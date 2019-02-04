@@ -20,22 +20,22 @@ function getCurrentUri()
     return $uri;
 }
 
-function tLink($t)
+function tLink($tanar)
 {
     if ($_SESSION['isToldy']) {
-        if (strpos($t, "Helyettesítő: ") > -1) {
-            return 'Helyettesítő: ' . tLink(str_replace('Helyettesítő: ', '', $t));
+        if (strpos($tanar, "Helyettesítő: ") > -1) {
+            return 'Helyettesítő: ' . tLink(str_replace('Helyettesítő: ', '', $tanar));
         }
 
-        $n = $t;
-        $school = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
-        $r = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa'];
-        $t = explode(' ', str_replace($school, $r, $t));
-        if (count($t) > 3) {
-            array_pop($t);
+        $nev = $tanar;
+        $find = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
+        $replace = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa'];
+        $tanar = explode(' ', str_replace($find, $replace, $tanar));
+        if (count($tanar) > 3) {
+            array_pop($tanar);
         }
 
-        $t = join('-', $t);
+        $tanar = implode('-', $tanar);
         $normalizeChars = array(
             'é' => 'e',
             'í' => 'i',
@@ -45,11 +45,11 @@ function tLink($t)
             'ü' => 'u',
             'á' => 'a'
         );
-        $l = mb_strtolower($t);
-        $l = strtr($l, $normalizeChars);
-        $ret = '<a href="http://www.toldygimnazium.hu/szerzo/' . $l . '">' . $n . "</a>";
+        $link = mb_strtolower($tanar);
+        $link = strtr($link, $normalizeChars);
+        $ret = "<a href=\"http://www.toldygimnazium.hu/szerzo/$link\">$nev</a>";
     } else {
-        $ret = $t;
+        $ret = $tanar;
     }
 
     return $ret;
@@ -71,24 +71,24 @@ function logout()
     }
 }
 
-function hasCookie($sch)
+function hasCookie($cookie)
 {
-    return isset($_COOKIE[$sch]) && !empty($_COOKIE[$sch]);
+    return isset($_COOKIE[$cookie]) && !empty($_COOKIE[$cookie]);
 }
 
 function parseRME()
 {
     $u = [];
     $id = $_SESSION['cuid'];
-    $cookie = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
-    $cookie = explode('|', $cookie);
-    foreach ($cookie as $sch) {
-        $sch = explode(',', $sch);
-        if (count($sch) == 3) {
+    $cookies = encrypt_decrypt('decrypt', htmlentities($_COOKIE['rme']));
+    $cookies = explode('|', $cookies);
+    foreach ($cookies as $cookie) {
+        $cookie = explode(',', $cookie);
+        if (count($cookie) == 3) {
             $u[] = [
-                'sch' => $sch[0],
-                'rtok' => $sch[1],
-                'name' => base64_decode($sch[2]),
+                'sch' => $cookie[0],
+                'rtok' => $cookie[1],
+                'name' => base64_decode($cookie[2]),
                 'revalidate' => 0,
                 'persistant' => true,
             ];
@@ -129,9 +129,7 @@ function reval()
 }
 function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $curl_options = array())
 {
-
 	// defaults
-
     $default_curl_options = array(
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_RETURNTRANSFER => true,
@@ -141,9 +139,7 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
     if (!is_string($data)) {
         $data = http_build_query($data);
     }
-
 	// apply method specific options
-
     if ($method == 'GET' && !empty($data)) {
         $uri .= "?$data";
     }
@@ -151,11 +147,9 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
     $curl = curl_init($uri);
 
 	// apply default options
-
     curl_setopt_array($curl, $default_curl_options);
 
 	// apply user options
-
     curl_setopt_array($curl, $curl_options);
     if ($method == 'POST') {
         curl_setopt($curl, CURLOPT_POST, true);
@@ -163,7 +157,6 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
     }
 
 	// add headers
-
     $h = [];
     foreach ($curl_headers as $k => $absence) {
         $h[] = "$k: $absence";
@@ -172,7 +165,6 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
     curl_setopt($curl, CURLOPT_HTTPHEADER, $h);
 
 	// parse result
-
     $res = curl_exec($curl);
     $code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     if (curl_errno($curl)) {
@@ -183,7 +175,6 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
     curl_close($curl);
 
 	// return
-
     return array(
         'content' => $res,
         'code' => $code
@@ -198,26 +189,16 @@ function redirect($url, $code = 302)
 
 function schools()
 {
-	/* $eval = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Institute", 'GET', [], array(
-	"Accept" => "application/json",
-	"HOST" => "kretaglobalmobileapi.ekreta.hu",
+	$sch = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Institute", 'GET', [], array(
 	"apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0",
-	"Connection" => "keep-alive"
-	));*/
-    $eval = file_get_contents("data.json");
-    $eval = json_decode($eval, true);
-    $eval = array_map(
-        function ($a) {
-            return array(
-                'n' => $a["Name"],
-                'v' => $a["InstituteCode"]
-            );
-        },
-        $eval
-    );
-    touch("datas.json");
-    file_put_contents("datas.json", json_encode($eval));
-    return ($eval);
+	))['content'];
+    $sch = json_decode($sch, true);
+    $out = [];
+    foreach($sch as $school) {
+        $out[$school["InstituteCode"]] =  $school["Name"]; 
+    }
+    file_put_contents("datas.json", json_encode($out));
+    return $out;
 }
 
 function getEvents()
@@ -249,8 +230,8 @@ function week($week)
 function flatten($tt)
 {
     $tw = [];
-    foreach ($tt as $w) {
-        foreach ($w as $day) {
+    foreach ($tt as $week) {
+        foreach ($week as $day) {
             foreach ($day as $lesson) {
                 $tw[] = $lesson;
             }
@@ -521,7 +502,7 @@ function timetable($from, $to)
                     'subject' => $lesson['Subject'],
                     'start' => strtotime($lesson['StartTime']),
                     'end' => strtotime($lesson['EndTime']),
-                    'teacher' => $lesson['Teacher'],
+                    'teacher' => tLink($lesson['Teacher']),
                     'room' => $lesson['ClassRoom'],
                     'theme' => $lesson['Theme'],
                     'homework' => $lesson["Homework"],
@@ -584,12 +565,12 @@ function getPushRegId($uid, $h, $platform)
 {
     $school = $_SESSION['users'][$_SESSION['cuid']]['sch'];
     $res = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Registration", "POST", "instituteCode=$school&instituteUserId=$uid&platform=$platform&notificationType=1&handle=$h", array(
-        "apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0"
+        "apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0",
     ));
 
-	// $res = json_decode($res, true);
+	$res = json_decode($res['content'], true);
 
-    return $res['content'];
+    return $res;
 }
 
 
@@ -607,7 +588,7 @@ function showHeader($title, $a = false)
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
-    header("Content-Security-Policy: default-src 'self' ; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce' https://cdnjs.cloudflare.com; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; manifest-src 'self';");
+    header("Content-Security-Policy: default-src 'self' www.google-analytics.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
     if (isset($_REQUEST['just_html'])) {
         echo "<title>$title | eFilc</title><div id=\"rle\"></div>
         ";
@@ -633,16 +614,22 @@ function showHeader($title, $a = false)
 	<meta name="Description" content="Nem hivatalos, webes KRÉTA kliens, Toldys extrákkal">
     <meta name="keywords" content="eFilc, KRÉTA, eNapló, Toldy">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="preload" href="<?= ABS_URI; ?>assets/ui.css" as="style">
+  <link rel="preload" href="<?= ABS_URI; ?>assets/base.js" as="script">
     <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
-    <title><?php
-            echo $title; ?> | eFilc</title>
+    <?php if($a) { ?>
+        <link rel="prefetch" href="<?= ABS_URI; ?>schools" as="fetch">
+    <?php } else { ?>
+        <link rel="preload" href="<?= ABS_URI; ?>assets/main.js" as="script">
+    <?php } ?>
+
+    <title><?= $title; ?> | eFilc</title>
 </head>
 <body>
-<?php
-if (!$a) : ?>
+<?php if (!$a) { ?>
 <div id="rle"></div>
 <?php
-endif;
+}
 }
 
 function getWeekURL($week)
@@ -657,7 +644,7 @@ function showFooter($a = false)
         <footer>
             eFilc - <a href="https://github.com/bru02/eFilc">Github</a>  
             <?php if (!hasCookie('pwa')) { ?>
-                <b class="pwa">- Letöltés</b>
+<b class="pwa">- Letöltés</b>
                 <?php 
             } ?>
         </footer>
@@ -676,29 +663,25 @@ if (!hasCookie('gdpr')) {
 
     if (isset($_GET['just_html'])) return; ?>
     </body>
-    <script src="<?= ABS_URI; ?>assets/base.js" defer data-no-instant></script>
+    <script src="<?= ABS_URI; ?>assets/base.js" data-no-instant></script>
 <?php
 if (!$a) {
-    echo "<script defer data-no-instant src=\"" . ABS_URI . "assets/main.js\"></script>";
+    echo "<script data-no-instant src=\"" . ABS_URI . "assets/main.js\"></script>";
 } else {
     ?>
     <script nonce="<?= $_SESSION['nonce']; ?>">
-    xhr = new XMLHttpRequest();
-    xhr.open('GET', "schools");
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onload = function () {
-        if (xhr.status === 200 && xhr.responseText) {
-            var data = JSON.parse(xhr.responseText);
-            let inp = $('#sc');
-            let el = inp[0].list ? $('#slc') : $('#rslc')
-            let s = el.find('option:checked');
+    ajax('schools', function (res) {
+            let data = JSON.parse(res),
+             inp = $('#sc'),
+             el = inp[0].list ? $('#slc') : $('#rslc'),
+             s = el.find('option:checked');
             if (s.length) {
                 s = s.val();
             }
             el.html("");
-            $(data).each(function () {
-                el.append("<option value=\"" + this.v + "\"" + (s == this.v ? (s = "", "selected") : '') + ">" + this.n + "</option>");
-            });
+            for(let key in data) {
+            el.append("<option value=\"" + key + "\"" + (s == key ? (s = "", "selected") : '') + ">" + data[key] + "</option>");
+            };
             inp.on('change', function () {
                 if (!this.value) return;
                 let f = $('option[value=' + this.value + ']');
@@ -709,10 +692,7 @@ if (!$a) {
                 }
                 M.validate_field($('#sc'))
             });
-        }
-    };
-    xhr.send();
-
+    });
 </script>
 <?php
 
@@ -782,8 +762,7 @@ if (empty($sch)) : ?>
         <span>Emlékezz rám</span>
         </label>
         <br />
-        <input type="hidden" name="_token" value="<?php
-                                                    echo $_SESSION['_token']; ?>"> 
+        <input type="hidden" name="_token" value="<?= $_SESSION['_token']; ?>"> 
         <p class="red center"><?= $err ?></p>
         <button type="submit" class="btn text-white" data-no-instant>  
             Belépés
@@ -878,10 +857,11 @@ function showNavbar($key)
 
         }
     } ?>
-            <li class="not">Értesítések</span>
-<label class="right">
+            <li class="not">
+<label>
+Értesítések
                     <input type="checkbox" id="push" value="1">
-                    <span class="left">
+                    <span class="right"></span>
                     </label>
             </li>
            <?php
@@ -1002,14 +982,31 @@ function activateUser($id)
     $_SESSION['cuid'] = $id;
     $APS = ("u=" . $_SESSION['cuid']);
     $u = $_SESSION['users'][$id];
+    if ($oid != $id) 
+        $_SESSION['tt'] = [];
     if ($u['revalidate'] < time()) {
-        $res =  getToken($u['sch'], $u['rtok']);
+        $res = getToken($u['sch'], $u['rtok']);
         updateRME();
         return $res;
     }
     if ($oid != $id) {
-        $_SESSION['tt'] = [];
         $_SESSION['data'] = getStudent();
     }
     return true;
+}
+function getContact($data) {
+    $contacts = [];
+    if(!empty($data['Email'])) {
+        $email = $data['Email'];
+        $contacts[] = "Email: <a href=\"mailto:$email\">$email</a>";
+    }
+    if(!empty($data['PhoneNumber'])) {
+        $tel = $data['PhoneNumber'];
+        $contacts[] = "Tel.: <a href=\"callto:$tel\">$tel</a>";
+    }
+    if(empty($contacts)) {
+        return '';
+    } else {
+        return ' (' . implode(', ', $contacts) . ')';
+    }
 }

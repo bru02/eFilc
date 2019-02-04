@@ -553,3 +553,25 @@ $(function () {
         }
     }, true);
 });
+
+function addCookie(n, v = 1) {
+    var exdate = new Date();
+    exdate.setDate(exdate.getDate() + 365);
+    document.cookie = `${n}=${v};expires=${exdate.toUTCString()};path=/`;
+}
+function deleteCookie(n) {
+    document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
+}
+
+function ajax(url, cb, $xhr = false) {
+    let xhr = $xhr || new XMLHttpRequest();
+    xhr.onreadystatechange = () => {
+        if (xhr.readyState < 4 || xhr.status == 0) {
+            return;
+        }
+        cb(xhr.responseText);
+    };
+    xhr.open('GET', url);
+    xhr.send();
+    return xhr;
+}

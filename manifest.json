@@ -6,7 +6,7 @@
   "display": "standalone",
   "lang": "hu-HU",
   "scope": "/e-filc/",
-  "start_url": "/e-filc/faliujsag?utm_source=a2hs",
+  "start_url": "/e-filc/faliujsag",
   "icons": [
     {
       "src": "images/icons/icon-72x72.png",
@@ -48,7 +48,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "splash_pages": null,
-  "gcm_sender_id": "571712848651"
+  ]
 }

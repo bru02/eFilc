@@ -38,21 +38,6 @@ nav {
   display: block;
 }
 
-/* Text-level semantics
-   ========================================================================== */
-/**
- * 1. Remove the gray background on active links in IE 10.
- * 2. Remove gaps in links underline in iOS 8+ and Safari 8+.
- */
-a {
-  background-color: transparent;
-  /* 1 */
-  -webkit-text-decoration-skip: objects;
-  /* 2 */
-}
-
-
-
 /**
  * Prevent the duplicate application of `bolder` by the next rule in Safari 6.
  */
@@ -171,11 +156,6 @@ ul > li {
   list-style-type: none;
 }
 
-a {
-  color: #039be5;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-}
 /* 2dp elevation modified*/
 .btn {
           box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
@@ -399,7 +379,13 @@ b.active {
   }
 }
 a {
+  color: #1565C0;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  background-color: transparent;
+  /* 1 */
+  -webkit-text-decoration-skip: objects;
+  /* 2 */
 }
 .h2 {
   float: left;
@@ -725,7 +711,7 @@ button:focus {
   background-color: #176fd2;
 }
 
-label {
+.input-field label {
   font-size: 0.8rem;
   color: #9e9e9e;
 }
@@ -822,21 +808,15 @@ input + label:after {
   left: 0;
   font-size: 1rem;
   cursor: text;
-  -webkit-transition: color .2s ease-out, -webkit-transform .2s ease-out;
-  transition: color .2s ease-out, -webkit-transform .2s ease-out;
+  transition: color .2s ease-out;
   transition: transform .2s ease-out, color .2s ease-out;
-  transition: transform .2s ease-out, color .2s ease-out, -webkit-transform .2s ease-out;
-  -webkit-transform-origin: 0% 100%;
           transform-origin: 0% 100%;
   text-align: initial;
-  -webkit-transform: translateY(12px);
           transform: translateY(12px);
 }
 
 input:focus + label, label.active, input[placeholder] + label {
-  -webkit-transform: translateY(-14px) scale(0.8);
           transform: translateY(-14px) scale(0.8);
-  -webkit-transform-origin: 0 0;
           transform-origin: 0 0;
 }
 
@@ -871,13 +851,11 @@ input:focus + label, label.active, input[placeholder] + label {
   border: 2px solid #5a5a5a;
   border-radius: 1px;
   margin-top: 3px;
-  -webkit-transition: .2s;
   transition: .2s;
 }
 
 [type="checkbox"] + span:after {
   border: 0;
-  -webkit-transform: scale(0);
           transform: scale(0);
 }
 
@@ -887,11 +865,9 @@ input:focus + label, label.active, input[placeholder] + label {
 }
 
 [type="checkbox"]:focus + span:after, [type="checkbox"]:hover + span:after {
-  -webkit-transform: scale(1);
           transform: scale(1);
   border: 0;
   border-radius: 50%;
-  -webkit-box-shadow: 0 0 0 10px rgba(0, 0, 0, 0.1);
           box-shadow: 0 0 0 10px rgba(0, 0, 0, 0.1);
   background-color: rgba(0, 0, 0, 0.1);
 }
@@ -905,12 +881,9 @@ input:focus + label, label.active, input[placeholder] + label {
   border-left: 2px solid transparent;
   border-right: 2px solid #1565C0;
   border-bottom: 2px solid #1565C0;
-  -webkit-transform: rotate(40deg);
           transform: rotate(40deg);
-  -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
-  -webkit-transform-origin: 100% 100%;
-          transform-origin: 100% 100%;
+            transform-origin: 100% 100%;
 }
 
 header {
@@ -960,7 +933,6 @@ header, [type="checkbox"], .collapsible-header, .btns, [tooltip] {
 }
 
 #menu.open {
-  -webkit-transform: translateX(0);
   transform: translateX(0);
 }
 
@@ -1002,7 +974,7 @@ header ul li {
   float: left;
   padding: 0;
 }
- ul a,  li.active {
+header ul a,.menu__list ul a,  li.active {
   transition: all .3s;
   font-size: 1rem;
   display: block;
@@ -1090,16 +1062,13 @@ header ul a:hover, li.active {
   padding: 5px;
   border-radius: 4px;
 }
-[tooltip*="200%"] {
-  color: red;
-}
 [tooltip*="Beszámoló"], .gr {
   color: green;
 }
 [tooltip*="Gyakorlati feladat"] {
   color: blue;
 }
-[tooltip*="50%"] {
+[tooltip*="50%"], [tooltip*="200%"] {
   color: red;
 }
 [tooltip*="Órai munka"] {
@@ -1448,4 +1417,3 @@ ul li ul li {
   clear: both;
   width: 100%;
 }
-
