@@ -10,16 +10,18 @@ function date_sort($a, $b)
 {
     return strtotime($b['Date']) - strtotime($a['Date']);
 }
-
-function getCurrentUri()
-{
-    $basepath = implode('/', array_slice(explode('/', $_SERVER['SCRIPT_NAME']), 0, -1)) . '/';
-    $uri = substr($_SERVER['REQUEST_URI'], strlen($basepath));
-    if (strstr($uri, '?')) $uri = substr($uri, 0, strpos($uri, '?'));
-    $uri = '/' . trim($uri, '/');
-    return $uri;
+function normalizeChars($txt) {
+    $normalizeChars = array(
+        'é' => 'e',
+        'í' => 'i',
+        'ó' => 'o',
+        'ö' => 'o',
+        'ú' => 'u',
+        'ü' => 'u',
+        'á' => 'a'
+    );
+    return strtr(mb_strtolower($txt), $normalizeChars);
 }
-
 function tLink($tanar)
 {
     if ($_SESSION['isToldy']) {
@@ -36,17 +38,8 @@ function tLink($tanar)
         }
 
         $tanar = implode('-', $tanar);
-        $normalizeChars = array(
-            'é' => 'e',
-            'í' => 'i',
-            'ó' => 'o',
-            'ö' => 'o',
-            'ú' => 'u',
-            'ü' => 'u',
-            'á' => 'a'
-        );
-        $link = mb_strtolower($tanar);
-        $link = strtr($link, $normalizeChars);
+
+        $link = normalizeChars($tanar);
         $ret = "<a href=\"http://www.toldygimnazium.hu/szerzo/$link\">$nev</a>";
     } else {
         $ret = $tanar;
@@ -183,7 +176,7 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
 
 function redirect($url, $code = 302)
 {
-    header('Location: ' . $url, true, $code);
+    header("Location: $url", true, $code);
     exit();
 }
 
@@ -307,7 +300,7 @@ function getStudent()
     }
 
     $sch = json_decode(file_get_contents('sch.json'), true);
-    if (!$_SESSION['tyid'] && $sch[$out['SchoolYearId']]) {
+    if (!$_SESSION['tyid'] && isset($sch[$out['SchoolYearId']])) {
         $_SESSION['tyid'] = $sch[$out['SchoolYearId']];
     }
 
@@ -321,7 +314,7 @@ function getStudent()
                         $w = (str_replace('%', '', $a['Weight']) + str_replace('%', '', $b['Weight']));
                         if ($w <= 200) {
                             $a['Weight'] = "$w%";
-                            $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? $b['NumberValue'] . '/' . $a['NumberValue'] : $a['NumberValue'] . '/' . $b['NumberValue'];
+                            $a['NumberValue'] = $a['Value'] = $a['NumberValue'] > $b['NumberValue'] ? "$b[NumberValue]/$a[NumberValue]" : "$a[NumberValue]/$b[NumberValue]";
                             $group[$i + 1]['Was'] = 1;
                             $evals[] = $a;
                             continue;
@@ -344,6 +337,7 @@ function getStudent()
     $absences = [];
     $igazolt = 0;
     $igazolatlan = 0;
+    $keses = 0;
     foreach ($out['Absences'] as $absence) {
         $li = $absence['NumberOfLessons'];
         $evals = $absence['JustificationStateName'];
@@ -365,7 +359,7 @@ function getStudent()
         $isJustfied = $absence['JustificationState'] == 'Justified';
         $absences[$date]['justified'] = $isJustfied;
         $absences[$date]['h'][] = array(
-            'sub' => $absence['Type'] == 'Delay' ? ($absence['TypeName'] . " (" . $absence['DelayTimeMinutes'] . " perc) - " . $absence['Subject'] . ' (' . $li . '. óra)') : ($absence['Subject'] . ' (' . $li . '. óra)'),
+            'sub' => $absence['Type'] == 'Delay' ? "$absence[TypeName] ($absence[DelayTimeMinutes] perc) - $absence[Subject] ($li. óra)" : "$absence[Subject] ($li. óra)",
             'status' => '<span class="' . ($isJustfied ? 'gr' : 'red') . '">' . $evals . '</span>',
             'count' => $li,
             'teacher' => $absence['Teacher'],
@@ -373,11 +367,14 @@ function getStudent()
             'creatingTime' => substr($absence['CreatingTime'], 0, 10),
             'jtn' => $absence['JustificationTypeName']
         );
-        $amount = $absence['Type'] == 'Delay' ? intval($absence['DelayTimeMinutes']) : 45;
-        if ($isJustfied) {
-            $igazolt += $amount;
-        } else {
-            $igazolatlan += $amount;
+        if($absence['Type'] == 'Delay') {
+            $keses += intval($absence['DelayTimeMinutes']);
+         } else {
+            if ($isJustfied) {
+                $igazolt++;
+            } else {
+                $igazolatlan++;
+            }
         }
     }
 
@@ -390,6 +387,7 @@ function getStudent()
     $out['igazolt'] = $igazolt;
     $out['igazolatlan'] = $igazolatlan;
     $out['osszes'] = $igazolatlan + $igazolt;
+    $out['keses'] = $keses;
     $out['Absences'] = $absences;
     if ($_SESSION['tyid']) {
         $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET')['content'];
@@ -589,19 +587,15 @@ function showHeader($title, $a = false)
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
     header("Content-Security-Policy: default-src 'self' www.google-analytics.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
-    if (isset($_REQUEST['just_html'])) {
-        echo "<title>$title | eFilc</title><div id=\"rle\"></div>
-        ";
-        return;
-    }
-
+    if (!isset($_REQUEST['just_html'])) {
     ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
+    <base href="<?= ABS_URI; ?>">
 	<meta charset="UTF-8">
-	<link rel="manifest" href="<?= ABS_URI; ?>manifest.json">
-	<link rel="shortcut icon" href="<?= ABS_URI; ?>favicon.ico" type="image/x-icon">
+	<link rel="manifest" href="manifest.json">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="application-name" content="eFilc">
@@ -614,20 +608,29 @@ function showHeader($title, $a = false)
 	<meta name="Description" content="Nem hivatalos, webes KRÉTA kliens, Toldys extrákkal">
     <meta name="keywords" content="eFilc, KRÉTA, eNapló, Toldy">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="preload" href="<?= ABS_URI; ?>assets/ui.css" as="style">
-  <link rel="preload" href="<?= ABS_URI; ?>assets/base.js" as="script">
-    <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
+    <link rel="preload" href="assets/ui.css" as="style">
+  <link rel="preload" href="assets/base.js" as="script">
+    <link rel="stylesheet" href="assets/ui.css">
     <?php if($a) { ?>
-        <link rel="prefetch" href="<?= ABS_URI; ?>schools" as="fetch">
+        <link rel="prefetch" href="schools" as="fetch">
     <?php } else { ?>
-        <link rel="preload" href="<?= ABS_URI; ?>assets/main.js" as="script">
+        <link rel="preload" href="assets/main.js" as="script">
     <?php } ?>
 
     <title><?= $title; ?> | eFilc</title>
 </head>
 <body>
-<?php if (!$a) { ?>
+<?php 
+} else {
+    ?>
+    <title><?= $title; ?> | eFilc</title>
+    <?php
+}
+if (!$a) { ?>
 <div id="rle"></div>
+<div id="ic">
+    <div id="ic-bar"></div>
+</div>
 <?php
 }
 }
@@ -645,7 +648,8 @@ function showFooter($a = false)
             eFilc - <a href="https://github.com/bru02/eFilc">Github</a>  
             <?php if (!hasCookie('pwa')) { ?>
 <b class="pwa">- Letöltés</b>
-                <?php 
+                <?php
+                if(isset($_GET['debug'])) echo explode(' ',microtime())[0] - START; 
             } ?>
         </footer>
     </main>
@@ -663,10 +667,10 @@ if (!hasCookie('gdpr')) {
 
     if (isset($_GET['just_html'])) return; ?>
     </body>
-    <script src="<?= ABS_URI; ?>assets/base.js" data-no-instant></script>
+    <script src="assets/base.js" data-no-instant></script>
 <?php
 if (!$a) {
-    echo "<script data-no-instant src=\"" . ABS_URI . "assets/main.js\"></script>";
+    echo "<script data-no-instant src=\"assets/main.js\"></script>";
 } else {
     ?>
     <script nonce="<?= $_SESSION['nonce']; ?>">
@@ -801,36 +805,34 @@ function showNavbar($key)
                     <?php
 
                 } else { ?>
-                <li><a href="<?= ABS_URI . $url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
+                <li><a href="<?=$url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
                  <?php
 
             }
         }
         ?>
-                <li><a href="#"><?= $_SESSION['name'] ?></a>
+                <li><a><?= $_SESSION['name'] ?></a>
                 <ul class="dropdown">
-                    <li><a href="<?= ABS_URI ?>profil?<?= $APS; ?>">Profil</a></li>
+                    <li><a href="profil?<?= $APS; ?>">Profil</a></li>
                     <?php
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
                         if ($name == $_SESSION['name']) continue; ?>
                     <li><a href="?u=<?= $id; ?>"><?= $name; ?></a></li>
-    <?php
-
-} ?>
+    <?php } ?>
                     <li><a href="addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
-                <li><a href="<?= ABS_URI; ?>login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
+                <li><a href="login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
       <div id="menu">
         <div class="menu__header">
             <ul>
-                <li><a href="#"><?= $_SESSION['name'] ?></a>
+                <li><a id='menu__title'><?= $_SESSION['name'] ?></a>
                 <ul class="dropdown">
-                    <li><a href="<?= ABS_URI ?>profil?<?= $APS; ?>">Profil</a></li>
+                    <li><a href="profil?<?= $APS; ?>">Profil</a></li>
                     <?php
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
@@ -852,25 +854,25 @@ function showNavbar($key)
             <?php
 
         } else { ?>
-            <li><a href="<?= ABS_URI . $url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
+            <li><a href="<?=  $url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
             <?php
 
         }
     } ?>
-            <li class="not">
+            <!-- <li class="not">
 <label>
 Értesítések
                     <input type="checkbox" id="push" value="1">
                     <span class="right"></span>
                     </label>
-            </li>
+            </li> -->
            <?php
             if (!hasCookie('pwa')) { ?>
-           <li class="pwa">Letöltés</li>
+           <li class="pwa not">Letöltés</li>
     <?php
 
 } ?>
-            <li><a href="<?= ABS_URI; ?>login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
+            <li><a href="login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
       <div class="overlay"></div>
@@ -965,7 +967,7 @@ function updateRME()
     $us = [];
     foreach ($_SESSION['users'] as $u) {
         if ($u['persistant']) {
-            $us[] = $u['sch'] . ',' . $u['rtok'] . ',' . base64_encode($u['name']);
+            $us[] = "$u[sch],$u[rtok]," . base64_encode($u['name']);
         }
     }
     if(empty($us)) {
@@ -980,7 +982,7 @@ function activateUser($id)
     global $APS;
     $oid = $_SESSION['cuid'];
     $_SESSION['cuid'] = $id;
-    $APS = ("u=" . $_SESSION['cuid']);
+    $APS = ("u=$_SESSION[cuid]");
     $u = $_SESSION['users'][$id];
     if ($oid != $id) 
         $_SESSION['tt'] = [];

@@ -581,7 +581,7 @@ h6 {
   border-top: 10px solid rgba(255, 255, 255, 0.2);
   border-right: 10px solid rgba(255, 255, 255, 0.2);
   border-bottom: 10px solid rgba(255, 255, 255, 0.2);
-  border-left: 10px solid #ffffff;
+  border-left: 10px solid #fff;
   transition: all .3s ease;
   transform: translateZ(0);
   z-index: 9999;
@@ -910,12 +910,28 @@ header, [type="checkbox"], .collapsible-header, .btns, [tooltip] {
 }
 
 .header__title {
-  color: #fff;
   font-size: 20px;
   position: absolute;
   margin-left: 10px;
 }
-
+header ul li {
+  transition: all .3s;
+  float: left;
+  padding: 0;
+}
+header ul a,#menu li a,  li.active {
+  transition: all .3s;
+  font-size: 1rem;
+  padding: 0 15px;
+  display: block;
+  cursor: pointer;
+}
+header, header a, header ul a {
+  color: #fff;
+}
+header ul a:hover, li.active {
+  background-color: rgba(0,0,0,.1);
+}
 #menu {
   width: 280px;
   background: #fff;
@@ -948,7 +964,7 @@ header, [type="checkbox"], .collapsible-header, .btns, [tooltip] {
   border-bottom: 1px solid #ddd;
 }
 .menu__list li a, .menu__list li.active {
-  padding: 20px;
+  padding: 20px!important;
   color: rgba(0, 0, 0, 0.87);
   cursor: pointer;
   display: block;
@@ -969,24 +985,7 @@ ul {
 ul, ul>li {
   list-style-type: none;
 }
-header ul li {
-  transition: all .3s;
-  float: left;
-  padding: 0;
-}
-header ul a,.menu__list ul a,  li.active {
-  transition: all .3s;
-  font-size: 1rem;
-  display: block;
-  padding: 0 15px;
-  cursor: pointer;
-}
-header, header a, header ul a {
-  color: #fff;
-}
-header ul a:hover, li.active {
-  background-color: rgba(0,0,0,.1);
-}
+
 
 @media print {
   @page { 
@@ -1047,9 +1046,9 @@ header ul a:hover, li.active {
   top: 75px;
   margin:0;
 }
-.menu__header>ul>li>a {
+#menu__title {
   color: #fff;
-  font-size: 19px;
+  font-size: 19px!important;
   line-height: 24px;
 }
 .dropdown>li>a {
@@ -1329,25 +1328,32 @@ nbody {
   cursor: pointer;
 }
 
-li.pwa, .not {
+.not {
   padding: 20px;
 }
-
-.btn-group{
+.pagination {
   text-align: center;
 }
-
-.btn-group>a{
-padding: 10px;
-  background:rgb(122, 122, 122);
-  color:#fff;
-  transition: all .3s;
+.pagination li a {
+  display: inline-block;
+  font-size: 1.2rem;
+  padding: 0 10px;
+  line-height: 30px;
 }
-
-.btn-group :hover,.btn-group .active {
-  background:#4444ee;
+.pagination li {
+  display: inline-block;
+  border-radius: 2px;
+  text-align: center;
+  vertical-align: top;
+  height: 30px;
+  color: #444;
 }
-
+.pagination li.active {
+  background-color: #2196F3;
+}
+.pagination li.active a {
+  color: #fff;
+}
 [type="radio"] {
     position: absolute;
     left: -9999px;
@@ -1416,4 +1422,20 @@ li {
 ul li ul li {
   clear: both;
   width: 100%;
+}
+#ic{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  pointer-events:none;
+  z-index:9999;
+  transition:all .25s .1s
+}
+#ic-bar{
+  background:red;
+  width:100%;
+  margin-left:-100%;
+  height:2px;
+  transition:all .25s
 }

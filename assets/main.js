@@ -69,8 +69,8 @@ function Modal(el, options) {
             }, 250);
         }
     };
-    self.el = el.is() ? el[0] : el;
     self.$el = $(el);
+    self.el = self.$el[0];
     self.options = $.fn.extend({
         opacity: .5,
         onCloseEnd: null,
@@ -114,14 +114,22 @@ function ga(type, obj = {}) {
     for (let key in obj) {
         data += `${key}=${encodeURIComponent(obj[key])}&`;
     }
-    ajax(`../collect?${data}`, () => { })
+    ajax(`./collect?${data}`, () => { })
 };
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+        .register('./sw.js', { scope: '/' })
+        .then(function (reg) {
+            console.log('Service Worker Registered');
+            reg.sync.register('bg');
+        });
+}
 (function (window) {
     /* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */
     // Internal variables
-    var $ua = navigator.userAgent, $hasTouch = "createTouch" in document, $currentLocationWithoutHash, $urlToPreload, $preloadTimer, $lastTouchTimestamp,
+    var $ua = navigator.userAgent, $currentLocationWithoutHash, $urlToPreload, $lastTouchTimestamp,
         // Preloading-related variables
-        $history = {}, $xhr = false, $url = false, $title = false, $mustRedirect = false, $body = false, $timing = {}, $isPreloading = false, $isWaitingForCompletion = false;
+        $history = {}, $xhr = false, $url = false, $title = false, $mustRedirect = false, $body = false, $isPreloading = false, $isWaitingForCompletion = false;
     // Variables defined by public functions
     ////////// HELPERS //////////
     function removeHash(url) {
@@ -134,7 +142,7 @@ function ga(type, obj = {}) {
     function isPreloadable(b) {
         let a = b[0];
         var domain = location.protocol + "//" + location.host;
-        return !(!b.is("a") || a.target || b.hasAttr("download") || a.href.indexOf(domain + "/") != 0 || removeHash(a.href) == $currentLocationWithoutHash || !!$(b).closest("[data-no-instant]").is());
+        return !(!b.is("a") || a.target || b.hasAttr("download") || a.href.indexOf(domain + "/") != 0 || /login|addUser/.test(a) != 0 || removeHash(a.href) == $currentLocationWithoutHash || !!$(b).closest("[data-no-instant]").is());
     }
 
     function changePage(title, body, newUrl) {
@@ -175,10 +183,6 @@ function ga(type, obj = {}) {
     }
     /////////
     function preload(url) {
-        if ($preloadTimer) {
-            clearTimeout($preloadTimer);
-            $preloadTimer = false;
-        }
         if (!url) {
             url = $urlToPreload;
         }
@@ -188,12 +192,8 @@ function ga(type, obj = {}) {
             $url = url;
             $body = false;
             $mustRedirect = false;
-            $timing = {
-                start: Date.now()
-            };
             url = addParam(url, "just_html");
             $xhr = ajax(url, function (res) {
-                $timing.ready = Date.now() - $timing.start;
                 var doc = document.implementation.createHTMLDocument("");
                 doc.documentElement.innerHTML = res.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
                 $title = doc.title;
@@ -217,34 +217,7 @@ function ga(type, obj = {}) {
 
     }
     function display(url) {
-        if (!("display" in $timing)) {
-            $timing.display = Date.now() - $timing.start;
-        }
-        if ($preloadTimer || !$isPreloading) {
-            /* $preloadTimer:
-               Happens when there's a delay before preloading and that delay
-               hasn't expired (preloading didn't kick in).
-      
-               !$isPreloading:
-               A link has been clicked, and preloading hasn't been initiated.
-               It happens with touch devices when a user taps *near* the link,
-               Safari/Chrome will trigger mousedown, mouseover, click (and others),
-               but when that happens we ignore mousedown/mouseover (otherwise click
-               doesn't fire). Maybe there's a way to make the click event fire, but
-               that's not worth it as mousedown/over happen just 1ms before click
-               in this situation.
-      
-               It also happens when a user uses his keyboard to navigate (with Tab
-               and Return), and possibly in other non-mainstream ways to navigate
-               a website.
-            */
-            if ($preloadTimer && $url && $url != url) {
-                /* Happens when the user clicks on a link before preloading
-                   kicks in while another link is already preloading.
-                */
-                location.href = url;
-                return;
-            }
+        if (!$isPreloading) {
             preload(url);
             bar.start(0, true);
             $isWaitingForCompletion = true;
@@ -274,24 +247,11 @@ function ga(type, obj = {}) {
     var bar = function () {
         var $barContainer, $barElement, $barProgress, $barTimer;
         function init() {
-            $barContainer = $('<div id="ic"></div>');
-            $('body').append($barContainer)
-            $barElement = $('<div id="ic-bar" class="ic-bar"></div>');
-            $barContainer.append($barElement);
-
-            var transitionProperty = prefix + "transition",
-                style = $("<style/>");
-            style.html("#ic{position:" + ($hasTouch ? "absolute" : "fixed") + ";top:0;left:0;width:100%;pointer-events:none;z-index:9999;" + transitionProperty + ":all .25s .1s}" + ".ic-bar{background:red;width:100%;margin-left:-100%;height:2px;" + transitionProperty + ":all .25s}");
-            /* We set the bar's background in `.ic - bar` so that it can be
-               overriden in CSS with `#ic - bar`, as IDs have higher priority.
-            */
-            $("head").append(style);
-            if ($hasTouch) {
-                updatePositionAndScale();
-                $(window).on("resize", updatePositionAndScale).on("scroll", updatePositionAndScale);
-            }
+            $barContainer = $('#ic');
+            $barElement = $('#ic-bar');
         }
         function start(at, jump) {
+            init();
             $barProgress = at;
             $barContainer.css({
                 opacity: 1
@@ -315,43 +275,22 @@ function ga(type, obj = {}) {
             update();
         }
         function update() {
+            init();
             $barElement.css({ transform: "translate(" + $barProgress + "%)" });
-            if (!$("#ic").is() && document.body) {
-                $("body").append($barContainer);
-            }
         }
         function done() {
-            if ($("#ic").is()) {
-                clearTimeout($barTimer);
+            clearTimeout($barTimer);
+            requestAnimationFrame(() => {
                 $barProgress = 100;
                 update();
                 $barContainer.css({
                     opacity: 0
-                })
+                });
                 return;
-            }
-            /* The bar container hasn't been appended: It's a new page. */            start($barProgress == 100 ? 0 : $barProgress)
-            /* $barProgress is 100 on popstate, usually. */;
-            requestAnimationFrame(done)
-            /* Must be done in a timer, otherwise the CSS animation doesn't happen. */;
-        }
-        function updatePositionAndScale() {
-            /* Adapted from code by Sam Stephenson and Mislav MarohniÄ
-               http://signalvnoise.com/posts/2407
-            */
-            $barContainer.css({
-                left: pageXOffset + "px",
-                width: innerWidth + "px",
-                top: pageYOffset + "px"
             });
-            var landscape = "orientation" in window && Math.abs(orientation) == 90, scaleY = innerWidth / screen[landscape ? "height" : "width"] * 2
-            /* We multiply the size by 2 because the progress bar is harder
-               to notice on a mobile device.
-            */;
-            $barContainer.css("transform", `scaleY(${scaleY})`);
         }
+
         return {
-            init,
             start,
             done
         };
@@ -376,12 +315,12 @@ function ga(type, obj = {}) {
 
     const szazasra = n => Math.round(100 * n) / 100;
     function calcAvr(row) {
-        let toAvr = [];
-        let len = 0;
+        let toAvr = [],
+            len = 0;
         row.find('.jegy').each(e => {
             e = $(e);
-            let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5;
-            let val = e.html();
+            let weight = e.is('b') ? 1 : e.attr('tooltip').indexOf('100%') < 0 ? 0.25 : 0.5,
+                val = e.html();
             if (val.indexOf('/') < 0) {
                 toAvr.push(weight * val);
             } else {
@@ -389,12 +328,12 @@ function ga(type, obj = {}) {
             }
             len += weight;
         });
-        let avr = szazasra(toAvr.reduce((prev, curr) => Number(prev) + Number(curr)) / len);
-        let nds = row.find('nd');
-        let diff = szazasra(avr - nds.eq(-2).html());
-        nds.eq(-1).html(diff).removeClass("red gr").addClass(diff < 0 ? 'red' : 'gr');
+        let avr = szazasra(toAvr.reduce((prev, curr) => Number(prev) + Number(curr)) / len),
+            nds = row.find('nd');
+        diff = szazasra(avr - nds.eq(-2).html()),
+            nds.eq(-1).html(diff).removeClass("red gr").addClass(diff < 0 ? 'red' : 'gr');
         nds.eq(-3).html(avr);
-        let h = $(`[value="${nds.eq(0).attr('data-v')}"]`);
+        h = $(`[value="${nds.eq(0).attr('data-v')}"]`);
         h.html([h.html().split(' - ').shift(), avr].join(' - '));
     }
     function _populateModal(elem, target, attrs, customAttrs, inst) {
@@ -408,6 +347,12 @@ function ga(type, obj = {}) {
         }
         inst.open();
     }
+    let _opening = false,
+        _opened = false;
+    window.scrolling = false;
+    function scrollCb() {
+        if (!_opened || !_opening) scrolling = true;
+    }
     function init() {
         const menuElement = $('#menu'),
             he = $(location.hash),
@@ -417,30 +362,8 @@ function ga(type, obj = {}) {
             $(he).find(".collapsible-body").addClass('open')
         }
 
-        window.scrolling = false;
+        scrolling = false;
 
-
-        function scrollCb() {
-            if (!_opened || !_opening) scrolling = true;
-        }
-        $(window).on('resize', resize)
-            .on('scroll', scrollCb)
-            .on('mousemove', '[tooltip]', function () {
-                $(this).toggleClass('bot', ($(this).offset().top - scrollY - getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 76) <= 0);
-            })
-            .on('dblclick', '.milenne', function () {
-                let t = $(this), p = t.closest("nr");
-                t.remove();
-                calcAvr(p);
-            })
-            .on('error', function (err) {
-                ga('exception', {
-                    'exd': (err.error && err.error.stack) || (`${err.message}; ${err.lineno}: ${err.colno} `),
-                });
-            })
-            .on('click', 'nr nd:first-child', function (e) {
-                $(this).closest('nr').toggleClass('open')
-            });
         if (menuElement.is()) {
             let body = $("body"),
                 drg = false,
@@ -449,8 +372,6 @@ function ga(type, obj = {}) {
                 pStop = { x: 0, y: 0 },
                 _currentOffsetX = 0,
                 _moved = false,
-                _opening = false,
-                _opened = false,
                 // Sets options
                 _tolerance = 70,
                 _padding = 307,
@@ -474,7 +395,7 @@ function ga(type, obj = {}) {
                 menuElement.removeClass('open')
                 _opened = false
             }
-            $('.overlay').on('click', close);
+            overlay.on('click', close);
 
             $('#mo').on('click', () => {
                 open()
@@ -483,7 +404,7 @@ function ga(type, obj = {}) {
             function closeThat() {
                 if (!waitin) {
                     $("#rle").css({
-                        top: "",
+                        top: '',
                     });
                     $("body").removeClass("spin");
                 }
@@ -618,7 +539,7 @@ function ga(type, obj = {}) {
         if (/\/lecke/.test(href)) {
             let isMobile = /Mobi|Android/i.test(navigator.userAgent);
             if (!isMobile) {
-                if (('DatePicker' in window)) {
+                if (typeof DatePicker == 'function') {
                     new DatePicker();
                 } else {
                     var script = document.createElement('script');
@@ -653,7 +574,7 @@ function ga(type, obj = {}) {
                 _populateModal(elem, hw, ['lecke', 'sender', 'cdate'], { deadline: hw.find('a').html(), tr: hw.html().split('<')[0] }, inst);
             });
 
-            var inst2 = Modal($('#addModal'));
+            var inst2 = Modal('#addModal');
             $('.fab').on('click', function () {
                 inst2.open();
             });
@@ -687,7 +608,7 @@ function ga(type, obj = {}) {
         }
         if (/\/jegyek/.test(href)) {
             he.closest('nr').addClass('open');
-            let inst = Modal($('#addModal'));
+            let inst = Modal('#addModal');
             $(".fab").on('click', inst.open);
             let tr = $('#tr');
             $('#tort').on('change', function () {
@@ -851,14 +772,7 @@ function ga(type, obj = {}) {
         }*/
     }
     $(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker
-                .register('./sw.js', { scope: '/' })
-                .then(function (reg) {
-                    console.log('Service Worker Registered');
-                    reg.sync.register('bg');
-                });
-        }
+
         if (!$currentLocationWithoutHash) {
             if (supported) {
                 $preloadOnMousedown = true;
@@ -869,7 +783,6 @@ function ga(type, obj = {}) {
                     scrollY: pageYOffset
                 };
                 instantanize();
-                bar.init();
                 $(window).on("popstate", function () {
                     var loc = removeHash(location.href);
                     if (loc == $currentLocationWithoutHash) {
@@ -889,8 +802,26 @@ function ga(type, obj = {}) {
         } else {
             init();
         }
+
     });
-    $(window).on('appinstalled', () => {
-        addCookie('pwa');
-    });
+    $(window).on('resize', resize)
+        .on('scroll', scrollCb)
+        .on('mousemove', '[tooltip]', function () {
+            $(this).toggleClass('bot', ($(this).offset().top - scrollY - getComputedStyle(this, ':after').getPropertyValue('height').replace('px', '') - 76) <= 0);
+        })
+        .on('dblclick', '.milenne', function () {
+            let t = $(this), p = t.closest("nr");
+            t.remove();
+            calcAvr(p);
+        })
+        .on('error', function (err) {
+            ga('exception', {
+                'exd': (err.error && err.error.stack) || (`${err.message}; ${err.lineno}: ${err.colno} `),
+            });
+        })
+        .on('click', 'nr nd:first-child', function (e) {
+            $(this).closest('nr').toggleClass('open')
+        }).on('appinstalled', () => {
+            addCookie('pwa');
+        });
 })(this);

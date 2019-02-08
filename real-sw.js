@@ -1,6 +1,6 @@
 importScripts('simpleDB.js');
 // Overcomplicated from https://jakearchibald.com/2014/offline-cookbook/
-var cacheName = 'eFilc-v1.1.0',
+var cacheName = 'eFilc-v1.1.1',
     filesToCache = [
         './assets/main.js',
         './assets/ui.css',
@@ -19,14 +19,15 @@ var cacheName = 'eFilc-v1.1.0',
     ],
     paramsThatCanBeIgnored = [
         'just_html',
-        'fr',
         'ido',
         'logout',
-        'u'
+        'debug'
     ],
     ignoredRegexes = [
         ...paramsThatCanBeIgnored.map(e => new RegExp(e)),
-        /week/
+        /week/,
+        /fr/,
+        /u/
     ],
     DB_NAME = 'offline-analytics',
     EXPIRATION_TIME_DELTA = 86400000, // One day, in milliseconds.
@@ -83,7 +84,7 @@ self.addEventListener('push', function (event) {
     event.waitUntil(async function () {
         await load(urlsToLoad);
         console.info('Event: Push');
-        console.log(esvent);
+        console.log(event.data);
         // await fetch('/collect', {
         //     method: 'POST',
         //     body: await event.text()
@@ -123,7 +124,7 @@ self.addEventListener('notificationclick', function (event) {
 
 });
 function fallback(request, response) {
-    request.url = request.url.replace(new RegExp(`(?<=&|\\\?)(${paramsThatCanBeIgnored.join('|')})(=[^&]*)?(&|$)`, 'g'), '');
+    request.url = request.url.replace(new RegExp(`(?<=&|\\\?)(${paramsThatCanBeIgnored.join('|')}|fr)(=[^&]*)?(&|$)`, 'g'), '');
     return response || new Response('<p>Offline : ( <a href="/e-filc/faliujsag">Vissza</a></p>', {
         headers: {
             'Content-Type': 'text/html'
@@ -156,6 +157,7 @@ function load(request) {
                 let fetchPromise = fetch(request).then(function (networkResponse) {
                     var clone = networkResponse.clone();
                     var url = networkResponse.url;
+                    request.url = request.url.replace(/(?<=&|\?)(u=0|fr=1)?(&|$)/, '');
                     cache.put(request, networkResponse);
                     if (datasRe.test(url)) {
                         if (url.indexOf('just_html') < 0) {
@@ -174,7 +176,7 @@ function load(request) {
                 }).catch(() => {
                     return fallback(request, response);
                 });
-                if (/addUser|login|lecke/.test(request.url)) {
+                if (/addUser|login|lecke|fr/.test(request.url)) {
                     return fetchPromise;
                 } else {
                     return response || fetchPromise;
