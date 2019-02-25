@@ -1,27 +1,52 @@
 <?php
-if(isset($_GET['debug'])) define('START',explode(' ',microtime())[0]);
 require_once("lib.php");
+$v = '1.1.2';
+
+# Felülírható pl.: ha aliast használsz (#1)
+# $root_uri_path = 'sub/2/pewds';
 $root_uri_path = str_replace($_SERVER['DOCUMENT_ROOT'], "", str_replace("\\", "/", dirname(__FILE__)));
+$root_uri_path = trim($root_uri_path, '/');
+
 $host  = 'http' . (empty($_SERVER['HTTPS']) ? '' : 's') . "://$_SERVER[SERVER_NAME]";
 $host .= ( $_SERVER["SERVER_PORT"] != 80 ) ? ":$_SERVER[SERVER_PORT]" : "";
-$current_url =str_replace($root_uri_path, '', explode('?', $_SERVER["REQUEST_URI"])[0]);
+$host = trim($host, '/');
+
+$current_url = trim(str_replace($root_uri_path, '', explode('?', $_SERVER["REQUEST_URI"])[0]), '/');
+
 $routes = [];
 foreach (explode('/', $current_url) as $route) {
-    if (trim($route) != '' && !empty($route)) $routes[] = $route;
+    if (trim($route) != '') $routes[] = $route;
 }
-$is_api = false;
 
+$is_api = false;
 if (count($routes) > 1 && $routes[0] == "api") {
     $is_api = true;
     array_shift($routes);
     if (isset($_REQUEST['token'])) $_SESSION['token'] = urlencode($_REQUEST['token']);
 }
 
-define('ROUTES', $routes);
-define('ABS_URI',"$host$root_uri_path");
-if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = (isset($_GET['u']) ? $_GET['u'] : 0);
+$u = 0;
+if(count($routes) > 2 && $routes[0] == "u" && is_numeric($routes[1])) {
+     $u = intval($routes[1]);
+     array_shift($routes);
+     array_shift($routes);
+}
 
-$APS = ("u=" . $_SESSION['cuid']);
+$refresh = isset($_GET['fr']);
+
+if(!isset($_SESSION['v'])) {
+    $_SESSION['v'] = $v;
+} elseif($_SESSION['v'] !== $v) {
+    $_SESSION['v'] = $v;
+    $refresh = true;
+}
+
+define('U', $u);
+define('ROUTES', $routes);
+define('ABS_URI',"$host/" . (empty($root_uri_path) ? '' : "$root_uri_path/"));
+define('REFRESH', $refresh);
+
+if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = U;
 
 if (!isset($_SESSION['users'])) $_SESSION['users'] = [];
 
@@ -39,12 +64,12 @@ $_SESSION['users'] = unique_multidim_array($_SESSION['users'], 'name');
 if($_SESSION['authed'] && isset($_GET['debug']) && $_GET['debug'] == 'token') {
     echo "<pre>Token:\n\r";
 
-    $parts =explode('.', $_SESSION['users'][$_SESSION['cuid']]['tok']);
-    $parts[0] =json_decode(base64_decode($parts[0]),true);
-    $parts[1] =json_decode( base64_decode($parts[1]),true);
+    $parts = explode('.', $_SESSION['users'][$_SESSION['cuid']]['tok']);
+    $parts[0] = json_decode(base64_decode($parts[0]), true);
+    $parts[1] = json_decode(base64_decode($parts[1]), true);
 
     print_r($parts);
-    print_r(explode('##',base64_decode( $_SESSION['users'][$_SESSION['cuid']]['rtok'])));
+    print_r(explode('##', base64_decode($_SESSION['users'][$_SESSION['cuid']]['rtok'])));
     echo "</pre>";
 }
 if (isset($_GET['logout'])) {
@@ -54,6 +79,7 @@ if (isset($_GET['logout'])) {
 if (empty(ROUTES)) {
     redirect("faliujsag");
 }
+
 if(!hasCookie('cid')) {
     setcookie('cid', sha1(uniqid()), strtotime('+2 years'));
 }
@@ -66,10 +92,18 @@ switch (ROUTES[0]) {
     case "sw.js":
         header('Content-Type: application/javascript');
         header('Service-Worker-Allowed: /');
-        die(file_get_contents("real-sw.js"));
+        $content = file_get_contents("real-sw.js");
+        $content = str_replace([
+            '<VERSION>',
+            '<ABS_URI>'
+        ], [
+            $v,
+            ABS_URI
+        ], $content);
+        die($content);
         break;
     case "collect":
-        $data = "v=1&tid=UA-114515850-2&de=UTF-8&" . http_build_query($_GET) . '&ua=' .urlencode($_SERVER['HTTP_USER_AGENT']) . "&cid=" . urlencode($_COOKIE['cid']);
+        $data = "v=1&tid=UA-114515850-2&de=UTF-8&av=$v&" . http_build_query($_GET) . '&ua=' .urlencode($_SERVER['HTTP_USER_AGENT']) . "&cid=" . urlencode($_COOKIE['cid']);
         if(isset($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_FLAG_NO_PRIV_RANGE)) $data .= '&uip=' . urlencode($_SERVER['REMOTE_ADDR']);
         // echo $data;
         echo request('https://www.google-analytics.com/collect', 'POST', $data)['content'];
@@ -119,7 +153,7 @@ switch (ROUTES[0]) {
                     $_SESSION['users'][$id]['name'] = $_SESSION['name'];
                     $_SESSION['users'][$id]['persistant'] = (isset($_POST['rme']) && $_POST['rme'] == "1");
                     updateRME();
-                    redirect("faliujsag?u=$id");
+                    redirect(ABS_URI . "u/$id/faliujsag");
                 } else {
                     $_SESSION['tries']++;
                     sleep(($_SESSION['tries'] - 1) ^ 2);
@@ -139,7 +173,7 @@ switch (ROUTES[0]) {
 
     case "jegyek":
         reval();
-        if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
+        if (REFRESH) $_SESSION['data'] = getStudent();
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
@@ -290,7 +324,7 @@ foreach ($evals as $tantargy => $jegyek) {
                 foreach ($jegyek[$key] as $jegy) {
                     $w = $jegy['Weight'];
                     $tag = $w == "200%" ? 'b' : 'span';
-                    echo "<$tag id=\"i$jegy[EvaluationId] class=\"jegy\" tooltip=\"" . date('Y. m. d.', strtotime($jegy['Date'])) . "&#xa;$jegy[Value]&#xa;$jegy[Mode]&#xa;Téma: $jegy[Theme]&#xa;Súly: $w &#xa;$jegy[Teacher]\">$jegy[NumberValue]</$tag> ";
+                    echo "<$tag id=\"i$jegy[EvaluationId]\" class=\"jegy\" tooltip=\"" . date('Y. m. d.', strtotime($jegy['Date'])) . "&#xa;$jegy[Value]&#xa;$jegy[Mode]&#xa;Téma: $jegy[Theme]&#xa;Súly: $w &#xa;$jegy[Teacher]\">$jegy[NumberValue]</$tag> ";
             }
             }
                 break;
@@ -305,7 +339,7 @@ foreach ($evals as $tantargy => $jegyek) {
 }
 
 ?>
-        </nbody>
+    </nbody>
 </notes>
 <div class="fab">+</div>
 <?php
@@ -314,7 +348,7 @@ break;
 
 case "feljegyzesek":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
+    if (REFRESH) $_SESSION['data'] = getStudent();
     showHeader('Feljegyzések');
     showNavbar('feljegyzesek');
     ?>
@@ -353,7 +387,7 @@ break;
 
 case "hianyzasok":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
+    if (REFRESH) $_SESSION['data'] = getStudent();
     showHeader('Hiányzások');
     showNavbar('hianyzasok');
     ?>
@@ -392,21 +426,21 @@ foreach ($_SESSION['data']['Absences'] as $absence) { ?>
 
         foreach ($absence['h'] as $abs) {
             ?>
-            <p class="collection-item" data-ct="<?= $abs['creatingTime']; ?>" data-jst="<?= $abs['jtn']; ?>" data-t="<?= htmlspecialchars(tLink($abs['teacher'])); ?>"  data-s="<?= $abs['subject']; ?>" data-l="<?= "$absence[week]&$APS#d$absence[day]h$abs[count]" ?>"><?= $abs['sub']; ?><span class="secondary-content"><?= $abs['status']; ?></span></p>
+            <p class="collection-item" data-ct="<?= $abs['creatingTime']; ?>" data-jst="<?= $abs['jtn']; ?>" data-t="<?= htmlspecialchars(tLink($abs['teacher'])); ?>"  data-s="<?= $abs['subject']; ?>" data-l="<?= "$absence[week]#d$absence[day]h$abs[count]" ?>"><?= $abs['sub']; ?><span class="secondary-content"><?= $abs['status']; ?></span></p>
         <?php } ?>
         </div>
     </li>
 <?php
 } ?>
 </ul>
-<p class="center">Igazolt hiányzás: <?= $_SESSION['data']['igazolt'] ?>; Igazolatlan hiányzás: <?= $_SESSION['data']['igazolatlan'] ?>; Összes késés: <?= prettyMins($_SESSION['data']['keses'])?>; Összes hiányzás: <?= $_SESSION['data']['osszes'] ?></p>
+<p class="center">Igazolt hiányzás: <?= $_SESSION['data']['igazolt'] ?> óra; Igazolatlan hiányzás: <?= $_SESSION['data']['igazolatlan'] ?> óra; Összes késés: <?= prettyMins($_SESSION['data']['keses'])?>; Összes hiányzás: <?= $_SESSION['data']['osszes'] ?> óra</p>
 <?php
 showFooter();
 break;
 
 case "profil":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
+    if (REFRESH) $_SESSION['data'] = getStudent();
     showHeader('Profil');
     showNavbar('profil', true);
     $data = $_SESSION['data'];
@@ -441,7 +475,7 @@ break;
 
 case "orarend":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['tt'] = [];
+    if (REFRESH) $_SESSION['tt'] = [];
     $week = isset($_GET['week']) ? intval($_GET['week']) : 0;
     list($monday, $friday) = week($week);
     $data = timetable($monday, $friday);
@@ -663,7 +697,7 @@ case "lecke":
     $i = isset($arr[$i]) ? $i : 'nap';
     $rt = $arr[$i];
     $start = strtotime($rt);
-    if (!isset($_SESSION['Homework'][$i]) || isset($_GET['fr'])) {
+    if (!isset($_SESSION['Homework'][$i]) || REFRESH) {
         $_SESSION['Homework'] = [];
         $_SESSION['Homework'][$i] = [];
         $data = timetable($start, time());
@@ -741,7 +775,7 @@ case "lecke":
     </div>
     <div id="addModal" class="modal n">
     <div class="modal-content">
-        <form action="lecke/ujLecke?<?= $APS; ?>" method="post">
+        <form action="lecke/ujLecke?" method="post">
         <h3>Új lecke</h3>
     <select name="tr">
         <?php
@@ -778,7 +812,7 @@ case "lecke":
     <?php
     foreach (['nap' => 'Nap', 'het' => 'Hét', 'honap' => 'Hónap', '3honap' => '3 hónap'] as $tantargy => $absence) { ?>
     <li <?= $tantargy == $i ? 'class="active"' : '' ?>><a href="lecke?ido=<?= $tantargy
-                    ?>&<?= $APS ?>"><?= $absence ?></a> </li>
+                    ?>"><?= $absence ?></a> </li>
     <?php
 
 } ?>
@@ -806,7 +840,7 @@ break;
 
 case "faliujsag":
     reval();
-    if (isset($_GET['fr'])) $_SESSION['data'] = getStudent();
+    if (REFRESH) $_SESSION['data'] = getStudent();
     showHeader('Faliújság');
     $data = $_SESSION['data'];
     showNavbar('faliujsag');
@@ -820,7 +854,7 @@ case "faliujsag":
                     <?php
                     ob_flush();
                     foreach (array_slice($data['Evaluations'], 0, 6) as $eval) { ?>
-                        <a href="jegyek?<?= $APS; ?>#i<?= $eval['EvaluationId'] ?>" class="collection-item"><?= ucfirst($eval['Value']) . " - " . $eval["Subject"] . ($eval['Type'] !== 'MidYear' ? (' (' . explode(' ', $eval['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($eval['Date'])); ?></span></a>
+                        <a href="jegyek#i<?= $eval['EvaluationId'] ?>" class="collection-item"><?= ucfirst($eval['Value']) . " - " . $eval["Subject"] . ($eval['Type'] !== 'MidYear' ? (' (' . explode(' ', $eval['TypeName'])[0] . ')') : ''); ?><span class="secondary-content"><?= date('m. d.', strtotime($eval['Date'])); ?></span></a>
             <?php } ?>
                 </div>
             </div>
@@ -833,7 +867,7 @@ case "faliujsag":
             <div class="collection-header"><b>Legutóbbi hiányzások</b></div>
             <?php
             foreach (array_slice($data['Absences'], 0, 6) as $absence) { ?>
-            <a href="hianyzasok?<?= $APS; ?>#i<?= $absence['id']; ?>" class="collection-item"><?= ($absence['justified'] ? '✔️ ' : '❌ ') . "$absence[type] - " . count($absence["h"]) ?> db tanítási óra<span class="secondary-content"><?= $absence['shortDate']; ?></span></a>
+            <a href="hianyzasok#i<?= $absence['id']; ?>" class="collection-item"><?= ($absence['justified'] ? '✔️ ' : '❌ ') . "$absence[type] - " . count($absence["h"]) ?> db tanítási óra<span class="secondary-content"><?= $absence['shortDate']; ?></span></a>
     <?php } ?>
         </div>
     </div>
@@ -854,7 +888,7 @@ if (count($data['Notes']) > 0) { ?>
             <p><?= $note['Content'] ?><br />
                 <?= tLink($note['Teacher']) ?>
             </p>
-            <a href="feljegyzesek?<?= $APS; ?>#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
+            <a href="feljegyzesek#i<?= $note['NoteId']; ?>" class="secondary-content"><?= date('m. d.', strtotime($note['Date'])); ?></a>
         </li>
 <?php } ?>
     </ul>
@@ -864,14 +898,13 @@ if (count($data['Notes']) > 0) { ?>
 }
 
 ob_flush();
-if (!isset($_SESSION['events']) || isset($_GET['fr'])) $_SESSION['events'] = json_decode(getEvents(),true);
-if (count($_SESSION['events']) > 0) {
+if (count($_SESSION['data']['Events']) > 0) {
     ?>
 <div class="col s12">
 <ul class="collection with-header">
         <li class="collection-header"><b>Faliújság</b></li>
     <?php
-    foreach (array_slice($_SESSION['events'], 0, 6) as $event) {
+    foreach (array_slice($_SESSION['data']['Events'], 0, 6) as $event) {
         ?>
         <li class="collection-item">
             <p><?= $event['Content'] ?>
@@ -897,11 +930,12 @@ default:
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header("Content-Security-Policy: default-src 'self' ; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:; connect-src 'self'; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
+    http_response_code(404);
     ?>
 <!DOCTYPE html>
 <html lang="hu">
     <head>
-        <base href="<?= ABS_URI; ?>">
+        <base href="<?= ABS_URI . (U == 0 ? '': ('u/' . U . '/')); ?>">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
@@ -944,7 +978,7 @@ default:
     <body class="e404">
         <div class="container">
             <div class="big">Hoppá! Nem kénne itt lenned</div>
-            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="faliujsag?<?= $APS; ?>">vissza</a> térni.</div>
+            <div>Úgy tűnik itt az ideje befejezni a küldetést és <a href="faliujsag">vissza</a> térni.</div>
         </div>
     </body>
 </html>

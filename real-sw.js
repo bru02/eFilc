@@ -1,12 +1,12 @@
 importScripts('simpleDB.js');
 // Overcomplicated from https://jakearchibald.com/2014/offline-cookbook/
-var cacheName = 'eFilc-v1.1.1',
+var cacheName = 'eFilc-v<VERSION>',
     filesToCache = [
-        './assets/main.js',
-        './assets/ui.css',
-        './assets/base.js',
-        './assets/picker.js',
-        './favicon.ico'
+        'assets/main.js',
+        'assets/ui.css',
+        'assets/base.js',
+        'assets/picker.js',
+        'favicon.ico'
     ],
     datas = [
         'faliujsag',
@@ -26,13 +26,13 @@ var cacheName = 'eFilc-v1.1.1',
     ignoredRegexes = [
         ...paramsThatCanBeIgnored.map(e => new RegExp(e)),
         /week/,
-        /fr/,
-        /u/
+        /fr/
     ],
     DB_NAME = 'offline-analytics',
     EXPIRATION_TIME_DELTA = 86400000, // One day, in milliseconds.
     datasRe = new RegExp(datas.join('|')),
-    urlsToLoad = datas.map(u => `${u}?just_html=1`);
+    urlsToLoad = datas.map(u => `${u}?just_html=1`),
+    ABS_URI = '<ABS_URI>';
 
 self.addEventListener('install', function (e) {
     console.log('[ServiceWorker] Install');
@@ -40,7 +40,7 @@ self.addEventListener('install', function (e) {
     e.waitUntil(
         caches.open(cacheName).then(function (cache) {
             console.log('[ServiceWorker] Caching app shell');
-            return cache.addAll(filesToCache);
+            return cache.addAll([filesToCache, ...datas.map(e => `${e}`)]);
         })
     );
 
@@ -131,11 +131,17 @@ function fallback(request, response) {
         }
     })
 }
-function load(request) {
+async function load(request) {
     if (request instanceof Request) {
-        var url = new URL(request.url);
-
-        url.search = url.search.slice(1).replace(/(?<=\&|\?)(u=1)?(\&|$)/, '')
+        var url = new URL(request.url),
+            u = 0,
+            m = url.match(/\/u\/(?<u>[0-9]+)/);
+        if (m) {
+            u = m.groups.u;
+        } else {
+            u = u.replace(ABS_URI, ABS_URI + 'u/0/');
+        }
+        url.search = url.search.slice(1).replace(/(?<=\&|\?)?(\&|$)/, '')
             .split('&')
             .map(function (kv) {
                 return kv.split('=');
@@ -151,20 +157,22 @@ function load(request) {
             .join('&');
 
         request.url = url.toString();
-
-        return caches.open(cacheName).then(function (cache) {
-            return cache.match(request).then(function (response) {
-                let fetchPromise = fetch(request).then(function (networkResponse) {
-                    var clone = networkResponse.clone();
-                    var url = networkResponse.url;
-                    request.url = request.url.replace(/(?<=&|\?)(u=0|fr=1)?(&|$)/, '');
+        let cache = await caches.open(cacheName),
+            response = await cache.match(request),
+            fetchPromise = async function () {
+                try {
+                    let networkResponsePromise = fetch(request),
+                        networkResponse = await networkResponsePromise,
+                        clone = networkResponse.clone(),
+                        url = networkResponse.url;
+                    request.url = request.url.replace(/(?<=&|\?)(fr=1)?(&|$)/, '');
                     cache.put(request, networkResponse);
                     if (datasRe.test(url)) {
                         if (url.indexOf('just_html') < 0) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
                         } else {
                             clone.clone().text().then(e => {
-                                cache.put(url.replace(/(?<=\&|\?)(just_html)(=[^\&]*)?(\&|$)/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><meta charset="UTF-8"><link rel="manifest" href="manifest.json"><link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="preload" href="<?= ABS_URI; ?>assets/main.js" as="script"><link rel="preload" href="<?= ABS_URI; ?>assets/ui.css" as="style"><link rel="preload" href="<?= ABS_URI; ?>assets/base.js" as="script"><link rel="stylesheet" href="assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="assets/base.js" data-no-instant></script><script src="assets/main.js" data-no-instant></script></html>`, {
+                                cache.put(url.replace(/(?<=\&|\?)(just_html)(=[^\&]*)?(\&|$)/, ''), new Response(`<!DOCTYPE html><html lang="hu"><head><base href="${ABS_URI + 'u/' + u}/"><meta charset="UTF-8"><link rel="manifest" href="${ABS_URI}manifest.json"><link rel="shortcut icon" href="${ABS_URI}favicon.ico" type="image/x-icon"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="application-name" content="eFilc"><meta name="apple-mobile-web-app-title" content="eFilc"><meta name="theme-color" content="#2196F3"><meta name="msapplication-navbutton-color" content="#2196F3"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="msapplication-starturl" content="/"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="Description" content="eFilc, gyors eKréta kliens a webre"><meta http-equiv="X-UA-Compatible" content="ie=edge"><link rel="preload" href="${ABS_URI}assets/main.js" as="script"><link rel="preload" href="${ABS_URI}assets/ui.css" as="style"><link rel="preload" href="${ABS_URI}assets/base.js" as="script"><link rel="stylesheet" href="${ABS_URI}assets/ui.css"></head><body><div id="rle"></div>${e}</body><script src="${ABS_URI}assets/base.js" data-no-instant></script><script src="${ABS_URI}assets/main.js" data-no-instant></script></html>`, {
                                     headers: {
                                         'Content-Type': 'text/html'
                                     }
@@ -173,17 +181,15 @@ function load(request) {
                         }
                     }
                     return clone;
-                }).catch(() => {
-                    return fallback(request, response);
-                });
-                if (/addUser|login|lecke|fr/.test(request.url)) {
-                    return fetchPromise;
-                } else {
-                    return response || fetchPromise;
+                } catch (e) {
+                    return response;
                 }
-            })
-        })
-
+            }();
+        if (/addUser|login|lecke|fr/.test(request.url)) {
+            return fetchPromise;
+        } else {
+            return response || fetchPromise;
+        }
     } else {
         return Promise.all(request.map(w => load(new Request(w))));
     }

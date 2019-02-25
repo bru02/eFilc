@@ -1,15 +1,21 @@
 ﻿<?php
+if(isset($_GET['debug'])) define('START',explode(' ',microtime())[0]);
+
 error_reporting(E_ALL);
 ini_set('log_errors', true); // Error logging
 ini_set('error_log', 'errors.log'); // Logging file
 ini_set('log_errors_max_len', 1024); // Logging file size
+
 session_name("naplo");
 session_start();
+
 mb_internal_encoding("UTF-8");
+
 function date_sort($a, $b)
 {
     return strtotime($b['Date']) - strtotime($a['Date']);
 }
+
 function normalizeChars($txt) {
     $normalizeChars = array(
         'é' => 'e',
@@ -22,6 +28,7 @@ function normalizeChars($txt) {
     );
     return strtr(mb_strtolower($txt), $normalizeChars);
 }
+
 function tLink($tanar)
 {
     if ($_SESSION['isToldy']) {
@@ -59,7 +66,8 @@ function logout()
         if (empty($_SESSION['users'])) {
             if (ROUTES[0] != 'login') redirect("login");
         } else {
-            redirect('faliujsag');
+            activateUser(0);
+            redirect(ABS_URI . 'faliujsag');
         }
     }
 }
@@ -110,9 +118,8 @@ function reval()
     if (empty($_SESSION['users'])) {
         logout();
     } else {
-        $id = isset($_GET['u']) ? intval($_GET['u']) : 0;
-        if (isset($_SESSION['users'][$id])) {
-            if (!activateUser($id)) {
+        if (isset($_SESSION['users'][U])) {
+            if (!activateUser(U)) {
                 if (ROUTES[0] != "login") {
                     logout();
                 }
@@ -389,6 +396,7 @@ function getStudent()
     $out['osszes'] = $igazolatlan + $igazolt;
     $out['keses'] = $keses;
     $out['Absences'] = $absences;
+    $out['Events'] = json_decode(getEvents(), true);
     if ($_SESSION['tyid']) {
         $htmlinput = request('http://www.toldygimnazium.hu/cimke/' . $_SESSION['tyid'], 'GET')['content'];
         $doc = new DOMDocument();
@@ -413,6 +421,9 @@ function getStudent()
             foreach ($arr as $item) {
                 if ($item->parentNode->tagName == "h3") {
                     $con = $item->ownerDocument->saveHTML($item);
+                    $id = $item->getAttribute('href');
+                    $id = explode('/', $id);
+                    $id = array_pop($id);
                 }
 
                 if ($item->parentNode->tagName == "p") {
@@ -445,7 +456,7 @@ function getStudent()
                 'Date' => $date,
                 'Content' => $con,
                 'Teacher' => $author,
-                'NoteId' => uniqid()
+                'NoteId' => "tld$id"
             ];
         }
 
@@ -586,16 +597,16 @@ function showHeader($title, $a = false)
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
-    header("Content-Security-Policy: default-src 'self' www.google-analytics.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-$nonce'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-$nonce'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
     if (!isset($_REQUEST['just_html'])) {
     ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <base href="<?= ABS_URI; ?>">
+    <base href="<?= ABS_URI . ((U == 0 && !$a) ? '': ('u/' . U . '/')); ?>">
 	<meta charset="UTF-8">
-	<link rel="manifest" href="manifest.json">
-	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+	<link rel="manifest" href="<?= ABS_URI; ?>manifest.json">
+	<link rel="shortcut icon" href="<?= ABS_URI; ?>favicon.ico" type="image/x-icon">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="application-name" content="eFilc">
@@ -603,18 +614,18 @@ function showHeader($title, $a = false)
 	<meta name="theme-color" content="#2196F3">
 	<meta name="msapplication-navbutton-color" content="#2196F3">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="msapplication-starturl" content="/">
+	<meta name="msapplication-starturl" content="<?= ABS_URI; ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
 	<meta name="Description" content="Nem hivatalos, webes KRÉTA kliens, Toldys extrákkal">
     <meta name="keywords" content="eFilc, KRÉTA, eNapló, Toldy">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="preload" href="assets/ui.css" as="style">
-  <link rel="preload" href="assets/base.js" as="script">
-    <link rel="stylesheet" href="assets/ui.css">
+    <link rel="preload" href="<?= ABS_URI; ?>assets/ui.css" as="style">
+    <link rel="preload" href="<?= ABS_URI; ?>assets/base.js" as="script">
+    <link rel="stylesheet" href="<?= ABS_URI; ?>assets/ui.css">
     <?php if($a) { ?>
-        <link rel="prefetch" href="schools" as="fetch">
+        <link rel="prefetch" href="<?= ABS_URI; ?>schools" as="fetch">
     <?php } else { ?>
-        <link rel="preload" href="assets/main.js" as="script">
+        <link rel="preload" href="<?= ABS_URI; ?>assets/main.js" as="script">
     <?php } ?>
 
     <title><?= $title; ?> | eFilc</title>
@@ -637,8 +648,7 @@ if (!$a) { ?>
 
 function getWeekURL($week)
 {
-    global $APS;
-    return "orarend?" . ($week == 0 ? '' : "week=$week&") . $APS;
+    return "orarend?" . ($week == 0 ? '' : "week=$week&");
 }
 
 function showFooter($a = false)
@@ -667,10 +677,10 @@ if (!hasCookie('gdpr')) {
 
     if (isset($_GET['just_html'])) return; ?>
     </body>
-    <script src="assets/base.js" data-no-instant></script>
+    <script src="<?= ABS_URI; ?>assets/base.js" data-no-instant></script>
 <?php
 if (!$a) {
-    echo "<script data-no-instant src=\"assets/main.js\"></script>";
+    echo '<script data-no-instant src="' . ABS_URI . 'assets/main.js"></script>';
 } else {
     ?>
     <script nonce="<?= $_SESSION['nonce']; ?>">
@@ -727,7 +737,7 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     ?>
     <main>
     <form action="<?= $au ? 'addUser' : 'login' ?>" method="post" class="container">
-    <h1><?= $au ? 'Új felhasználó hozzáadása' : 'Bejelentkezés' ?></h1>
+    <h1><?= $au ? 'Új felhasználó hozzáadása' : 'Belépés' ?></h1>
     <?php
     if (!$au) : ?>
     <p>
@@ -786,7 +796,6 @@ function showNavbar($key)
         'lecke' => 'Lecke',
         'orarend' => 'Órarend',
     );
-    global $APS;
     ?>
     <main>
         <header class="np">
@@ -805,7 +814,7 @@ function showNavbar($key)
                     <?php
 
                 } else { ?>
-                <li><a href="<?=$url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
+                <li><a href="<?=$url; ?>"><?= $txt; ?></a></li>      
                  <?php
 
             }
@@ -813,17 +822,17 @@ function showNavbar($key)
         ?>
                 <li><a><?= $_SESSION['name'] ?></a>
                 <ul class="dropdown">
-                    <li><a href="profil?<?= $APS; ?>">Profil</a></li>
+                    <li><a href="profil">Profil</a></li>
                     <?php
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
                         if ($name == $_SESSION['name']) continue; ?>
-                    <li><a href="?u=<?= $id; ?>"><?= $name; ?></a></li>
+                    <li><a href="u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
     <?php } ?>
-                    <li><a href="addUser" data-no-instant>+</a></li>
+                    <li><a href="<?= ABS_URI; ?>addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
-                <li><a href="login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
+                <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
             </ul>
         </header>
 
@@ -832,19 +841,17 @@ function showNavbar($key)
             <ul>
                 <li><a id='menu__title'><?= $_SESSION['name'] ?></a>
                 <ul class="dropdown">
-                    <li><a href="profil?<?= $APS; ?>">Profil</a></li>
+                    <li><a href="profil">Profil</a></li>
                     <?php
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
                         if ($name == $_SESSION['name']) continue; ?>
-                    <li><a href="?u=<?= $id; ?>"><?= $name; ?></a></li>
-    <?php
-
-} ?>
-                    <li><a href="addUser" data-no-instant>+</a></li>
+                    <li><a href="u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
+    <?php } ?>
+                    <li><a href="<?= ABS_URI; ?>addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
-                </ul>
+            </ul>
         </div>
         <ul class="menu__list">
         <?php
@@ -854,25 +861,25 @@ function showNavbar($key)
             <?php
 
         } else { ?>
-            <li><a href="<?=  $url . '?' . $APS; ?>"><?= $txt; ?></a></li>      
+            <li><a href="<?=  $url; ?>"><?= $txt; ?></a></li>      
             <?php
 
         }
     } ?>
-            <!-- <li class="not">
+             <li class="not">
 <label>
 Értesítések
                     <input type="checkbox" id="push" value="1">
                     <span class="right"></span>
                     </label>
-            </li> -->
+            </li> 
            <?php
             if (!hasCookie('pwa')) { ?>
            <li class="pwa not">Letöltés</li>
     <?php
 
 } ?>
-            <li><a href="login?logout=1&<?= $APS; ?>" data-no-instant>Kilépés</a></li>
+            <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
       <div class="overlay"></div>
@@ -979,10 +986,8 @@ function updateRME()
 
 function activateUser($id)
 {
-    global $APS;
     $oid = $_SESSION['cuid'];
     $_SESSION['cuid'] = $id;
-    $APS = ("u=$_SESSION[cuid]");
     $u = $_SESSION['users'][$id];
     if ($oid != $id) 
         $_SESSION['tt'] = [];

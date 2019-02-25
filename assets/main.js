@@ -1,97 +1,84 @@
 function Modal(el, options) {
     let self = {
         open: function () {
-            if (self.isOpen) return;
-            self.isOpen = true;
-            Modal._modalsOpen++;
-            self._nthModalOpened = Modal._modalsOpen;
-            // Set Z-Index based on number of currently open modals
-            let zi = 1e3 + Modal._modalsOpen * 2;
-            self.$overlay.css({
-                zIndex: zi
-            });
-            self.$el.css({
-                zIndex: zi + 1
-            });
-            // Set opening trigger, undefined indicates modal was opened by javascript
-            // onOpenStart callback
-            if (self.options.preventScrolling) {
-                $("body").addClass('no-scroll');
-            }
-            self.$overlay.show().css({
-                opacity: self.options.opacity
-            });
-            // Animate overlay
-            self.el.insertAdjacentElement("afterend", self.$overlay[0]);
-            self.$el.addClass("open");
-            if (self.options.dismissible) {
-                var _doc = $(document);
-                _doc.on("keydown", function (e) {
-                    if (e.keyCode === 27 && self.options.dismissible) {
-                        self.close();
-                    }
+            if (!self.isOpen) {
+                self.isOpen = true;
+                Modal._modalsOpen++;
+                self._nthModalOpened = Modal._modalsOpen;
+                // Set Z-Index based on number of currently open modals
+                let zi = 1000 + Modal._modalsOpen * 2;
+                self.$overlay.show().css({
+                    zIndex: zi,
+                    opacity: self.options.opacity
                 });
-                _doc.on("focus", function (e) {
-                    // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
-                    if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
-                        self.el.focus();
-                    }
+                self.$el.css({
+                    zIndex: zi + 1
                 });
+                // Set opening trigger, undefined indicates modal was opened by javascript
+                if (self.options.preventScrolling) {
+                    $("body").addClass('no-scroll');
+                }
+                // Animate overlay
+                self.el.insertAdjacentElement("afterend", self.$overlay[0]);
+                self.$el.addClass("open");
+                if (self.options.dismissible) {
+                    $(document).on("keydown", function (e) {
+                        if (e.keyCode === 27) {
+                            self.close();
+                        }
+                    }).on("focus", function (e) {
+                        // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
+                        if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
+                            self.el.focus();
+                        }
+                    });
+                }
+                // Focus modal
+                self.el.focus();
             }
-            // this._animateIn();
-            // Focus modal
-            self.el.focus();
         },
         close: function () {
-            if (!self.isOpen) {
-                return;
-            }
-            self.isOpen = false;
-            Modal._modalsOpen--;
-            self._nthModalOpened = 0;
-            self.$overlay.css({
-                opacity: 0
-            });
-            self.$el.removeClass("open");
-            $("body").removeClass('no-scroll');
+            if (self.isOpen) {
+                self.isOpen = false;
+                Modal._modalsOpen--;
+                self._nthModalOpened = 0;
+                self.$overlay.css({
+                    opacity: 0
+                });
+                self.$el.removeClass("open");
+                $("body").removeClass('no-scroll');
 
-            if (self.options.dismissible) {
-                var doc = $(document);
-                doc.off("keydown", self._handleKeydownBound);
-                doc.off("focus", self._handleFocusBound, true);
-            }
-            setTimeout(function () {
-                self.$overlay.remove();
-                // Call onCloseEnd callback
-                if (self.options.onCloseEnd) {
-                    self.options.onCloseEnd();
+                if (self.options.dismissible) {
+                    var doc = $(document);
+                    doc.off("keydown", self._handleKeydownBound);
+                    doc.off("focus", self._handleFocusBound, true);
                 }
-            }, 250);
-        }
+                setTimeout(function () {
+                    self.$overlay.remove();
+                    // Call onClose callback
+                    if (self.options.onClose) {
+                        self.options.onClose();
+                    }
+                }, 250);
+            }
+        },
+        _nthModalOpened: 0,
+        isOpen: false,
+        $el: $(el).on("click", function (e) {
+            if ($(e.target).closest(".modal-close").is()) {
+                self.close();
+            }
+        })
     };
-    self.$el = $(el);
     self.el = self.$el[0];
     self.options = $.fn.extend({
-        opacity: .5,
-        onCloseEnd: null,
+        opacity: 0.5,
+        onClose: null,
         preventScrolling: true,
         dismissible: true
     }, options);
-    /**
-     * Describes open/close state of modal
-     * @type {Boolean}
-     */    self.isOpen = false;
-    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`);
-    self._nthModalOpened = 0;
-    Modal._count++;
-    self.$overlay.on("click", function () {
+    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`).on("click", function () {
         if (self.options.dismissible) {
-            self.close();
-        }
-    });
-    self.$el.on("click", function (e) {
-        var $closeTrigger = $(e.target).closest(".modal-close");
-        if ($closeTrigger.is()) {
             self.close();
         }
     });
@@ -99,7 +86,7 @@ function Modal(el, options) {
 }
 Modal._modalsOpen = 0;
 
-function ga(type, obj = {}) {
+function ga(type, obj) {
     obj = {
         ...obj,
         t: type,
@@ -108,17 +95,18 @@ function ga(type, obj = {}) {
         sr: `${innerWidth}x${innerHeight}`,
         ul: navigator.language.toLowerCase(),
         dl: location.href,
-        dt: document.title
+        dt: document.title,
+        dr: document.referrer
     };
     let data = '';
     for (let key in obj) {
         data += `${key}=${encodeURIComponent(obj[key])}&`;
     }
-    ajax(`./collect?${data}`, () => { })
+    ajax(`collect?${data}`, () => { })
 };
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker
-        .register('./sw.js', { scope: '/' })
+        .register('sw.js', { scope: '/' })
         .then(function (reg) {
             console.log('Service Worker Registered');
             reg.sync.register('bg');
@@ -286,7 +274,6 @@ if ('serviceWorker' in navigator) {
                 $barContainer.css({
                     opacity: 0
                 });
-                return;
             });
         }
 
@@ -355,11 +342,11 @@ if ('serviceWorker' in navigator) {
     }
     function init() {
         const menuElement = $('#menu'),
-            he = $(location.hash),
+            target = $(location.hash),
             href = location.href;
-        if (he.is()) {
-            intoView(he[0]);
-            $(he).find(".collapsible-body").addClass('open')
+        if (target.is()) {
+            intoView(target[0]);
+            $(target).find(".collapsible-body").addClass('open')
         }
 
         scrolling = false;
@@ -527,7 +514,7 @@ if ('serviceWorker' in navigator) {
             $('#printBtn').on('click', function () {
                 print();
             })
-            if (he.is('.lesson')) he[0].click();
+            if (target.is('.lesson')) target[0].click();
         }
         if (/\/faliujsag/.test(href)) {
             $('#fj li').on('click', function (e) {
@@ -568,9 +555,8 @@ if ('serviceWorker' in navigator) {
                 let hw = $(this);
                 let b = elem.find('a').hide();
                 if (hw.hasAttr('data-del')) {
-                    b.show().attr('href', "./lecke/torles?did=" + hw.attr('data-del'));
+                    b.show().attr('href', "lecke/torles?did=" + hw.attr('data-del'));
                 }
-                inst.open();
                 _populateModal(elem, hw, ['lecke', 'sender', 'cdate'], { deadline: hw.find('a').html(), tr: hw.html().split('<')[0] }, inst);
             });
 
@@ -607,7 +593,7 @@ if ('serviceWorker' in navigator) {
             });
         }
         if (/\/jegyek/.test(href)) {
-            he.closest('nr').addClass('open');
+            target.closest('nr').addClass('open');
             let inst = Modal('#addModal');
             $(".fab").on('click', inst.open);
             let tr = $('#tr');
@@ -630,15 +616,12 @@ if ('serviceWorker' in navigator) {
                 }
             })
         }
-        $('a[href*=logout]').on('click', function () {
-            deleteCookie('naplo');
-            deleteCookie('rme');
-        });
+
         ga('pageview');
         let g = $('#gdpr');
         if (g.is()) {
             Modal(g, {
-                opacity: 0, dismissible: false, preventScrolling: false, onCloseEnd: function () {
+                opacity: 0, dismissible: false, preventScrolling: false, onClose: function () {
                     addCookie('gdpr');
                 }
             }).open();
@@ -653,7 +636,7 @@ if ('serviceWorker' in navigator) {
                 deferredPrompt = e;
                 // Update UI notify the user they can add to home screen
 
-                $('.pwa').show().on('click', () => {
+                $('.pwa').css({ display: 'inline-block' }).on('click', () => {
                     // Show the prompt
                     deferredPrompt.prompt();
                     ga('event', {
@@ -686,7 +669,8 @@ if ('serviceWorker' in navigator) {
         }
 
         //Push notification button
-        /* var fabPushElement = $('#push').on('click', function () {
+        /*
+        var fabPushElement = $('#push').on('click', function () {
             var isSubscribed = (fabPushElement.is(':checked'));
             if (isSubscribed) {
                 // Unsubscribe the user from push notifications
@@ -772,7 +756,6 @@ if ('serviceWorker' in navigator) {
         }*/
     }
     $(() => {
-
         if (!$currentLocationWithoutHash) {
             if (supported) {
                 $preloadOnMousedown = true;
@@ -802,7 +785,13 @@ if ('serviceWorker' in navigator) {
         } else {
             init();
         }
-
+        let timing = performance.timing,
+            start = timing.navigationStart;
+        ga('timing', {
+            clt: timing.domContentLoadedEventStart - start,
+            dit: timing.domInteractive - start,
+            ni: 1
+        });
     });
     $(window).on('resize', resize)
         .on('scroll', scrollCb)
