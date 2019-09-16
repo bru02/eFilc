@@ -1,6 +1,6 @@
 <?php
-require_once("lib.php");
-$v = '1.1.2';
+require "lib.php";
+$v = '1.1.3';
 
 # Felülírható pl.: ha aliast használsz (#1)
 # $root_uri_path = 'sub/2/pewds';
@@ -43,7 +43,8 @@ if(!isset($_SESSION['v'])) {
 
 define('U', $u);
 define('ROUTES', $routes);
-define('ABS_URI',"$host/" . (empty($root_uri_path) ? '' : "$root_uri_path/"));
+define('HOST', $host);
+define('ABS_URI', '/' . (empty($root_uri_path) ? '' : "$root_uri_path/"));
 define('REFRESH', $refresh);
 
 if (!isset($_SESSION['cuid'])) $_SESSION['cuid'] = U;
@@ -59,18 +60,26 @@ if (!isset($_SESSION['tt'])) $_SESSION['tt'] = [];
 if (!isset($_SESSION['authed'])) {
     if (hasCookie('rme')) parseRME();
 }
+
 $_SESSION['authed'] = !empty($_SESSION['users']);
 $_SESSION['users'] = unique_multidim_array($_SESSION['users'], 'name');
-if($_SESSION['authed'] && isset($_GET['debug']) && $_GET['debug'] == 'token') {
-    echo "<pre>Token:\n\r";
 
-    $parts = explode('.', $_SESSION['users'][$_SESSION['cuid']]['tok']);
-    $parts[0] = json_decode(base64_decode($parts[0]), true);
-    $parts[1] = json_decode(base64_decode($parts[1]), true);
+if($_SESSION['authed'] && isset($_GET['debug'])){
+    echo "<pre>\n\r";
 
-    print_r($parts);
-    print_r(explode('##', base64_decode($_SESSION['users'][$_SESSION['cuid']]['rtok'])));
+    if($_GET['debug'] == 'token') {
+
+        $parts = explode('.', $_SESSION['users'][$_SESSION['cuid']]['tok']);
+        $parts[0] = json_decode(base64_decode($parts[0]), true);
+        $parts[1] = json_decode(base64_decode($parts[1]), true);
+
+        print_r($parts);
+        print_r(explode('##', base64_decode($_SESSION['users'][$_SESSION['cuid']]['rtok'])));
+    } elseif ($_GET['debug'] == 'data') {
+        print_r($_SESSION['data']);
+    }
     echo "</pre>";
+
 }
 if (isset($_GET['logout'])) {
     logout();
@@ -81,12 +90,15 @@ if (empty(ROUTES)) {
 }
 
 if(!hasCookie('cid')) {
-    setcookie('cid', sha1(uniqid()), strtotime('+2 years'));
+    setcookie('cid', sha1(uniqid()), strtotime('+2 years'), '/');
 }
+
+header('X-Users: ' . (implode(',',array_keys( $_SESSION['users']))));
+
 switch (ROUTES[0]) {
     case "schools":
         header('Content-Type: application/json');
-        // schools();
+        schools();
         die(file_get_contents("datas.json"));
         break;
     case "sw.js":
@@ -103,31 +115,11 @@ switch (ROUTES[0]) {
         die($content);
         break;
     case "collect":
-        $data = "v=1&tid=UA-114515850-2&de=UTF-8&av=$v&" . http_build_query($_GET) . '&ua=' .urlencode($_SERVER['HTTP_USER_AGENT']) . "&cid=" . urlencode($_COOKIE['cid']);
+        $data = "v=1&tid=UA-114515850-2&de=UTF-8&an=eFilc&av=$v&" . http_build_query($_GET) . '&ua=' .urlencode($_SERVER['HTTP_USER_AGENT']) . "&cid=" . urlencode($_COOKIE['cid']);
         if(isset($_SERVER['REMOTE_ADDR']) && filter_var($_SERVER['REMOTE_ADDR'], FILTER_FLAG_NO_PRIV_RANGE)) $data .= '&uip=' . urlencode($_SERVER['REMOTE_ADDR']);
-        // echo $data;
+        if(isset($_SESSION['id'])) $data .= '&uid=' . sha1($_SESSION['id']);
         echo request('https://www.google-analytics.com/collect', 'POST', $data)['content'];
-        break;
-    case "notify":
-        reval();
-        if (isset($_REQUEST['id'])) {
-            $id = $_REQUEST['id'];
-            if (strpos($id, 'gcm') > -1) {
-                $id = explode('gcm/send/', $id)[1];
-                $platform = 'Gcm';
-            } elseif (strpos($id, 'push.apple.com') > -1) {
-                $id = explode('/3/device/', $id)[1];
-                $platform = 'Apn';
-            }
-            echo json_encode(getPushRegId($_SESSION['id'], $id, $platform));
-            ob_flush();
-            exit();
-        } else {
-            raise400();
-        }
-
-        break;
-
+        break;    
     case "login":
     case "addUser":
         $au = ROUTES[0] == 'addUser';
@@ -177,10 +169,11 @@ switch (ROUTES[0]) {
         showHeader('Jegyek');
         showNavbar('jegyek');
         ?>
-          <div id="addModal" class="modal n">
+<div id="addModal" class="modal n">
     <div class="modal-content">
         <h3>Milenne ha...</h3>
-        <p>Tantárgy: </p>
+        <label>
+            <p>Tantárgy: </p>
             <select id="tr">
                 <?php
                 foreach ($_SESSION['data']['SubjectAverages'] as $avr) : ?>
@@ -188,46 +181,48 @@ switch (ROUTES[0]) {
                 <?php
                 endforeach; ?>
             </select>
-            <p class="center j">
-    <input type="radio" id="j1" name="j" value=1>
-    <label for="j1">1</label>
-    <input type="radio" id="j2" name="j" value=2>
-    <label for="j2">2</label>
-    <input type="radio" id="j3" name="j" value=3>
-    <label for="j3">3</label>
-    <input type="radio" id="j4" name="j" value=4>
-    <label for="j4">4</label>
-    <input type="radio" id="j5" name="j" value=5>
-    <label for="j5">5</label>
-            </p>
-            <p class="center j" style="display:none">
-    <input type="radio" id="j6" name="j" value=1/2>
-    <label for="j6">1/2</label>
-    <input type="radio" id="j7" name="j" value=2/3>
-    <label for="j7">2/3</label>
-    <input type="radio" id="j8" name="j" value=3/4>
-    <label for="j8">3/4</label>
-    <input type="radio" id="j9" name="j" value=4/5>
-    <label for="j9">4/5</label>
-            </p>
-            <p class="center w">
-    <input type="radio" id="w1" name="w" value=200>
-    <label for="w1">200%</label>
-    <input type="radio" id="w2" name="w" value=100 checked>
-    <label for="w2">100%</label>
-    <input type="radio" id="w3" name="w" value=50>
-    <label for="w3">50%</label>
-            </p>
-                <label>
-        <input type="checkbox" id="tort">
-        <span>Tört jegy</span>
-        </label><br />
-                <button id="cnn" class="btn">Hozzáadás</button>
-               </div>
+        </label>
+        <p class="center j">
+            <input type="radio" id="j1" name="j" value=1>
+            <label for="j1">1</label>
+            <input type="radio" id="j2" name="j" value=2>
+            <label for="j2">2</label>
+            <input type="radio" id="j3" name="j" value=3>
+            <label for="j3">3</label>
+            <input type="radio" id="j4" name="j" value=4>
+            <label for="j4">4</label>
+            <input type="radio" id="j5" name="j" value=5>
+            <label for="j5">5</label>
+        </p>
+        <p class="center j" style="display:none">
+            <input type="radio" id="j6" name="j" value=1/2>
+            <label for="j6">1/2</label>
+            <input type="radio" id="j7" name="j" value=2/3>
+            <label for="j7">2/3</label>
+            <input type="radio" id="j8" name="j" value=3/4>
+            <label for="j8">3/4</label>
+            <input type="radio" id="j9" name="j" value=4/5>
+            <label for="j9">4/5</label>
+        </p>
+        <p class="center w">
+            <input type="radio" id="w1" name="w" value=200>
+            <label for="w1">200%</label>
+            <input type="radio" id="w2" name="w" value=100 checked>
+            <label for="w2">100%</label>
+            <input type="radio" id="w3" name="w" value=50>
+            <label for="w3">50%</label>
+        </p>
+        <label>
+            <input type="checkbox" id="tort">
+            <span>Tört jegy</span>
+        </label>
+        <br />
+        <button id="cnn" class="btn">Hozzáadás</button>
+    </div>
     <div class="modal-footer">
         <button class="modal-close btn">Bezárás</button>
-        </div>
-        </div>
+    </div>
+</div>
 <notes class="responsive-table striped notes">
     <nhead>
         <nr>
@@ -448,7 +443,7 @@ case "profil":
     <div class="container">
         <p>Név: <?= $data['Name'] ?></p>
         <p>Születtél <?= date('Y. m. d.', strtotime($data['DateOfBirthUtc'])) ?>, <?= $data['PlaceOfBirth'] ?></p>
-        <p>Osztályfönők: <?= $data['FormTeacher']['Name'] . getContact($data['FormTeacher'])?></p>
+        <p>Osztályfönők: <?= $data['FormTeacher']['Name'] . getContact($data['FormTeacher']) ?></p>
         <p>Iskola neve: <?= $data['InstituteName'] ?></p>
         <ul class="collection with-header s12">
             <li class="collection-header"><h4>Lakcímek</h4></li>
@@ -464,7 +459,7 @@ case "profil":
                 <?php
                 foreach ($data['Tutelaries'] as $tutelary) :
                 ?>
-            <li class="collection-item"><?= $tutelary['Name'] ?></li>
+            <li class="collection-item"><?= $tutelary['Name'] . getContact($tutelary) ?></li>
                 <?php
                 endforeach; ?>
         </ul>
@@ -498,7 +493,7 @@ case "orarend":
 </div>
     <div id="modal" class="modal n">
     <div class="modal-content">
-        <span></span>
+        <span>Elmarad!</span>
         <p>Időpont: <span data-nth></span>. óra, <span data-time></span></p>
         <p>Tantárgy: <span data-tr></span></p>
         <p>Tanár: <span data-teacher></span></p>
@@ -568,7 +563,7 @@ if ($db !== 0) {
                         $sch[$_SESSION['data']['SchoolYearId']] = $_SESSION['tyid'] = "$b$osztaly[1]";
                         file_put_contents('sch.json', json_encode($sch));
                     }
-                    echo "<div id=\"d{$day}h$hid\" class=\"lesson" . (count($lout[$hid]) == 2 ? ' h2' : '') . "\" data-time=\"" . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . "\" data-theme=\"$lesson[theme]\" data-lecke=\"$lesson[homework]\"><b class=\"lesson-head title" . ($lesson['state'] == 'Missed' ? ' em' : '') . "\">$lesson[subject]</b><br/><i>$lesson[teacher]</i><span class=\"secondary-content\">$lesson[room]</span></div>";
+                    echo "<div id=\"d{$day}h$hid\" class=\"lesson" . (count($lout[$hid]) == 2 ? ' h2' : '') . "\" data-time=\"" . date('Y. m. d. H:i', $lesson['start']) . '-' . date('H:i', $lesson['end']) . "\" data-theme=\"$lesson[theme]\" data-lecke=\"$lesson[homework]\"><b class=\"lesson-head title" . ($lesson['state'] == 'Missed' ? ' em' : '') . "\">$lesson[subject]</b><br/><i>" . str_replace(['<a', 'a>'], ['<span style="color:#1565C0"', 'span>'], $lesson['teacher']) . "</i><span class=\"secondary-content\">$lesson[room]</span></div>";
                     $wl++;
                 }
 
@@ -644,7 +639,7 @@ case "lecke":
                     if (isset($deadline)) break;
 
                     if ($i > 5) {
-                        $deadline = 'Nincs következő óra a következő 5 héten';
+                        $deadline = 'Nincs következő óra az elkövetkező 5 héten';
                     }
                 }
             } else {
@@ -676,7 +671,6 @@ case "lecke":
         $id = intval($_GET['did']);
         $conn = connect();
 
-		// sql to delete a record
         $uid = $_SESSION['data']['StudentId'];
         $sql = "DELETE FROM homework WHERE id=$id AND `uid`=$uid";
         if ($conn->query($sql) === true) {
@@ -698,7 +692,7 @@ case "lecke":
     $rt = $arr[$i];
     $start = strtotime($rt);
     if (!isset($_SESSION['Homework'][$i]) || REFRESH) {
-        $_SESSION['Homework'] = [];
+        if(REFRESH) $_SESSION['Homework'] = [];
         $_SESSION['Homework'][$i] = [];
         $data = timetable($start, time());
         $tw = flatten($data);
@@ -733,7 +727,6 @@ case "lecke":
 			// output data of each row
             while ($row = $result->fetch_assoc()) {
                 if ($row['deadline'] < time()) {
-                    // sql to delete a record
                     $id = $row['id'];
                     $sql = "DELETE FROM homework WHERE id=$id AND `uid`=$uid";
                     if ($conn->query($sql) === false) {                             echo "Error deleting record: $conn->error";
@@ -921,7 +914,21 @@ if (count($_SESSION['data']['Events']) > 0) {
 <?php
 showFooter();
 break;
-
+case 'offline':
+    showHeader('Offline');
+    showNavbar('');
+    ?>
+    <p>Offline. Próbáld meg később.</p>
+    <button id="tt" class="btn">Vissza</button>
+    <script nonce='<?= $_SESSION['nonce']; ?>'>
+        addEventListener('online', function() {
+            location.href = location.href
+        });
+        document.getElementById('tt').addEventListener('click', () => { history.back() })
+    </script>
+    <?php
+    showFooter();
+    break;
 default:
     header("Connection: keep-alive");
     header("Cache-Control: private");

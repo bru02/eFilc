@@ -1,0 +1,276 @@
+[16-Sep-2019 13:32:59 UTC] PHP Warning:  Use of undefined constant CURLOPT_SSL_VERIFYPEER - assumed 'CURLOPT_SSL_VERIFYPEER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 134
+[16-Sep-2019 13:32:59 UTC] PHP Stack trace:
+[16-Sep-2019 13:32:59 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:32:59 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:32:59 UTC] PHP Warning:  Use of undefined constant CURLOPT_RETURNTRANSFER - assumed 'CURLOPT_RETURNTRANSFER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 135
+[16-Sep-2019 13:32:59 UTC] PHP Stack trace:
+[16-Sep-2019 13:32:59 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:32:59 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:32:59 UTC] PHP Warning:  Use of undefined constant CURLOPT_TIMEOUT - assumed 'CURLOPT_TIMEOUT' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 136
+[16-Sep-2019 13:32:59 UTC] PHP Stack trace:
+[16-Sep-2019 13:32:59 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:32:59 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:32:59 UTC] PHP Warning:  Use of undefined constant CURLOPT_FOLLOWLOCATION - assumed 'CURLOPT_FOLLOWLOCATION' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 137
+[16-Sep-2019 13:32:59 UTC] PHP Stack trace:
+[16-Sep-2019 13:32:59 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:32:59 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:32:59 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function curl_init() in C:\wamp\www\e-filc\lib.php:147
+Stack trace:
+#0 C:\wamp\www\e-filc\index.php(121): request('https://www.goo...', 'POST', 'v=1&tid=UA-1145...')
+#1 {main}
+  thrown in C:\wamp\www\e-filc\lib.php on line 147
+[16-Sep-2019 13:36:34 UTC] PHP Warning:  Use of undefined constant CURLOPT_SSL_VERIFYPEER - assumed 'CURLOPT_SSL_VERIFYPEER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 134
+[16-Sep-2019 13:36:34 UTC] PHP Stack trace:
+[16-Sep-2019 13:36:34 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:36:34 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:36:34 UTC] PHP Warning:  Use of undefined constant CURLOPT_RETURNTRANSFER - assumed 'CURLOPT_RETURNTRANSFER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 135
+[16-Sep-2019 13:36:34 UTC] PHP Stack trace:
+[16-Sep-2019 13:36:34 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:36:34 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:36:34 UTC] PHP Warning:  Use of undefined constant CURLOPT_TIMEOUT - assumed 'CURLOPT_TIMEOUT' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 136
+[16-Sep-2019 13:36:34 UTC] PHP Stack trace:
+[16-Sep-2019 13:36:34 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:36:34 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:36:34 UTC] PHP Warning:  Use of undefined constant CURLOPT_FOLLOWLOCATION - assumed 'CURLOPT_FOLLOWLOCATION' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 137
+[16-Sep-2019 13:36:34 UTC] PHP Stack trace:
+[16-Sep-2019 13:36:34 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:36:34 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:121
+[16-Sep-2019 13:36:34 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function curl_init() in C:\wamp\www\e-filc\lib.php:147
+Stack trace:
+#0 C:\wamp\www\e-filc\index.php(121): request('https://www.goo...', 'POST', 'v=1&tid=UA-1145...')
+#1 {main}
+  thrown in C:\wamp\www\e-filc\lib.php on line 147
+[16-Sep-2019 13:49:21 UTC] PHP Warning:  Use of undefined constant CURLOPT_SSL_VERIFYPEER - assumed 'CURLOPT_SSL_VERIFYPEER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 134
+[16-Sep-2019 13:49:21 UTC] PHP Stack trace:
+[16-Sep-2019 13:49:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:49:21 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:49:21 UTC] PHP Warning:  Use of undefined constant CURLOPT_RETURNTRANSFER - assumed 'CURLOPT_RETURNTRANSFER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 135
+[16-Sep-2019 13:49:21 UTC] PHP Stack trace:
+[16-Sep-2019 13:49:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:49:21 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:49:21 UTC] PHP Warning:  Use of undefined constant CURLOPT_TIMEOUT - assumed 'CURLOPT_TIMEOUT' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 136
+[16-Sep-2019 13:49:21 UTC] PHP Stack trace:
+[16-Sep-2019 13:49:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:49:21 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:49:21 UTC] PHP Warning:  Use of undefined constant CURLOPT_FOLLOWLOCATION - assumed 'CURLOPT_FOLLOWLOCATION' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 137
+[16-Sep-2019 13:49:21 UTC] PHP Stack trace:
+[16-Sep-2019 13:49:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:49:21 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:49:21 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function curl_init() in C:\wamp\www\e-filc\lib.php:147
+Stack trace:
+#0 C:\wamp\www\e-filc\index.php(152): request('https://klik035...', 'POST', 'institute_code=...')
+#1 {main}
+  thrown in C:\wamp\www\e-filc\lib.php on line 147
+[16-Sep-2019 13:54:53 UTC] PHP Warning:  Use of undefined constant CURLOPT_SSL_VERIFYPEER - assumed 'CURLOPT_SSL_VERIFYPEER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 134
+[16-Sep-2019 13:54:53 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:53 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:53 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:53 UTC] PHP Warning:  Use of undefined constant CURLOPT_RETURNTRANSFER - assumed 'CURLOPT_RETURNTRANSFER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 135
+[16-Sep-2019 13:54:53 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:53 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:53 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:53 UTC] PHP Warning:  Use of undefined constant CURLOPT_TIMEOUT - assumed 'CURLOPT_TIMEOUT' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 136
+[16-Sep-2019 13:54:53 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:53 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:53 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:53 UTC] PHP Warning:  Use of undefined constant CURLOPT_FOLLOWLOCATION - assumed 'CURLOPT_FOLLOWLOCATION' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 137
+[16-Sep-2019 13:54:53 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:53 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:53 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:53 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function curl_init() in C:\wamp\www\e-filc\lib.php:147
+Stack trace:
+#0 C:\wamp\www\e-filc\index.php(152): request('https://klik035...', 'POST', 'institute_code=...')
+#1 {main}
+  thrown in C:\wamp\www\e-filc\lib.php on line 147
+[16-Sep-2019 13:54:56 UTC] PHP Warning:  Use of undefined constant CURLOPT_SSL_VERIFYPEER - assumed 'CURLOPT_SSL_VERIFYPEER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 134
+[16-Sep-2019 13:54:56 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:56 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:56 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:56 UTC] PHP Warning:  Use of undefined constant CURLOPT_RETURNTRANSFER - assumed 'CURLOPT_RETURNTRANSFER' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 135
+[16-Sep-2019 13:54:56 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:56 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:56 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:56 UTC] PHP Warning:  Use of undefined constant CURLOPT_TIMEOUT - assumed 'CURLOPT_TIMEOUT' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 136
+[16-Sep-2019 13:54:56 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:56 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:56 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:56 UTC] PHP Warning:  Use of undefined constant CURLOPT_FOLLOWLOCATION - assumed 'CURLOPT_FOLLOWLOCATION' (this will throw an Error in a future version of PHP) in C:\wamp\www\e-filc\lib.php on line 137
+[16-Sep-2019 13:54:56 UTC] PHP Stack trace:
+[16-Sep-2019 13:54:56 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 13:54:56 UTC] PHP   2. request() C:\wamp\www\e-filc\index.php:152
+[16-Sep-2019 13:54:56 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function curl_init() in C:\wamp\www\e-filc\lib.php:147
+Stack trace:
+#0 C:\wamp\www\e-filc\index.php(152): request('https://klik035...', 'POST', 'institute_code=...')
+#1 {main}
+  thrown in C:\wamp\www\e-filc\lib.php on line 147
+[16-Sep-2019 15:45:11 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:45:11 UTC] PHP Stack trace:
+[16-Sep-2019 15:45:11 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:45:11 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:45:17 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:45:17 UTC] PHP Stack trace:
+[16-Sep-2019 15:45:17 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:45:17 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:04 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:04 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:04 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:04 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:04 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:04 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:04 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:04 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:07 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:07 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:07 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:07 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:07 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:07 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:07 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:07 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:10 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:10 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:10 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:10 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:10 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:10 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:10 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:10 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:19 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:19 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:19 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:19 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:19 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:19 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:19 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:19 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:24 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:24 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:24 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:24 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:24 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:24 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:24 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:24 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:27 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:27 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:27 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:27 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:27 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:27 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:27 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:27 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:41 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:41 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:41 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:41 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:42 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:42 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:42 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:42 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:47:47 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:47:47 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:47 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:47 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:47:53 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:47:53 UTC] PHP Stack trace:
+[16-Sep-2019 15:47:53 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:47:53 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:04 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:04 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:04 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:04 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:04 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:04 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:04 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:04 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:06 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:06 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:06 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:06 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:06 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:06 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:06 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:06 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:07 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:07 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:07 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:07 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:08 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:08 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:08 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:08 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:09 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:09 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:09 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:09 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:09 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:09 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:09 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:09 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:11 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:11 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:11 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:11 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:11 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:11 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:11 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:11 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:12 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:12 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:12 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:12 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:12 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:12 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:12 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:12 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:14 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:14 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:14 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:14 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:14 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:14 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:14 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:14 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:48:15 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:48:15 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:15 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:15 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:48:15 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:48:15 UTC] PHP Stack trace:
+[16-Sep-2019 15:48:15 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:48:15 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:49:00 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:49:00 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:00 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:00 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:49:00 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:49:00 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:00 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:00 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:49:16 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:49:16 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:16 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:16 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:49:16 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:49:16 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:16 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:16 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 15:49:19 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 15:49:19 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:19 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:19 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 15:49:28 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 15:49:28 UTC] PHP Stack trace:
+[16-Sep-2019 15:49:28 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 15:49:28 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 16:13:21 UTC] PHP Warning:  array_filter() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 715
+[16-Sep-2019 16:13:21 UTC] PHP Stack trace:
+[16-Sep-2019 16:13:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 16:13:21 UTC] PHP   2. array_filter() C:\wamp\www\e-filc\index.php:715
+[16-Sep-2019 16:13:21 UTC] PHP Warning:  usort() expects parameter 1 to be array, null given in C:\wamp\www\e-filc\index.php on line 762
+[16-Sep-2019 16:13:21 UTC] PHP Stack trace:
+[16-Sep-2019 16:13:21 UTC] PHP   1. {main}() C:\wamp\www\e-filc\index.php:0
+[16-Sep-2019 16:13:21 UTC] PHP   2. usort() C:\wamp\www\e-filc\index.php:762
+[16-Sep-2019 18:04:22 UTC] PHP Warning:  session_name(): Cannot change session name when headers already sent in C:\wamp\www\e-filc\lib.php on line 9
+[16-Sep-2019 18:04:22 UTC] PHP Warning:  session_start(): Cannot start session when headers already sent in C:\wamp\www\e-filc\lib.php on line 10
+[16-Sep-2019 18:04:27 UTC] PHP Fatal error:  Cannot redeclare date_sort() (previously declared in C:\wamp\www\e-filc\lib.php:14) in C:\wamp\www\e-filc\lib.php on line 17

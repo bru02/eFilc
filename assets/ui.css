@@ -913,6 +913,7 @@ header, [type="checkbox"], .collapsible-header, .btns, [tooltip] {
   font-size: 20px;
   position: absolute;
   margin-left: 10px;
+  background: transparent;
 }
 header ul li {
   transition: all .3s;
@@ -1353,6 +1354,7 @@ nbody {
 }
 .pagination li.active a {
   color: #fff;
+  background: transparent;
 }
 [type="radio"] {
     position: absolute;

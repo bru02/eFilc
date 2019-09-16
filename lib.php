@@ -37,8 +37,8 @@ function tLink($tanar)
         }
 
         $nev = $tanar;
-        $find = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna'];
-        $replace = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa'];
+        $find = ['dr ', 'Attila Dezső', 'Csilla Margit', 'Tamás Miklós', 'Erika Julianna', 'Zsuzsanna', 'András László', 'László Elemerné'];
+        $replace = ['', 'attila', 'csilla', 'tamas', 'erika', 'zsuzsa', 'andras', 'laszlone'];
         $tanar = explode(' ', str_replace($find, $replace, $tanar));
         if (count($tanar) > 3) {
             array_pop($tanar);
@@ -158,8 +158,8 @@ function request($uri, $method = 'GET', $data = '', $curl_headers = array(), $cu
 
 	// add headers
     $h = [];
-    foreach ($curl_headers as $k => $absence) {
-        $h[] = "$k: $absence";
+    foreach ($curl_headers as $k => $v) {
+        $h[] = "$k: $v";
     }
 
     curl_setopt($curl, CURLOPT_HTTPHEADER, $h);
@@ -529,11 +529,12 @@ function timetable($from, $to)
     return $res;
 }
 
+
 function getHomeWork($id)
 {
-    $id = $_SESSION['cuid'];
-    $school = $_SESSION['users'][$id]['sch'];
-    $tok = $_SESSION['users'][$id]['tok'];
+    $uid = $_SESSION['cuid'];
+    $school = $_SESSION['users'][$uid]['sch'];
+    $tok = $_SESSION['users'][$uid]['tok'];
     $ret = request("https://$school.e-kreta.hu/mapi/api/v1/HaziFeladat/TanuloHaziFeladatLista/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
@@ -541,9 +542,9 @@ function getHomeWork($id)
 
 function getTeacherHomeWork($id)
 {
-    $id = $_SESSION['cuid'];
-    $school = $_SESSION['users'][$id]['sch'];
-    $tok = $_SESSION['users'][$id]['tok'];
+    $uid = $_SESSION['cuid'];
+    $school = $_SESSION['users'][$uid]['sch'];
+    $tok = $_SESSION['users'][$uid]['tok'];
     $ret = request("https://$school.e-kreta.hu/mapi/api/v1/HaziFeladat/TanarHaziFeladat/$id", 'GET', [], ['Authorization' => "Bearer $tok"])['content'];
     if (!$ret || empty($ret)) return "[]";
     return $ret;
@@ -597,16 +598,17 @@ function showHeader($title, $a = false)
     header("X-Content-Type-Options: nosniff");
     header("Strict-Transport-Security: max-age=31536000");
     header('Content-type: text/html; charset=utf-8');
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-$nonce'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'nonce-$nonce' 'unsafe-inline'; img-src 'self' data:; form-action 'self'; style-src 'self' 'unsafe-inline'; manifest-src 'self';");
     if (!isset($_REQUEST['just_html'])) {
     ?>
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <base href="<?= ABS_URI . ((U == 0 && !$a) ? '': ('u/' . U . '/')); ?>">
+    <base href="<?= HOST . ABS_URI . ((U == 0 && !$a) ? '': ('u/' . U . '/')); ?>">
 	<meta charset="UTF-8">
 	<link rel="manifest" href="<?= ABS_URI; ?>manifest.json">
-	<link rel="shortcut icon" href="<?= ABS_URI; ?>favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="<?= ABS_URI; ?>favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="application-name" content="eFilc">
@@ -672,7 +674,6 @@ if (!hasCookie('gdpr')) {
             <button class="right modal-close btn">Oké</button>
     </div>
         <?php
-
     }
 
     if (isset($_GET['just_html'])) return; ?>
@@ -684,38 +685,33 @@ if (!$a) {
 } else {
     ?>
     <script nonce="<?= $_SESSION['nonce']; ?>">
-    ajax('schools', function (res) {
+    ajax('<?= ABS_URI; ?>schools', function (res) {
             let data = JSON.parse(res),
              inp = $('#sc'),
              el = inp[0].list ? $('#slc') : $('#rslc'),
              s = el.find('option:checked');
-            if (s.length) {
+            if (s.is()) {
                 s = s.val();
             }
             el.html("");
             for(let key in data) {
-            el.append("<option value=\"" + key + "\"" + (s == key ? (s = "", "selected") : '') + ">" + data[key] + "</option>");
+                el.append(`<option value=\"${key}\"${(s == key ? (s = "", "selected") : '')}>${data[key]}</option>`);
             };
             inp.on('change', function () {
-                if (!this.value) return;
-                let f = $('option[value=' + this.value + ']');
-                if (f.length) {
-                    this.setCustomValidity('');
-                } else {
-                    this.setCustomValidity('Adjon meg egy érvényes értéket');
+                if (this.value) {
+                    this.setCustomValidity(
+                        $(`option[value='${this.value}']`).is() ?
+                         '' :
+                          'Adjon meg egy érvényes értéket');
+                    validateField('#sc')
                 }
-                M.validate_field($('#sc'))
             });
     });
+    ga('pageview');
 </script>
-<?php
-
-}
-
-?>
+<?php } ?>
 </html>
 <?php
-
 }
 
 function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
@@ -743,23 +739,17 @@ function promptLogin($usr = "", $psw = "", $sch = "", $err = "")
     <p>
         Ez egy nem hivatalos eKréta kliens, Toldys extrákkal
     </p>
-<?php
-endif; ?>
+<?php endif; ?>
     <div class="input-field">
-                <input name="school" id="sc" list="slc" type="text" class="validate" value="<?= $sch
-                                                                                            ?>" required>
+                <input name="school" id="sc" list="slc" type="text" class="validate" value="<?= $sch ?>" required>
                 <label for="sc">Iskola</label>
                 <datalist id="slc">
-                <select name="school" id="rslc">
-<?php
-if (empty($sch)) : ?>
+                    <select name="school" id="rslc">
+<?php if (empty($sch)): ?>
         <option value="klik035220001">Toldy</option>
-    <?php
-    else : ?>
+    <?php else: ?>
     <option value="<?= $sch ?>" selected>Amit az előbb kiválasztottál</option>
-
-    <?php
-    endif; ?>
+    <?php endif; ?>
     </select>
     </datalist>
         </div>
@@ -816,10 +806,9 @@ function showNavbar($key)
                 } else { ?>
                 <li><a href="<?=$url; ?>"><?= $txt; ?></a></li>      
                  <?php
-
             }
         }
-        ?>
+?>
                 <li><a><?= $_SESSION['name'] ?></a>
                 <ul class="dropdown">
                     <li><a href="profil">Profil</a></li>
@@ -827,8 +816,8 @@ function showNavbar($key)
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
                         if ($name == $_SESSION['name']) continue; ?>
-                    <li><a href="u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
-    <?php } ?>
+                    <li><a href="<?= ABS_URI; ?>u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
+<?php } ?>
                     <li><a href="<?= ABS_URI; ?>addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
@@ -846,8 +835,8 @@ function showNavbar($key)
                     foreach ($_SESSION['users'] as $id => $u) {
                         $name = $u['name'];
                         if ($name == $_SESSION['name']) continue; ?>
-                    <li><a href="u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
-    <?php } ?>
+                    <li><a href="<?= ABS_URI; ?>u/<?= "$id/". ROUTES[0]; ?>"><?= $name; ?></a></li>
+<?php } ?>
                     <li><a href="<?= ABS_URI; ?>addUser" data-no-instant>+</a></li>
                 </ul>
                 </li>
@@ -859,26 +848,22 @@ function showNavbar($key)
             if ($url == $key) { ?>
             <li class="active"><?= $txt; ?></li>
             <?php
-
         } else { ?>
             <li><a href="<?=  $url; ?>"><?= $txt; ?></a></li>      
             <?php
-
         }
     } ?>
-             <li class="not">
-<label>
-Értesítések
+            <li class="not">
+                <label>
+                    Értesítések
                     <input type="checkbox" id="push" value="1">
                     <span class="right"></span>
-                    </label>
+                </label>
             </li> 
            <?php
             if (!hasCookie('pwa')) { ?>
            <li class="pwa not">Letöltés</li>
-    <?php
-
-} ?>
+    <?php } ?>
             <li><a href="login?logout=1" data-no-instant>Kilépés</a></li>
         </ul>
       </div>
@@ -978,9 +963,9 @@ function updateRME()
         }
     }
     if(empty($us)) {
-        setcookie('rme');
+        setcookie('rme','', 0, ABS_URI);
     } else {
-        setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us)), strtotime('+1 month'));
+        setcookie('rme', encrypt_decrypt('encrypt', implode('|', $us)), strtotime('+1 month'),  ABS_URI);
     }
 }
 
@@ -1001,6 +986,7 @@ function activateUser($id)
     }
     return true;
 }
+
 function getContact($data) {
     $contacts = [];
     if(!empty($data['Email'])) {

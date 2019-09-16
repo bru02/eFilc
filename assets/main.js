@@ -1,117 +1,3 @@
-function Modal(el, options) {
-    let self = {
-        open: function () {
-            if (!self.isOpen) {
-                self.isOpen = true;
-                Modal._modalsOpen++;
-                self._nthModalOpened = Modal._modalsOpen;
-                // Set Z-Index based on number of currently open modals
-                let zi = 1000 + Modal._modalsOpen * 2;
-                self.$overlay.show().css({
-                    zIndex: zi,
-                    opacity: self.options.opacity
-                });
-                self.$el.css({
-                    zIndex: zi + 1
-                });
-                // Set opening trigger, undefined indicates modal was opened by javascript
-                if (self.options.preventScrolling) {
-                    $("body").addClass('no-scroll');
-                }
-                // Animate overlay
-                self.el.insertAdjacentElement("afterend", self.$overlay[0]);
-                self.$el.addClass("open");
-                if (self.options.dismissible) {
-                    $(document).on("keydown", function (e) {
-                        if (e.keyCode === 27) {
-                            self.close();
-                        }
-                    }).on("focus", function (e) {
-                        // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
-                        if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
-                            self.el.focus();
-                        }
-                    });
-                }
-                // Focus modal
-                self.el.focus();
-            }
-        },
-        close: function () {
-            if (self.isOpen) {
-                self.isOpen = false;
-                Modal._modalsOpen--;
-                self._nthModalOpened = 0;
-                self.$overlay.css({
-                    opacity: 0
-                });
-                self.$el.removeClass("open");
-                $("body").removeClass('no-scroll');
-
-                if (self.options.dismissible) {
-                    var doc = $(document);
-                    doc.off("keydown", self._handleKeydownBound);
-                    doc.off("focus", self._handleFocusBound, true);
-                }
-                setTimeout(function () {
-                    self.$overlay.remove();
-                    // Call onClose callback
-                    if (self.options.onClose) {
-                        self.options.onClose();
-                    }
-                }, 250);
-            }
-        },
-        _nthModalOpened: 0,
-        isOpen: false,
-        $el: $(el).on("click", function (e) {
-            if ($(e.target).closest(".modal-close").is()) {
-                self.close();
-            }
-        })
-    };
-    self.el = self.$el[0];
-    self.options = $.fn.extend({
-        opacity: 0.5,
-        onClose: null,
-        preventScrolling: true,
-        dismissible: true
-    }, options);
-    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`).on("click", function () {
-        if (self.options.dismissible) {
-            self.close();
-        }
-    });
-    return self;
-}
-Modal._modalsOpen = 0;
-
-function ga(type, obj) {
-    obj = {
-        ...obj,
-        t: type,
-        cd1: ('serviceWorker' in navigator ? navigator.serviceWorker.controller ? 'controlled' : 'supported' : 'unsupported'),
-        cd2: ((navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) ? 1 : 0),
-        sr: `${innerWidth}x${innerHeight}`,
-        ul: navigator.language.toLowerCase(),
-        dl: location.href,
-        dt: document.title,
-        dr: document.referrer
-    };
-    let data = '';
-    for (let key in obj) {
-        data += `${key}=${encodeURIComponent(obj[key])}&`;
-    }
-    ajax(`collect?${data}`, () => { })
-};
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker
-        .register('sw.js', { scope: '/' })
-        .then(function (reg) {
-            console.log('Service Worker Registered');
-            reg.sync.register('bg');
-        });
-}
 (function (window) {
     /* InstantClick 3.1.0 | (C) 2014 Alexandre Dieulot | http://instantclick.io/license */
     // Internal variables
@@ -136,10 +22,8 @@ if ('serviceWorker' in navigator) {
     function changePage(title, body, newUrl) {
         document.documentElement.replaceChild(body, document.body);
         $currentLocationWithoutHash = removeHash(newUrl);
-        url = newUrl.split("#");
-        history.pushState(null, null, url[0]);
+        history.pushState(null, null, newUrl);
         document.title = title + String.fromCharCode(160);
-        location.hash = url[1] ? `#${url[1]}` : "";
         instantanize();
         bar.done();
     }
@@ -183,7 +67,7 @@ if ('serviceWorker' in navigator) {
             url = addParam(url, "just_html");
             $xhr = ajax(url, function (res) {
                 var doc = document.implementation.createHTMLDocument("");
-                doc.documentElement.innerHTML = res.replace(/<noscript[\s\S]+<\/noscript>/gi, "");
+                doc.documentElement.innerHTML = res/*.replace(/<noscript[\s\S]+<\/noscript>/gi, "")*/;
                 $title = doc.title;
                 $body = doc.body;
                 var urlWithoutHash = removeHash($url);
@@ -196,13 +80,11 @@ if ('serviceWorker' in navigator) {
                     $isWaitingForCompletion = false;
                     display($url);
                 }
-            }, $xhr)
+            }, $xhr);
             $xhr.onerror = function () {
-                $isWaitingForCompletion = false;
-                bar.done();
+                location.href = $url;
             }
         }
-
     }
     function display(url) {
         if (!$isPreloading) {
@@ -385,7 +267,7 @@ if ('serviceWorker' in navigator) {
             overlay.on('click', close);
 
             $('#mo').on('click', () => {
-                open()
+                open();
             });
 
             function closeThat() {
@@ -414,41 +296,39 @@ if ('serviceWorker' in navigator) {
                 overlay.hide()
                 if (_opening || _opened) overlay.show()
                 if (
-                    scrolling ||
-                    typeof eve.touches === 'undefined'
-                    || !!Modal._modalsOpen
+                    !scrolling ||
+                    typeof eve.touches !== 'undefined'
+                    || !Modal._modalsOpen
                 ) {
-                    return;
-                }
+                    var dif_x = eve.touches[0].clientX - pStart.x,
+                        translateX = _currentOffsetX = dif_x;
+                    if (Math.abs(translateX) < _padding || pStart.x < 50) {
+                        if (Math.abs(dif_x) > 20) {
+                            _opening = true;
+                            if (!_opened && dif_x > 0 || _opened && dif_x < 0) {
 
-                var dif_x = eve.touches[0].clientX - pStart.x;
-                var translateX = _currentOffsetX = dif_x;
-                if (Math.abs(translateX) < _padding || pStart.x < 50) {
-                    if (Math.abs(dif_x) > 20) {
-                        _opening = true;
-                        if (!_opened && dif_x > 0 || _opened && dif_x < 0) {
-
-                            if (dif_x <= 0) {
-                                translateX = dif_x + _padding;
-                                _opening = false;
+                                if (dif_x <= 0) {
+                                    translateX = dif_x + _padding;
+                                    _opening = false;
+                                }
+                                let a = translateX - _padding;
+                                overlay.css({
+                                    opacity: ((280 + a) / 280) * 0.2
+                                })
+                                transformTo(Math.min(a, 0) + "px");
+                                _moved = true;
                             }
-                            let a = translateX - _padding;
-                            overlay.css({
-                                opacity: ((280 + a) / 280) * 0.2
-                            })
-                            transformTo(Math.min(a, 0) + "px");
-                            _moved = true;
                         }
                     }
+                    drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
+                    body.toggleClass('no-scroll', drg)
+                    if (drg && !waitin) {
+                        const y = eve.touches[0].pageY - pStart.y;
+                        $("#rle").css({
+                            top: Math.min(y, 120) + "px"
+                        });
+                    } else closeThat();
                 }
-                drg = document.scrollingElement.scrollTop === 0 && !(_opened || _opening);
-                body.toggleClass('no-scroll', drg)
-                if (drg && !waitin) {
-                    const y = eve.touches[0].pageY - pStart.y;
-                    $("#rle").css({
-                        top: Math.min(y, 120) + "px"
-                    });
-                } else closeThat();
             }).on('touchcancel', function () {
                 _moved = false;
                 _opening = false;
@@ -461,14 +341,14 @@ if ('serviceWorker' in navigator) {
                 pStop.x = e.changedTouches[0].pageX;
                 pStop.y = e.changedTouches[0].pageY;
                 if (drg) {
-                    var dY = Math.abs(pStart.y - pStop.y);
-                    var dX = Math.abs(pStart.x - pStop.x);
+                    var dY = Math.abs(pStart.y - pStop.y),
+                        dX = Math.abs(pStart.x - pStop.x);
                     if (!waitin && pStart.y < pStop.y && (
                         (dX <= 100 && dY >= 90)
                         || (dX / dY <= 0.3 && dY >= 60)
                     )) {
                         closeThat();
-                        $("body").addClass("spin");
+                        body.addClass("spin");
                         waitin = true;
                         display(addParam(location.href, "fr"));
                     } else closeThat();
@@ -479,24 +359,23 @@ if ('serviceWorker' in navigator) {
         }
         if (/\/orarend/.test(href)) {
             resize();
-            let today = $(`[data-day="${new Date().toISOString().split('T')[0]}"]`);
+            let today = $(`[data-day="${new Date().toISOString().split('T')[0]}"]`),
+                elem = $('#modal'),
+                inst = Modal(elem);
             if (today.is()) {
                 today.addClass('activeDay');
                 $('#tt')[0].scrollTo(today.index() * innerWidth, 0);
             }
-            var elem = $('#modal');
-            var inst = Modal(elem);
             $('.lesson').on('click', function () {
                 let lesson = $(this),
                     tantargy = lesson.find('b');
                 _populateModal(elem, lesson, ['lecke', 'time', 'theme'], {
                     nth: lesson.parent().attr('data-nth'),
                     tr: tantargy.html(),
-                    teacher: lesson.find('i').html(),
+                    teacher: lesson.find('i').html().replace(/span/g, 'a'),
                     room: lesson.find('.secondary-content').html()
                 }, inst);
-                elem.find('.modal-content>span').html(tantargy.is('.em') ? 'Elmarad!' : '');
-
+                $('.modal-content>span')[tantargy.is('.em') ? 'show' : 'hide']();
             });
             $('.btns b').on('click', function () {
                 let t = $(this);
@@ -513,32 +392,17 @@ if ('serviceWorker' in navigator) {
             });
             $('#printBtn').on('click', function () {
                 print();
-            })
+            });
             if (target.is('.lesson')) target[0].click();
         }
         if (/\/faliujsag/.test(href)) {
             $('#fj li').on('click', function (e) {
-                if (!$(e.target).is('a')) {
-                    $(this).find('.secondary-content')[0].click()
+                if ($(e.target).is('p, span, .collection-item')) {
+                    $(this).find('.secondary-content')[0].click();
                 }
             });
         }
         if (/\/lecke/.test(href)) {
-            let isMobile = /Mobi|Android/i.test(navigator.userAgent);
-            if (!isMobile) {
-                if (typeof DatePicker == 'function') {
-                    new DatePicker();
-                } else {
-                    var script = document.createElement('script');
-                    script.type = 'text/javascript';
-                    script.src = 'assets/picker.js';
-                    script.onload = function () {
-                        new DatePicker();
-                    };
-                    $("body").append(script);
-                }
-            }
-
             $('[name=t]').on('change', function () {
                 if (this.value == 'date') {
                     $('#hi').show();
@@ -549,11 +413,11 @@ if ('serviceWorker' in navigator) {
                 }
             });
 
-            var elem = $('#modal')
-            var inst = Modal(elem);
+            var elem = $('#modal'),
+                inst = Modal(elem);
             $('.collection-item').on('click', function () {
-                let hw = $(this);
-                let b = elem.find('a').hide();
+                let hw = $(this),
+                    b = $('a').hide();
                 if (hw.hasAttr('data-del')) {
                     b.show().attr('href', "lecke/torles?did=" + hw.attr('data-del'));
                 }
@@ -580,11 +444,11 @@ if ('serviceWorker' in navigator) {
             $(this).next().toggleClass('open');
         });
         if (/\/hianyzasok/.test(href)) {
-            var elem = $('#modal')
-            var inst = Modal(elem);
+            var elem = $('#modal'),
+                inst = Modal(elem);
             $('li p').on('click', function () {
-                let a = $(this);
-                let b = a.parent().prev()
+                let a = $(this),
+                    b = a.parent().prev();
                 _populateModal(elem, a, ['ct', 'jst', 't', 's'], {
                     d: b.find('span').html(),
                     ty: b.attr('data-ty')
@@ -594,13 +458,14 @@ if ('serviceWorker' in navigator) {
         }
         if (/\/jegyek/.test(href)) {
             target.closest('nr').addClass('open');
-            let inst = Modal('#addModal');
+            let inst = Modal('#addModal'),
+                tr = $('#tr');
+
             $(".fab").on('click', inst.open);
-            let tr = $('#tr');
             $('#tort').on('change', function () {
                 $('.j').hide().eq(this.checked ? 1 : 0).show();
-                $('.j').find('input').each(e => { e.checked = false })
-            })
+                $('.j').find('input').each(e => { e.checked = false });
+            });
             $("#cnn").on('click', function () {
                 let fa = $('p.j>:checked').val();
                 if (fa !== null) {
@@ -608,13 +473,13 @@ if ('serviceWorker' in navigator) {
                         w = $('.w>:checked').val(),
                         tag = w == 200 ? "b" : "span",
                         x = row.find(".jegy").eq(-1).parent(), y = x[0];
-                    y.innerHTML += ` < ${tag} tooltip = 'Milenne ha-val hozzáadott jegy&#xa;Súly: ${w}%' class='milenne jegy' > ${fa}</${tag}> `;
+                    y.innerHTML += ` <${tag} tooltip = 'Milenne ha-val hozzáadott jegy&#xa;Súly: ${w}%' class='milenne jegy'> ${fa}</${tag}> `;
                     calcAvr(row);
                     inst.close();
                     x.parent().addClass('open')
                     intoView(y);
                 }
-            })
+            });
         }
 
         ga('pageview');
@@ -667,93 +532,6 @@ if ('serviceWorker' in navigator) {
 
             });
         }
-
-        //Push notification button
-        /*
-        var fabPushElement = $('#push').on('click', function () {
-            var isSubscribed = (fabPushElement.is(':checked'));
-            if (isSubscribed) {
-                // Unsubscribe the user from push notifications
-                navigator.serviceWorker.ready
-                    .then(function (registration) {
-                        //Get `push subscription`
-                        registration.pushManager.getSubscription()
-                            .then(function (subscription) {
-                                //If no `push subscription`, then return
-                                if (!subscription) {
-                                    return;
-                                }
-
-                                //Unsubscribe `push notification`
-                                subscription.unsubscribe()
-                                    .then(function () {
-                                        console.info('Push notification unsubscribed.');
-                                        console.log(subscription);
-                                        fetch('/notify?del=1&id=' + encodeURIComponent(subscription.endpoint));
-                                        changePushStatus(false);
-                                    })
-                                    .catch(function (error) {
-                                        console.error(error);
-                                    });
-                            })
-                            .catch(function (error) {
-                                console.error('Failed to unsubscribe push notification.');
-                            });
-                    })
-
-            }
-            else {
-                // Ask User if he/she wants to subscribe to push notifications and then subscribe and send push notification
-                navigator.serviceWorker.ready.then(function (registration) {
-                    if (!registration.pushManager) {
-                        return false;
-                    }
-
-                    //To subscribe `push notification` from push manager
-                    registration.pushManager.subscribe({
-                        userVisibleOnly: true //Always show notification when received
-                    })
-                        .then(function (subscription) {
-                            console.info('Push notification subscribed.');
-                            console.log(subscription);
-                            fetch('notify?id=' + encodeURIComponent(subscription.endpoint));
-                            changePushStatus(true);
-                        })
-                        .catch(function (error) {
-                            changePushStatus(false);
-                            console.error('Push notification subscription error: ', error);
-                        });
-                })
-
-            }
-        });
-        if (!('serviceWorker' in navigator) || Notification.permission === 'denied' || !('PushManager' in window)) {
-            fabPushElement.attr('disabled', true)
-        } else {
-            //To change status
-            function changePushStatus(status) {
-                fabPushElement[0].checked = status
-            }
-
-            //Get `push notification` subscription
-            //If `serviceWorker` is registered and ready
-            navigator.serviceWorker.ready
-                .then(function (registration) {
-                    registration.pushManager.getSubscription()
-                        .then(function (subscription) {
-                            //If already access granted, enable push button status
-                            if (subscription) {
-                                changePushStatus(true);
-                            }
-                            else {
-                                changePushStatus(false);
-                            }
-                        })
-                        .catch(function (error) {
-                            console.error('Error occurred while enabling push ', error);
-                        });
-                });
-        }*/
     }
     $(() => {
         if (!$currentLocationWithoutHash) {
@@ -772,10 +550,11 @@ if ('serviceWorker' in navigator) {
                         return;
                     }
                     if (!(loc in $history)) {
-                        location.href = location.href
-                    /* Reloads the page while using cache for scripts, styles and images,
-                       unlike `location.reload()` */;
-                        return;
+                        if (loc == location.href) {
+                            location.href = location.href; // Reloads the page while using cache
+                            return;
+                        }
+                        location.reload();
                     }
                     $history[$currentLocationWithoutHash].scrollY = pageYOffset;
                     $currentLocationWithoutHash = loc;

@@ -7,10 +7,7 @@ function addParam(uri, key) {
         .replace(new RegExp("([?&]" + key + "(?=[=&#]|$)[^#&]*|(?=#|$))"), "&" + key + "=1")
         .replace(/^([^?&]+)&/, "$1?");
 }
-window.prefix = function () {
-    var styles = getComputedStyle(document.documentElement, ""), pre = (Array.prototype.slice.call(styles).join("").match(/-(moz|webkit|ms)-/) || styles.OLink === "" && ["", "o"])[1];
-    return "-" + pre + "-";
-}();
+
 /*! cash-dom 1.3.5, https://github.com/kenwheeler/cash @license MIT */
 (function (factory) {
     window.$ = factory();
@@ -474,51 +471,15 @@ window.prefix = function () {
     return cash;
 });
 
-
-
-window.M = {};
-
-/*
-M.anime = function (a) {
-    function rad(i) {
-        let r = a[i];
-        delete a[i];
-        return r;
-    }
-    let cb = rad('complete');
-    let t = $(rad('targets'))
-    let d = rad('duration')
-    for (const [key, val] of Object.entries(a)) {
-        if (Array.isArray(val)) {
-            t.css(key, val[0]);
-            a[key] = val[1]
-        }
-    }
-    t.css('transition', 'all ' + d + 'ms cubic-bezier(0.645, 0.045, 0.355, 1.000)');
-
-    window.requestAnimationFrame(function () {
-
-        t.css(a);
-        setTimeout(function () {
-            /* let s = {}
-             t.css('transition', '')
-             $(Object.keys(a)).each((e) => { s[e] = "" });
-             t.css(s);*/
-/* cb();
-}, d);
-})
-}
-M.anime.remove = () => { }
-*/
 // Function to update labels of text fields
-M.updateTextFields = function () {
+function updateTextFields() {
     $("input").each(function () {
         $(this).siblings("label").toggleClass("active", this.value.length > 0 || this.autofocus);
     });
 };
 
-M.validate_field = function (object) {
-    object.removeClass("valid invalid");
+function validateField(object) {
+    object = $(object).removeClass("valid invalid");
     // Check for character counter attributes
     if (object.is(":valid")) {
         object.addClass("valid");
@@ -529,27 +490,18 @@ M.validate_field = function (object) {
 
 $(function () {
     // Text based inputs
-    var input_selector = "input";
-    let doc = $(document);
-    // Add active if form auto complete
-    doc.on("change", input_selector, function () {
+    $(document).on("change", "input", function () {
         if (this.value.length !== 0) {
             $(this).siblings("label").addClass("active");
         }
-        M.validate_field($(this));
-    });
-    // Add active if input element has been pre-populated on document ready
-    M.updateTextFields();
-    /**
-     * Remove active when element is blurred
-     * @param {Event} e
-     */    doc.on("blur", function (e) {
+        validateField(this);
+    }).on("blur", function (e) {
         var $inputElement = $(e.target);
-        if ($inputElement.is(input_selector)) {
+        if ($inputElement.is("input")) {
             if (!$inputElement[0].value.length && !$inputElement[0].validity.badInput) {
                 $inputElement.siblings("label").removeClass("active");
             }
-            M.validate_field($inputElement);
+            validateField($inputElement);
         }
     }, true);
 });
@@ -558,9 +510,6 @@ function addCookie(n, v = 1) {
     var exdate = new Date();
     exdate.setDate(exdate.getDate() + 365);
     document.cookie = `${n}=${v};expires=${exdate.toUTCString()};path=/`;
-}
-function deleteCookie(n) {
-    document.cookie = `${n}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`;
 }
 
 function ajax(url, cb, $xhr = false) {
@@ -574,4 +523,115 @@ function ajax(url, cb, $xhr = false) {
     xhr.open('GET', url);
     xhr.send();
     return xhr;
+}
+
+function Modal(el, options) {
+    let self = {
+        open: function () {
+            if (!self.isOpen) {
+                self.isOpen = true;
+                Modal._modalsOpen++;
+                self._nthModalOpened = Modal._modalsOpen;
+                // Set Z-Index based on number of currently open modals
+                let zi = 1000 + Modal._modalsOpen * 2;
+                self.$overlay.show().css({
+                    zIndex: zi,
+                    opacity: self.options.opacity
+                });
+                self.$el.css({
+                    zIndex: zi + 1
+                });
+                // Set opening trigger, undefined indicates modal was opened by javascript
+                if (self.options.preventScrolling) {
+                    $("body").addClass('no-scroll');
+                }
+                // Animate overlay
+                self.el.insertAdjacentElement("afterend", self.$overlay[0]);
+                self.$el.addClass("open");
+                if (self.options.dismissible) {
+                    $(document).on("keydown", function (e) {
+                        if (e.keyCode === 27) {
+                            self.close();
+                        }
+                    }).on("focus", function (e) {
+                        // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
+                        if (!self.el.contains(e.target) && self._nthModalOpened === Modal._modalsOpen) {
+                            self.el.focus();
+                        }
+                    });
+                }
+                // Focus modal
+                self.el.focus();
+            }
+        },
+        close: function () {
+            if (self.isOpen) {
+                self.isOpen = false;
+                Modal._modalsOpen--;
+                self._nthModalOpened = 0;
+                self.$overlay.css({
+                    opacity: 0
+                });
+                self.$el.removeClass("open");
+                $("body").removeClass('no-scroll');
+
+                if (self.options.dismissible) {
+                    var doc = $(document);
+                    doc.off("keydown", self._handleKeydownBound)
+                        .off("focus", self._handleFocusBound, true);
+                }
+                setTimeout(function () {
+                    self.$overlay.remove();
+                    // Call onClose callback
+                    if (self.options.onClose) {
+                        self.options.onClose();
+                    }
+                }, 250);
+            }
+        },
+        _nthModalOpened: 0,
+        isOpen: false,
+        $el: $(el).on("click", function (e) {
+            if ($(e.target).closest(".modal-close").is()) {
+                self.close();
+            }
+        })
+    };
+    self.el = self.$el[0];
+    self.options = $.fn.extend({
+        opacity: 0.5,
+        onClose: null,
+        preventScrolling: true,
+        dismissible: true
+    }, options);
+    self.$overlay = $(`<div ${self.options.opacity == 0 ? "" : 'class="overlay"'}></div>`).on("click", function () {
+        if (self.options.dismissible) {
+            self.close();
+        }
+    });
+    return self;
+}
+Modal._modalsOpen = 0;
+
+function ga(type, obj) {
+    obj = {
+        ...obj,
+        t: type,
+        cd1: ('serviceWorker' in navigator ? navigator.serviceWorker.controller ? 'controlled' : 'supported' : 'unsupported'),
+        cd2: ((navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) ? 1 : 0),
+        sr: `${innerWidth}x${innerHeight}`,
+        ul: navigator.language.toLowerCase(),
+        dl: location.href,
+        dt: document.title,
+        dr: document.referrer
+    };
+    let data = '';
+    for (let key in obj) {
+        data += `${key}=${encodeURIComponent(obj[key])}&`;
+    }
+    ajax(`collect?${data}`, () => { })
+}
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
 }
