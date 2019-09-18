@@ -191,7 +191,7 @@ function schools()
 {
 	$sch = request("https://kretaglobalmobileapi.ekreta.hu/api/v1/Institute", 'GET', [], array(
 	"apiKey" => "7856d350-1fda-45f5-822d-e1a2f3f1acf0",
-	))['content'];
+    ))['content'];
     $sch = json_decode($sch, true);
     $out = [];
     foreach($sch as $school) {

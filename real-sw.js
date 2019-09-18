@@ -182,8 +182,8 @@ async function load(request) {
                         clone = networkResponse.clone(),
                         url = networkResponse.url;
                     cache.put(request, networkResponse);
-                    db.clear();
-                    users =  networkResponse.headers.get('X-Users').split(',');
+                    let t = networkResponse.headers.get('X-Users');
+                    if(t) users = t.split(',');
                     if (datasRe.test(url)) {
                         if (url.indexOf('just_html') < 0) {
                             cache.put(new Request(url + (url.indexOf('?') < 0 ? '?' : '&') + "just_html=1"), clone.clone());
@@ -200,7 +200,9 @@ async function load(request) {
 
                     return clone;
                 } catch (e) {
-                    return response || Response.redirect(ABS_URI + 'offline', 307);
+                    console.log(e)
+                    console.log(response)
+                    return response || cache.match(ABS_URI + 'offline');
                 }
             }();
         if (/addUser|login|lecke|fr/.test(request.url)) {
